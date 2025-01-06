@@ -5,7 +5,7 @@ default_stages: [pre-commit, manual]
 fail_fast: true
 repos:
   - repo: "https://github.com/commitizen-tools/commitizen"
-    rev: v3.31.0
+    rev: v4.1.0
     hooks:
       - id: commitizen
       - id: commitizen-branch
@@ -60,19 +60,19 @@ repos:
         entry: yamllint --strict --config-file .yamllint.yml
 
   - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-    rev: "v0.7.4"
+    rev: "v0.8.6"
     hooks:
       - id: ruff
         exclude: tests/
       - id: ruff-format
 
   - repo: "https://github.com/crate-ci/typos"
-    rev: typos-dict-v0.11.35
+    rev: dictgen-v0.3.1
     hooks:
       - id: typos
 
   - repo: "https://github.com/fpgmaas/deptry.git"
-    rev: "0.21.1"
+    rev: "0.21.2"
     hooks:
       - id: deptry
 
