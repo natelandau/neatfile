@@ -14,7 +14,7 @@ CACHE_DIR = Path(os.getenv("XDG_CACHE_HOME", "~/.cache")).expanduser().absolute(
 PROJECT_ROOT_PATH = Path(__file__).parents[2].absolute()
 CONFIG_PATH = CONFIG_DIR / "config.toml"
 
-VERSION = "2.0.0"
+VERSION = "2.0.1"
 ALWAYS_IGNORE_FILES = [".DS_Store", ".jdfile", ".stignore"]
 SPINNER = "bouncingBall"
 

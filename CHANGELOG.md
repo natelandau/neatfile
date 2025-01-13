@@ -1,3 +1,9 @@
+## v2.0.1 (2025-01-13)
+
+### Fix
+
+- correctly compute last month in January (#99)
+
 ## v2.0.0 (2024-11-21)
 
 ### BREAKING CHANGE
