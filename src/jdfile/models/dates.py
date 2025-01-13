@@ -586,12 +586,15 @@ class DatePattern:
             """,
             re.VERBOSE | re.IGNORECASE,
         )
+        today = datetime.now(tz=timezone.utc).date()
+        last_month = (today.replace(day=1) - timedelta(days=today.replace(day=1).day)).replace(
+            day=1
+        )
+
         match = pattern.search(string)
         if match:
             return (
-                datetime.now(tz=timezone.utc)
-                .date()
-                .replace(month=datetime.now(tz=timezone.utc).date().month - 1, day=1),
+                last_month,
                 str(match.group("found")),
             )
         return None  # type: ignore [unreachable]

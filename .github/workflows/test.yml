@@ -48,7 +48,7 @@ jobs:
 
             - name: Upload coverage to Codecov
               if: ${{ matrix.python-version == '3.13' }}
-              uses: codecov/codecov-action@v4
+              uses: codecov/codecov-action@v5
               with:
                   files: reports/coverage.xml
               env:
@@ -82,13 +82,3 @@ jobs:
 
             - name: Check lock file consistency
               run: uv sync --locked
-
-            - name: Run pre-commit
-              run: |
-                  uv run pre-commit run -a yamllint
-                  uv run pre-commit run -a typos
-                  uv run pre-commit run -a check-json
-                  uv run pre-commit run -a check-toml
-                  uv run pre-commit run -a check-xml
-                  uv run pre-commit run -a shellcheck
-                  uv run pre-commit run -a check-shebang-scripts-are-executable

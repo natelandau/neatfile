@@ -83,7 +83,7 @@ def instantiate_logger(
     level = verbosity if verbosity < 3 else 2  # noqa: PLR2004
 
     logger.remove()
-    with contextlib.suppress(TypeError):
+    with contextlib.suppress(TypeError, ValueError):
         logger.level("DRYRUN", no=21, color="<blue>", icon="👉")
 
     logger.add(
