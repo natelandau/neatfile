@@ -125,5 +125,5 @@ ci:
   autofix_prs: false
   autoupdate_commit_msg: "build: pre-commit autoupdate"
   autoupdate_schedule: quarterly
-  skip: [stopwords, pytest, mypy, shellcheck]
+  skip: [stopwords, pytest, mypy, shellcheck, deptry]
   submodules: false
