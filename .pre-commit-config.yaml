@@ -5,7 +5,7 @@ default_stages: [pre-commit, manual]
 fail_fast: true
 repos:
   - repo: "https://github.com/commitizen-tools/commitizen"
-    rev: v3.31.0
+    rev: v4.1.0
     hooks:
       - id: commitizen
       - id: commitizen-branch
@@ -60,19 +60,22 @@ repos:
         entry: yamllint --strict --config-file .yamllint.yml
 
   - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-    rev: "v0.7.4"
+    rev: "v0.9.1"
     hooks:
       - id: ruff
         exclude: tests/
+        args: [--no-fix]
       - id: ruff-format
+        args: [--check]
 
   - repo: "https://github.com/crate-ci/typos"
-    rev: typos-dict-v0.11.35
+    rev: dictgen-v0.3.1
     hooks:
       - id: typos
+        args: ["--force-exclude"]
 
   - repo: "https://github.com/fpgmaas/deptry.git"
-    rev: "0.21.1"
+    rev: "0.22.0"
     hooks:
       - id: deptry
 
@@ -113,3 +116,14 @@ repos:
           poetry\.lock|
           pyproject\.toml
           )
+
+ci:
+  autofix_commit_msg: |
+    fix: auto fixes from pre-commit.com hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: false
+  autoupdate_commit_msg: "build: pre-commit autoupdate"
+  autoupdate_schedule: quarterly
+  skip: [stopwords, pytest, mypy, shellcheck, deptry]
+  submodules: false
