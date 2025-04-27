@@ -1,3 +1,9 @@
+## v3.0.4 (2025-04-27)
+
+### Fix
+
+- fix error finding python executable
+
 ## v3.0.3 (2025-04-27)
 
 ### Fix
