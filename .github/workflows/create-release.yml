@@ -2,6 +2,7 @@
 name: "Create Release"
 
 on:
+    workflow_dispatch:
     push:
         tags:
             - "v*"
@@ -81,7 +82,7 @@ jobs:
             # Build draft release (Note: Will need to manually publish)
             # ----------------------------------------------
 
-            - name: Create Release Draft
+            - name: Create Github Release
               uses: softprops/action-gh-release@v2
               with:
                   body: ${{join(fromJson(steps.generate_notes.outputs.notes).notes, '')}}
@@ -91,6 +92,7 @@ jobs:
                       dist/*-${{env.PROJECT_VERSION}}.tar.gz
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     publish-to-pypi:
         runs-on: ubuntu-latest
         needs: auto-release
