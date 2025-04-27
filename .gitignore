@@ -8,6 +8,7 @@ dev-config.toml
 # Caches
 *_cache/
 __pycache__/
+.cache/
 
 # Coverage.py
 htmlcov/

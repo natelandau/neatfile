@@ -78,13 +78,14 @@
 [tool.coverage.run]
     branch       = true
     command_line = "--module pytest"
-    data_file    = "reports/.coverage"
+    data_file    = ".reports/.coverage"
     source       = ["src"]
 
 [tool.coverage.xml]
-    output = "reports/coverage.xml"
+    output = ".reports/coverage.xml"
 
 [tool.mypy] # https://mypy.readthedocs.io/en/latest/config_file.html
+    cache_dir                   = ".cache/mypy"
     disallow_any_unimported     = false
     disallow_subclassing_any    = false
     disallow_untyped_decorators = false
@@ -105,11 +106,13 @@
 
 [tool.pytest.ini_options]
     addopts             = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --junitxml=.reports/pytest.xml"
+    cache_dir           = ".cache/pytest"
     doctest_optionflags = ["IGNORE_EXCEPTION_DETAIL", "NORMALIZE_WHITESPACE"]
     filterwarnings      = ["error", "ignore::DeprecationWarning", "ignore::ResourceWarning"]
     markers             = ["no_db: marks tests as not needing a database"]
     testpaths           = ["src", "tests"]
     xfail_strict        = true
+
 [tool.ruff] # https://github.com/charliermarsh/ruff
     exclude = [
         ".bzr",
@@ -134,11 +137,10 @@
         "node_modules",
         "venv",
     ]
-
-    fix            = true
-    line-length    = 100
-    output-format  = "grouped"
-    src            = ["src", "tests"]
+    fix = true
+    line-length = 100
+    output-format = "grouped"
+    src = ["src", "tests"]
     target-version = "py310"
 
     [tool.ruff.lint]

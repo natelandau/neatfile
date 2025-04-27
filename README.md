@@ -2,15 +2,15 @@
 
 # neatfile
 
-CLI to automatically normalize and organize your files based on customizable rules.
+CLI to normalize and organize your files based on customizable rules.
 
 ## Why build this?
 
-I have filesystem OCD. Maybe you do too and share my annoyance at having files with non-normalized names sent from coworkers, friends, and family. On any given day, I receive dozens of files via Slack, email, and other messaging apps sent by people who have their own way of naming files. For example:
+I have filesystem OCD. Maybe you share my annoyance at having files with non-normalized filenames sent from coworkers, friends, and family. On any given day, I receive dozens of files via Slack, email, and other messaging apps sent by people who have their own way of naming files. For example:
 
 -   `department 2023 financials and budget 08232002.xlsx`
 -   `some contract Jan7 reviewed NOT FINAL (NL comments) v13.docx`
--   `John&Jane-meeting-notes.txt`
+-   `John&Jane-meeting-notes 4 3 25.txt`
 -   `Project_mockups(WIP)___sep92022.pdf`
 -   `FIRSTNAMElastname Resume (#1) [companyname].PDF`
 
@@ -31,7 +31,7 @@ What's the problem here?
 
 -   Remove special characters
 -   Trim multiple separators (`word----word` becomes `word-word`)
--   Normalize to `lowercase`, `uppercase`, `Sentence case`, or `Title Case`
+-   Normalize filenamesto `lowercase`, `uppercase`, `Sentence case`, or `Title Case`
 -   Normalize all files to a common word separator (`_`, `-`, ` `, `.`)
 -   Enforce lowercase file extensions
 -   Remove common English stopwords
@@ -39,17 +39,16 @@ What's the problem here?
 
 ### Date parsing
 
--   Parse dates in filenames in many different formats
+-   Identify dates in filenames in many different formats and and normalize them into a preferred format
+-   Add the date to the beginning or the end of the filename (or remove it entirely)
 -   Fall back to file creation date if no date is found in the filename
--   Normalize dates in filenames to a preferred format
--   Add the date to the beginning or the end of the filename or remove it entirely
 
 ### File organization
 
--   Set up projects with directory trees in the config file
--   Match terms in filenames to folder names and move files into the appropriate folders
+-   Define projects with directory trees in the config file
+-   Match terms in filenames to folder names and move files into matching folder
 -   Use vector matching to find similar terms
--   Respect the [Johnny Decimal](https://johnnydecimal.com) system if you use it
+-   Respect the [Johnny Decimal](https://johnnydecimal.com) system, if you use it
 -   Optionally, add `.neatfile` files to directories containing a list of words that will match files
 
 ## Installation
@@ -220,7 +219,7 @@ You can influence how files match to directories in two ways:
     neatfile sort --project=work --term=legal contract.pdf
     ```
 
-    This tells neatfile to include directories that match "legal" when sorting the file.
+    This tells neatfile to include directories that match "legal" when sorting the file even though it doesn't contain the term "legal" in the filename.
 
 1. **Creating `.neatfile` Files**: Add a .neatfile text file to any directory containing additional terms that should match to that location:
 

@@ -50,7 +50,7 @@ jobs:
               if: ${{ matrix.python-version == '3.13' }}
               uses: codecov/codecov-action@v5
               with:
-                  files: reports/coverage.xml
+                  files: .reports/coverage.xml
               env:
                   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
