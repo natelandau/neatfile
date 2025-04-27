@@ -562,7 +562,7 @@ wheels = [
 
 [[package]]
 name = "neatfile"
-version = "3.0.2"
+version = "3.0.4"
 source = { editable = "." }
 dependencies = [
     { name = "cappa" },

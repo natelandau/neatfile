@@ -9,14 +9,14 @@
     dependencies = [
         "cappa>=0.27.2",
         "dynaconf>=3.2.10",
-        "en-core-web-md",
+        "en-core-web-md @ https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl",
         "inflect>=7.5.0",
         "pip>=25.1",
         "questionary>=2.1.0",
         "regex>=2024.11.6",
         "rich>=14.0.0",
         "spacy>=3.8.5",
-]
+    ]
     description = "CLI to automatically normalize and organize your files based on customizable rules."
     license = { file = "LICENSE" }
     name = "neatfile"
@@ -119,6 +119,9 @@
     markers             = ["no_db: marks tests as not needing a database"]
     testpaths           = ["src", "tests"]
     xfail_strict        = true
+
+[tool.hatch.metadata]
+    allow-direct-references = true
 
 [tool.ruff] # https://github.com/charliermarsh/ruff
     exclude = [
@@ -223,6 +226,3 @@
         line-ending               = "auto"
         quote-style               = "double"
         skip-magic-trailing-comma = false
-
-[tool.uv.sources]
-en-core-web-md = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl" }
