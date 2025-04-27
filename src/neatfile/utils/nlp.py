@@ -1,5 +1,7 @@
 """Natural language processing utilities."""
 
+import subprocess  # noqa: S404
+
 import cappa
 import spacy
 
@@ -9,7 +11,7 @@ try:
     nlp = spacy.load("en_core_web_md")
 except OSError as e:
     pp.rule("Downloading spaCy model...")
-    spacy.cli.download("en_core_web_md")  # type: ignore [attr-defined]
+    subprocess.run(["python", "-m", "spacy", "download", "en_core_web_md"], check=False)  # noqa: S607
     pp.rule()
     pp.info(":rocket: Model downloaded successfully. Run `neatfile` again.")
     raise cappa.Exit() from e
