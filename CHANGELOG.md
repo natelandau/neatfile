@@ -1,3 +1,9 @@
+## v3.0.1 (2025-04-27)
+
+### Fix
+
+- download spacy language model on first run (#103)
+
 ## v3.0.0 (2025-04-27)
 
 ### BREAKING CHANGE
