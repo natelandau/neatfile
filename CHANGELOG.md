@@ -1,3 +1,13 @@
+## v3.0.0 (2025-04-27)
+
+### BREAKING CHANGE
+
+- New package name and new cli interface
+
+### Feat
+
+- rename to neatfile and refactor cli (#101)
+
 ## v2.0.1 (2025-01-13)
 
 ### Fix
