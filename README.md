@@ -109,16 +109,16 @@ $ neatfile process --project=work --date-format=%Y-%m-%d datestamped_20230904_si
 
 ## Configuration
 
-Define personalized defaults in a configuration file and apply them consistently across all runs. You can also set project specific settings within the configuration file with their own specific filename patterns. Folders beneath the root path of projects will be indexed and used to move files into.
+Define personalized defaults in a configuration file and apply them consistently across all runs.
 
-To set default settings, you'll need to create a configuration file. Neatfile will look for a file at `~/.config/neatfile/config.toml` or your `$XDG_CONFIG_HOME/neatfile/config.toml` if set.
+To create a configuration file. Run `neatfile config --create` to create a configuration file at `~/.config/neatfile/config.toml` or your `$XDG_CONFIG_HOME/neatfile/config.toml` if set.
 
 Preferences can also be set on a per project basis within the configuration file.
 
 Values are set in the following order of precedence:
 
 1. CLI arguments
-2. Project specific settings
+2. Project specific settings within the configuration file
 3. Default values in the user configuration file
 4. Default values as specified below in the sample configuration file.
 
@@ -126,7 +126,7 @@ Values are set in the following order of precedence:
 
 ```toml
 # Global settings
-# These can be overridden on a per project basis in the [projects] section.
+# Override on a per project basis in the [projects] section if needed.
 
 # Ambiguous date formats can be specified by region
 # Useful when searching a filename for a date and the date format is ambiguous such as 030425
@@ -171,7 +171,8 @@ separator          = "ignore"
 # true or false
 split_words        = false
 
-# List of specific stopwords to be stripped from filenames above and beyond the default English stopwords
+# List of specific stopwords to be stripped from filenames in
+# addition to the default English stopwords
 stopwords          = []
 
 # Strip stopwords from filenames.
@@ -182,7 +183,8 @@ strip_stopwords    = true
 # Options: "ignore", "lower", "upper", "title", "sentence"
 transform_case     = "ignore"
 
-# Override the global settings for specific projects and tell neatfile how to organize files into a directory tree.
+# Override the global settings for specific projects and tell neatfile
+# how to organize files into a directory tree.
 [projects]
     [projects.project_name]
         # The name of the project is used as a command line option. (e.g. --project=project_name)
@@ -224,7 +226,7 @@ You can influence how files match to directories in two ways:
 1. **Creating `.neatfile` Files**: Add a .neatfile text file to any directory containing additional terms that should match to that location:
 
     ```bash
-    # In /path/to/work/admin/legal/.neatfile
+    # /path/to/work/admin/legal/.neatfile
     contract
     agreement
     nda
@@ -254,7 +256,7 @@ Configured in config.toml:
 
 ```toml
 [projects.work]
-name = "Work Files"
+name = "work"
 path = "/path/to/work"
 depth = 2
 ```
