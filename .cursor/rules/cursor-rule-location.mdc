@@ -1,0 +1,13 @@
+---
+description: Cursor Rules Location, creating cursor rules files
+globs: *.mdc
+alwaysApply: false
+---
+# Cursor Rules Location
+
+Always follow these rules when creating cursor rule files
+
+1. Only use `.mdc` for the file extension
+2. Always place rule files in `PROJECT_ROOT/.cursor/rules/`
+3. Use kebab case for filenames
+4. Make filenames descriptive of the rule's purpose

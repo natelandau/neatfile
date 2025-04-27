@@ -1,13 +1,19 @@
 # Scratch folder for temporary files
 scratch/
+tmp/
+development/
+.development/
+dev-config.toml
 
 # Caches
 *_cache/
 __pycache__/
+.cache/
 
 # Coverage.py
 htmlcov/
 reports/
+.reports/
 
 # cruft
 *.rej
@@ -42,9 +48,6 @@ dist/
 
 # PyCharm
 .idea/
-
-# pyenv
-.python-version
 
 # Python
 *.py[cdo]

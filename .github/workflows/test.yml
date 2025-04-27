@@ -44,13 +44,13 @@ jobs:
 
             - name: Run tests
               shell: bash
-              run: uv run pytest --cov --cov-config=pyproject.toml --cov-report=xml --cov-report=term tests/
+              run: uv run duty test
 
             - name: Upload coverage to Codecov
               if: ${{ matrix.python-version == '3.13' }}
               uses: codecov/codecov-action@v5
               with:
-                  files: reports/coverage.xml
+                  files: .reports/coverage.xml
               env:
                   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -68,17 +68,6 @@ jobs:
             - name: Setup Python, uv, and the package
               uses: ./.github/actions/setup_python_env
 
-            - name: lint with ruff
+            - name: run all linters
               shell: bash
-              run: uv run ruff check --no-fix src/
-
-            - name: check types with mypy
-              shell: bash
-              run: uv run mypy --config-file pyproject.toml src/
-
-            - name: check spelling with typos
-              shell: bash
-              run: uv run typos
-
-            - name: Check lock file consistency
-              run: uv sync --locked
+              run: uv run duty lint

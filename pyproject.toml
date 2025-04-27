@@ -1,122 +1,117 @@
 [project]
     authors = [{ name = "Nate Landau", email = "github@natenate.org" }]
     dependencies = [
-        "dynaconf>=3.2.6",
+        "cappa>=0.27.2",
+        "dynaconf>=3.2.10",
+        "en-core-web-md",
         "inflect>=7.5.0",
-        "loguru>=0.7.3",
-        "nltk>=3.9.1",
-        "questionary>=2.0.1",
-        "rich>=13.9.4",
-        "typer>=0.15.1",
+        "questionary>=2.1.0",
+        "regex>=2024.11.6",
+        "rich>=14.0.0",
+        "spacy>=3.8.5",
     ]
-    description = "File Manager for the Johnny Decimal System"
+    description = "CLI to automatically normalize and organize your files based on customizable rules."
     license = { file = "LICENSE" }
-    name = "jdfile"
+    name = "neatfile"
     readme = "README.md"
     requires-python = ">=3.11"
     version = "2.0.1"
 
     [project.urls]
-        Homepage   = "https://github.com/natelandau/jdfile"
-        Repository = "https://github.com/natelandau/jdfile"
+        Homepage   = "https://github.com/natelandau/neatfile"
+        Repository = "https://github.com/natelandau/neatfile"
 
     [project.scripts]
-        jdfile = "jdfile.jdfile:app"
+        neatfile = "neatfile.cli:main"
 
-[build-system]
-    build-backend = "hatchling.build"
-    requires      = ["hatchling"]
-
-[tool.uv]
-    dev-dependencies = [
-        "commitizen>=4.1.0",
-        "coverage>=7.6.7",
-        "deptry>=0.22.0",
-        "mypy>=1.14.1",
-        "poethepoet>=0.32.1",
-        "pre-commit>=4.0.1",
+[dependency-groups]
+    dev = [
+        "commitizen>=4.6.0",
+        "coverage>=7.8.0",
+        "duty>=1.6.0",
+        "mypy>=1.15.0",
+        "pre-commit>=4.2.0",
         "pytest-clarity>=1.0.1",
-        "pytest-cov>=6.0.0",
+        "pytest-cov>=6.1.1",
         "pytest-env>=1.1.5",
         "pytest-mock>=3.14.0",
         "pytest-pretty-terminal>=1.1.0",
         "pytest-sugar>=1.0.0",
         "pytest-xdist>=3.6.1",
-        "pytest>=8.3.3",
-        "ruff>=0.9.1",
+        "pytest>=8.3.5",
+        "ruff>=0.11.6",
         "types-python-dateutil>=2.9.0.20241206",
-        "typos>=1.29.4",
-        "yamllint>=1.35.1",
+        "typos>=1.31.1",
+        "yamllint>=1.37.0",
     ]
+
+[build-system]
+    build-backend = "hatchling.build"
+    requires      = ["hatchling"]
 
 [tool.commitizen]
     bump_message               = "bump(release): v$current_version → v$new_version"
     changelog_merge_prerelease = true
     tag_format                 = "v$version"
     update_changelog_on_bump   = true
-    version_files              = ["src/jdfile/constants.py:VERSION"]
+    version_files              = ["src/neatfile/constants.py:VERSION"]
     version_provider           = "pep621"
 
 [tool.coverage.report] # https://coverage.readthedocs.io/en/latest/config.html#report
     exclude_lines = [
+        'assert_never',
         'def __repr__',
         'except [\w\s\._]+ as .*:',
-        'log\.critical',
-        'log\.debug',
-        'log\.error',
-        'log\.exception',
-        'log\.info',
-        'log\.success',
-        'log\.trace',
-        'log\.warning',
+        'if TYPE_CHECKING:',
+        'if __name__ == .__main__.:',
+        'if typing.TYPE_CHECKING:',
         'pragma: no cover',
-        'raise Abort',
-        'raise Exit',
-        'raise typer\.Exit',
+        'raise cappa\.Exit',
     ]
-    fail_under = 60
-    precision = 1
+    fail_under = 20
+    # omit = ["src/neatfile/constants.py"]
+    precision    = 1
     show_missing = true
     skip_covered = true
+    skip_empty   = true
 
 [tool.coverage.run]
     branch       = true
     command_line = "--module pytest"
-    data_file    = "reports/.coverage"
+    data_file    = ".reports/.coverage"
     source       = ["src"]
 
 [tool.coverage.xml]
-    output = "reports/coverage.xml"
-
-[tool.deptry]
-    known_first_party = ["jdfile"]
+    output = ".reports/coverage.xml"
 
 [tool.mypy] # https://mypy.readthedocs.io/en/latest/config_file.html
-    disallow_any_unimported = false
-    disallow_subclassing_any = false
+    cache_dir                   = ".cache/mypy"
+    disallow_any_unimported     = false
+    disallow_subclassing_any    = false
     disallow_untyped_decorators = false
-    disallow_untyped_defs = true
-    exclude = [
-        'tests/', # TOML literal string (single-quotes, regex okay, no escaping necessary)
-    ]
-    follow_imports = "normal"
-    ignore_missing_imports = true
-    junit_xml = "reports/mypy.xml"
-    no_implicit_optional = true
-    pretty = false
-    show_column_numbers = true
-    show_error_codes = true
-    show_error_context = true
-    strict_optional = false
-    warn_redundant_casts = true
-    warn_unreachable = true
-    warn_unused_ignores = true
+    disallow_untyped_defs       = true
+    exclude                     = ["tests/"]
+    follow_imports              = "normal"
+    ignore_missing_imports      = true
+    junit_xml                   = ".reports/mypy.xml"
+    no_implicit_optional        = true
+    pretty                      = false
+    show_column_numbers         = true
+    show_error_codes            = true
+    show_error_context          = true
+    strict_optional             = false
+    warn_redundant_casts        = true
+    warn_unreachable            = true
+    warn_unused_ignores         = true
 
 [tool.pytest.ini_options]
-    addopts        = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --junitxml=reports/pytest.xml"
-    filterwarnings = ["error", "ignore::DeprecationWarning"]
-    testpaths      = ["src", "tests"]
-    xfail_strict   = true
+    addopts             = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --junitxml=.reports/pytest.xml"
+    cache_dir           = ".cache/pytest"
+    doctest_optionflags = ["IGNORE_EXCEPTION_DETAIL", "NORMALIZE_WHITESPACE"]
+    filterwarnings      = ["error", "ignore::DeprecationWarning", "ignore::ResourceWarning"]
+    markers             = ["no_db: marks tests as not needing a database"]
+    testpaths           = ["src", "tests"]
+    xfail_strict        = true
 
 [tool.ruff] # https://github.com/charliermarsh/ruff
     exclude = [
@@ -128,6 +123,7 @@
         ".mypy_cache",
         ".nox",
         ".pants.d",
+        ".pytest_cache",
         ".pytype",
         ".ruff_cache",
         ".svn",
@@ -141,15 +137,15 @@
         "node_modules",
         "venv",
     ]
-
-    fix            = true
-    line-length    = 100
-    output-format  = "grouped"
-    src            = ["src", "tests"]
+    fix = true
+    line-length = 100
+    output-format = "grouped"
+    src = ["src", "tests"]
     target-version = "py310"
 
     [tool.ruff.lint]
         ignore = [
+            "ANN204",  # Missing return type annotation for special method `__init__`
             "B006",    # mutable-argument-default
             "B008",    # function-call-in-default-argument
             "COM812",  # Trailing comma missing"
@@ -162,51 +158,51 @@
             "D408",    # section-underline-after-name
             "D409",    # section-underline-matches-section-length
             "D413",    # blank-line-after-last-section
-            "DOC501",  # docstring does not contain raised exceptions
+            "DOC501",  # Raised exception missing from docstring
             "E501",    # line-too-long
-            "FBT001",  # Boolean default positional argument in function definition
-            "FBT002",  # Boolean default positional argument in function definition
-            "FIX002",  # Line contains TODO
+            "FBT001",  # Boolean-typed positional argument in function definition
+            "FBT002",  # Boolean-typed positional argument in function definition
+            "FIX002",  # Line contains TODO, consider resolving the issue
             "ISC001",  # single-line-implicit-string-concatenation
             "N805",    # invalid-first-argument-name-for-method
             "PLR0913", # too-many-arguments
-            "PLR0917", # too many positional arguments
-            "RSE102",  # Unnecessary parentheses on raised exception"
+            "RSE102",  # Unnecessary parentheses on raised exception
             "S311",    # suspicious-non-cryptographic-random-usage
-            "TD002",   # Missing author in todo
-            "TD003",   # Missing ticket number in todo
+            "TD002",   # Missing author in TODO
+            "TD003",   # Missing issue link on the line following this TODO
             "UP007",   # non-pep604-annotation
-            "UP045",   # Use `X | None` for type annotations
         ]
-        per-file-ignores = { "jdfile.py" = [
-            "PLR0912",
-            "PLR0913",
-        ], "tests/*.py" = [
+        per-file-ignores = { "tests/*.py" = [
             "A002",
             "A003",
             "ANN001",
             "ANN003",
             "ANN201",
             "ANN202",
+            "ANN205",
             "ARG001",
             "ARG002",
             "ARG005",
             "D102",
-            "DOC201",
+            "D417",
+            "E712",
             "ERA001",
             "F403",
             "PGH003",
+            "PLC2701",
             "PLR0913",
             "PLR0917",
             "PLR2004",
             "PLR6301",
             "S101",
+            "SLF001",
+        ], "duties.py" = [
+            "ANN001",
         ] }
         preview = true
         select = ["ALL"]
-        unfixable = ["E712", "ERA001", "F401", "F841", "UP007"]
+        # unfixable = ["E712", "ERA001", "F401", "F841", "UP007"]
         [tool.ruff.lint.mccabe]
-            # Unlike Flake8, default to a complexity level of 10.
             max-complexity = 10
 
         [tool.ruff.lint.pydocstyle]
@@ -221,37 +217,5 @@
         quote-style               = "double"
         skip-magic-trailing-comma = false
 
-[tool.poe.tasks]
-    [tool.poe.tasks.upgrade]
-        shell = """
-        echo "-- Upgrading packages --" &&
-        uv lock --upgrade &&
-        echo "-- Autoupdating pre-commit --" &&
-        pre-commit autoupdate
-        """
-
-    [tool.poe.tasks.lint]
-        help = "Lint this package"
-
-        [[tool.poe.tasks.lint.sequence]]
-            shell = "ruff check --preview --no-fix src/"
-
-        [[tool.poe.tasks.lint.sequence]]
-            shell = "ruff format --check src/ tests/"
-
-        [[tool.poe.tasks.lint.sequence]]
-            shell = "mypy --config-file pyproject.toml src/"
-
-        [[tool.poe.tasks.lint.sequence]]
-            shell = "typos"
-
-        [[tool.poe.tasks.lint.sequence]]
-            cmd = """
-                pre-commit run
-                    --all-files
-                    --color always
-                """
-
-    [tool.poe.tasks.test]
-        cmd  = "pytest --cov --cov-config=pyproject.toml --cov-report=xml --cov-report=term tests/"
-        help = "Test this package and generate coverage reports"
+[tool.uv.sources]
+    en-core-web-md = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl" }

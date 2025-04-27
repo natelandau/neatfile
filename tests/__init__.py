@@ -1,1 +1,1 @@
-"""jdfile test suite."""
+"""Tests for neatfile."""
