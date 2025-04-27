@@ -1,3 +1,9 @@
+## v3.0.3 (2025-04-27)
+
+### Fix
+
+- add neatfile version to trace output
+
 ## v3.0.2 (2025-04-27)
 
 ### Fix
