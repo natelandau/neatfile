@@ -1,3 +1,9 @@
+## v3.0.5 (2025-04-27)
+
+### Fix
+
+- include spacy model in build (#105)
+
 ## v3.0.4 (2025-04-27)
 
 ### Fix
