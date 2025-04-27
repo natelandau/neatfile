@@ -1,3 +1,9 @@
+## v3.0.6 (2025-04-27)
+
+### Fix
+
+- download language model on first run (#106)
+
 ## v3.0.5 (2025-04-27)
 
 ### Fix
