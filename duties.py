@@ -219,7 +219,21 @@ def update(ctx: Context) -> None:
     )
 
 
-@duty()
+@duty
+def download_spacy_model(ctx: Context) -> None:
+    """Download the spaCy model."""
+    output = ctx.run(
+        "pip list | grep 'en_core_web_md' || echo 'not installed' ",
+        title="check en_core_web_md",
+    )
+    if "not installed" in output:
+        ctx.run(
+            ["uv", "run", "spacy", "download", "en_core_web_md"],
+            title="download en_core_web_md",
+        )
+
+
+@duty(pre=[download_spacy_model])
 def test(ctx: Context, *cli_args: str) -> None:
     """Test package and generate coverage reports."""
     ctx.run(

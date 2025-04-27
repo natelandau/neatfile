@@ -1,4 +1,4 @@
-[![PyPI version](https://badge.fury.io/py/neatfile.svg)](https://badge.fury.io/py/neatfile) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/neatfile) [![Tests](https://github.com/natelandau/neatfile/actions/workflows/test.yml/badge.svg)](https://github.com/natelandau/neatfile/actions/workflows/test.yml) [![codecov](https://codecov.io/gh/natelandau/neatfile/branch/main/graph/badge.svg?token=Y11Z883PMI)](https://codecov.io/gh/natelandau/neatfile)
+[![PyPI version](https://badge.fury.io/py/neatfile.svg)](https://badge.fury.io/py/neatfile) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/neatfile) [![Tests](https://github.com/natelandau/neatfile/actions/workflows/test.yml/badge.svg)](https://github.com/natelandau/neatfile/actions/workflows/test.yml) [![codecov](https://codecov.io/gh/natelandau/neatfile/graph/badge.svg?token=Y11Z883PMI)](https://codecov.io/gh/natelandau/neatfile)
 
 # neatfile
 
@@ -61,7 +61,7 @@ uv tool install neatfile
 python -m pip install --user neatfile
 ```
 
-**Note:** neatfile relies on a ~35mb language model to provide vector matching used in identifying similarities between filenames and directory names. This file will only be downloaded once when you install neatfile.
+**Note:** neatfile relies on a ~35mb language model to provide vector matching used to identify similarities between filenames and directory names. This file will be downloaded when you first run `neatfile`.
 
 ## Quickstart
 
