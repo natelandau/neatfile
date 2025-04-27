@@ -54,10 +54,10 @@ What's the problem here?
 ## Installation
 
 ```bash
-# With uv
-uv tool install neatfile
+# With uv (Specify any python version between 3.9 and 3.12)
+uv tool install --python 3.12 neatfile
 
-# With pip
+# With pip - requires python between 3.9 and 3.12
 python -m pip install --user neatfile
 ```
 
