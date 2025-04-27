@@ -298,14 +298,6 @@ wheels = [
 ]
 
 [[package]]
-name = "en-core-web-md"
-version = "3.8.0"
-source = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl" }
-wheels = [
-    { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl", hash = "sha256:5e6329fe3fecedb1d1a02c3ea2172ee0fede6cea6e4aefb6a02d832dba78a310" },
-]
-
-[[package]]
 name = "execnet"
 version = "2.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -562,12 +554,11 @@ wheels = [
 
 [[package]]
 name = "neatfile"
-version = "3.0.4"
+version = "3.0.5"
 source = { editable = "." }
 dependencies = [
     { name = "cappa" },
     { name = "dynaconf" },
-    { name = "en-core-web-md" },
     { name = "inflect" },
     { name = "pip" },
     { name = "questionary" },
@@ -601,7 +592,6 @@ dev = [
 requires-dist = [
     { name = "cappa", specifier = ">=0.27.2" },
     { name = "dynaconf", specifier = ">=3.2.10" },
-    { name = "en-core-web-md", url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl" },
     { name = "inflect", specifier = ">=7.5.0" },
     { name = "pip", specifier = ">=25.1" },
     { name = "questionary", specifier = ">=2.1.0" },
