@@ -1,5 +1,12 @@
 [project]
     authors = [{ name = "Nate Landau", email = "github@natenate.org" }]
+    classifiers = [
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.9",
+    ]
     dependencies = [
         "cappa>=0.27.2",
         "dynaconf>=3.2.10",

@@ -1,4 +1,4 @@
-[![PyPI version](https://badge.fury.io/py/neatfile.svg)](https://badge.fury.io/py/neatfile) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/neatfile) [![Tests](https://github.com/natelandau/neatfile/actions/workflows/test.yml/badge.svg)](https://github.com/natelandau/neatfile/actions/workflows/test.yml) [![codecov](https://codecov.io/gh/natelandau/neatfile/branch/main/graph/badge.svg?token=Y11Z883PMI)](https://codecov.io/gh/natelandau/neatfile)
+[![PyPI version](https://badge.fury.io/py/neatfile.svg)](https://badge.fury.io/py/neatfile) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/neatfile) [![Tests](https://github.com/natelandau/neatfile/actions/workflows/test.yml/badge.svg)](https://github.com/natelandau/neatfile/actions/workflows/test.yml) [![codecov](https://codecov.io/gh/natelandau/neatfile/graph/badge.svg?token=Y11Z883PMI)](https://codecov.io/gh/natelandau/neatfile)
 
 # neatfile
 
