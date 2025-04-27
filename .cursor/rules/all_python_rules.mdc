@@ -1,0 +1,10 @@
+---
+description: Include all python rules
+globs: **/*.py
+alwaysApply: false
+---
+[inline-comment-usage.mdc](mdc:.cursor/rules/inline-comment-usage.mdc)
+[pytest-test-rules.mdc](mdc:.cursor/rules/pytest-test-rules.mdc)
+[python-docstring-rules.mdc](mdc:.cursor/rules/python-docstring-rules.mdc)
+[python-naming-conventions.mdc](mdc:.cursor/rules/python-naming-conventions.mdc)
+[use-pathlib.mdc](mdc:.cursor/rules/use-pathlib.mdc)

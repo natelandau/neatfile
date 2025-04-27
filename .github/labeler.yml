@@ -5,6 +5,6 @@ github_actions:
 dev_container:
   - changed-files:
       - any-glob-to-any-file: ".devcontainer/**"
-jdfile:
+neatfile:
   - changed-files:
       - any-glob-to-any-file: "src/**"

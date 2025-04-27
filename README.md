@@ -1,209 +1,279 @@
-[![PyPI version](https://badge.fury.io/py/jdfile.svg)](https://badge.fury.io/py/jdfile) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/jdfile) [![Tests](https://github.com/natelandau/jdfile/actions/workflows/test.yml/badge.svg)](https://github.com/natelandau/jdfile/actions/workflows/test.yml) [![codecov](https://codecov.io/gh/natelandau/jdfile/branch/main/graph/badge.svg?token=Y11Z883PMI)](https://codecov.io/gh/natelandau/jdfile)
+[![PyPI version](https://badge.fury.io/py/neatfile.svg)](https://badge.fury.io/py/neatfile) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/neatfile) [![Tests](https://github.com/natelandau/neatfile/actions/workflows/test.yml/badge.svg)](https://github.com/natelandau/neatfile/actions/workflows/test.yml) [![codecov](https://codecov.io/gh/natelandau/neatfile/branch/main/graph/badge.svg?token=Y11Z883PMI)](https://codecov.io/gh/natelandau/neatfile)
 
-# jdfile
+# neatfile
 
-`jdfile` cleans and normalizes filenames. In addition, if you have directories which follow the [Johnny Decimal](https://johnnydecimal.com), jdfile can move your files into the appropriate directory.
+CLI to automatically normalize and organize your files based on customizable rules.
 
-`jdfile` cleans filenames based on your preferences.
+## Why build this?
 
--   Remove special characters
--   Trim multiple separators (`word----word` becomes `word-word`)
--   Normalize to `lower case`, `upper case`, `sentence case`, or `title case`
--   Normalize all files to a common word separator (`_`, `-`, ` `)
--   Enforce lowercase file extensions
--   Remove common English stopwords
--   Split `camelCase` words into separate words (`camel Case`)
--   Parse the filename for a date in many different formats
--   Remove or reformat the date and add it to the the beginning of the filename
--   Avoid overwriting files by adding a unique integer when renaming/moving
--   Clean entire directory trees
--   Optionally, show previews of changes to be made before committing
--   Ignore files listed in a config file by filename or by regex
--   Specify casing for words which should never be changed (ie. `iMac` will never be re-cased)
-
-`jdfile` can organize your files into folders.
-
--   Move files into directory trees following the [Johnny Decimal](https://johnnydecimal.com) system
--   Parse files and folder names looking for matching terms
--   Uses [nltk](https://www.nltk.org) to lookup synonyms to improve matching
--   Add `.jdfile` files to directories containing a list of words that will match files
-
-### Why build this?
-
-It's nearly impossible to file away documents with normalized names when everyone has a different convention for naming files. On any given day, tons of files are attached to emails or sent via Slack by people who have their won way of naming files. For example:
+I have filesystem OCD. Maybe you do too and share my annoyance at having files with non-normalized names sent from coworkers, friends, and family. On any given day, I receive dozens of files via Slack, email, and other messaging apps sent by people who have their own way of naming files. For example:
 
 -   `department 2023 financials and budget 08232002.xlsx`
 -   `some contract Jan7 reviewed NOT FINAL (NL comments) v13.docx`
 -   `John&Jane-meeting-notes.txt`
 -   `Project_mockups(WIP)___sep92022.pdf`
 -   `FIRSTNAMElastname Resume (#1) [companyname].PDF`
--   `code_to_review.js`
 
-If you are a person who archives documents there are a number of problems with these files.
+What's the problem here?
 
 -   No self-evident way to organize them into folders
 -   No common patterns to search for
 -   Dates all over the place or nonexistent
--   No consistent casing
--   No consistent word separators
+-   Inconsistent casing and word separators
 -   Special characters within text
 -   I could go on and on...
 
-Additionally, even if the filenames were normalized, filing documents manually is a pain.
+`neatfile` is created to solve for these problems by providing an easy CLI to rename and organize files into directories based on your preferences.
 
-`jdfile` is created to solve for these problems by providing an easy CLI to normalize the filename and organize it into an appropriate directory on your computer.
+## Features
 
-## Install
+### Filename cleaning and normalization
 
-jdfile requires Python v3.10 or above
+-   Remove special characters
+-   Trim multiple separators (`word----word` becomes `word-word`)
+-   Normalize to `lowercase`, `uppercase`, `Sentence case`, or `Title Case`
+-   Normalize all files to a common word separator (`_`, `-`, ` `, `.`)
+-   Enforce lowercase file extensions
+-   Remove common English stopwords
+-   Split `camelCase` words into separate words (`camel Case`)
+
+### Date parsing
+
+-   Parse dates in filenames in many different formats
+-   Fall back to file creation date if no date is found in the filename
+-   Normalize dates in filenames to a preferred format
+-   Add the date to the beginning or the end of the filename or remove it entirely
+
+### File organization
+
+-   Set up projects with directory trees in the config file
+-   Match terms in filenames to folder names and move files into the appropriate folders
+-   Use vector matching to find similar terms
+-   Respect the [Johnny Decimal](https://johnnydecimal.com) system if you use it
+-   Optionally, add `.neatfile` files to directories containing a list of words that will match files
+
+## Installation
 
 ```bash
-pip install jdfile
+# With uv
+uv tool install neatfile
+
+# With pip
+python -m pip install --user neatfile
 ```
 
-## Usage
+**Note:** neatfile relies on a ~35mb language model to provide vector matching used in identifying similarities between filenames and directory names. This file will only be downloaded once when you install neatfile.
 
-Run `jdfile --help` for usage
+## Quickstart
 
-### Configuration
+neatfile has four subcommands:
 
-To organize files into folders, a valid [toml](https://toml.io/en/) configuration file is required at `~/.config/jdfile/config.toml` or your `XDG_CONFIG_HOME` if set.
+-   `clean` - Clean and normalize filenames
+-   `config` - View the user configuration file (or create one)
+-   `sort` - Move files into a directory tree
+-   `process` - Clean AND sort files
+-   `tree` - Print a tree representation of a project's directory structure
 
-```toml
-# Clean special characters, normalize word separators, remove stopwords, based on your preferences.
-clean_filenames = true
-
-# An optional date format. If specified, the date will be appended to the filename
-# See https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes for details on how to specify a date.
-date_format = "%Y-%m-%d"
-
-# Format dates in filenames. true or false
-format_dates = true
-
-# Ignores dotfiles (files that start with a period) when cleaning a directory.  true or false
-ignore_dotfiles = true
-
-# List of file names to ignore when processing entire directories.
-ignored_files = ['file1.txt', 'file2.txt']
-
-# File names matching this regex will be skipped.
-ignore_file_regex = ''
-
-# Force the casing of certain words. Great for acronyms or proper nouns.
-match_case_list = ["iMac", "iPhone"]
-
-# Overwrite existing files. true or false. If false, unique integers will be appended to the filename.
-overwrite_existing = false
-
-# Separator to use between words. Options: "ignore", "underscore", "space", "dash", "none"
-separator = "ignore"
-
-# Split CamelCase words into separate words. true or false
-split_words = false
-
-# List of project specific stopwords to be stripped from filenames
-stopwords = []
-
-# Strip stopwords from filenames. true or false
-strip_stopwords = true
-
-# Transform case of filenames.
-# Options: "lower", "upper", "title", "CamelCase", "sentence", "ignore",
-transform_case = "ignore"
-
-# Use the nltk wordnet corpus to find synonyms for words in filenames. true or false
-# Note, this will download a large corpus (~400mb) the first time it is run.
-use_synonyms = false
-
-# USAGE: To create more projects, duplicate the [project_name] section below
-
-[projects]
-    [projects.project_name] # The name of the project is used as a command line option. (e.g. --project=project_name)
-
-        # (Required) Path to the folder containing the Johnny Decimal project
-        path = "~/johnnydecimal"
-
-        # (Required) Options: "jd" for Johnny Decimal, "folder" for a folder structure
-        project_type = "jd"
-
-        # (Optional) The depth of folders to parse. Ignored for Johnny Decimal projects. Default is 2
-        project_depth = 4
-
-        # Any duplicated default values can be overridden here on a per project basis
-```
+To see the help text for a subcommand, run `neatfile <subcommand> --help`.
 
 ### Example usage
 
-```bash
-# Normalize all files in a directory to lowercase, with underscore separators
-$ jdfile --case=lower --separator=underscore /path/to/directory
+Copy the default configuration file into place for you to edit:
 
-# Clean all files in a directory and confirm all changes before committing them
-$ jdfile --clean /path/to/directory
-
-# Strip common English stopwords from all files in a directory
-$ jdfile --stopwords /path/to/directory
-
-# Transform a date and add it to the filename
-$ jdfile --date-format="%Y-%m-%d" ./somefile_march 3rd, 2022.txt
-
-# Print a tree representation of a Johnny Decimal project
-$ jdfile --project=[project_name] --tree
-
-# Use the settings of a project in the config file to clean filenames without
-# organizing them into folders
-$ jdfile --project=[project_name] --no-organize path/to/some_file.jpg
-
-# Organize files into a Johnny Decimal project with specified terms with title casing
-$ jdfile ---project=[project_name] --term=term1 --term=term2 path/to/some_file.jpg
+```console
+$ neatfile config --create
+✅ Success: User config file created: ~/.config/neatfile/config.toml
 ```
 
-### Tips
+Clean all text files in a directory
 
-Adding custom functions to your `.bashrc` or `.zshrc` can save time and ensure your filename preferences are always used.
-
-```bash
-# ~/.bashrc
-if command -v jdfile &>/dev/null; then
-
-    clean() {
-        # DESC:	 Clean filenames using the jdfile package
-        if [[ $1 == "--help" || $1 == "-h" ]]; then
-            jdfile --help
-        else
-            jdfile --sep=space --case=title --confirm "$@"
-        fi
-    }
-
-    wfile() {
-        # DESC:	 File work documents
-        if [[ $1 == "--help" || $1 == "-h" ]]; then
-            jdfile --help
-        else
-            jdfile --project=work "$@"
-        fi
-    }
-fi
+```console
+$ neatfile clean *.txt
+✅ Success: CamelCase_with_underscore_separators.txt -> 2025-04-16 Camel Case Underscore Separators.txt
+✅ Success: datestamped sept 04 2023 (signed).txt -> 2023-09-04 Datestamped Signed.txt
+✅ Success: removing.special.characters.$#@.08-05-2024.txt -> 2024-08-05 Removing Special Characters.txt
 ```
+
+Sort a file into a specific directory within a project (without cleaning the filename)
+
+```console
+$ neatfile sort --project=work 20230904_datestamped_signed.txt
+✅ Success: 20230904_datestamped_signed.txt -> ~/work/administrative/legal/20230904_datestamped_signed.txt
+```
+
+Process a file to clean and sort it
+
+```console
+$ neatfile process --project=work --date-format=%Y-%m-%d datestamped_20230904_signed.txt
+✅ Success: datestamped_20230904_signed.txt -> ~/work/administrative/legal/2023-09-04 Datestamped Signed.txt
+```
+
+## Configuration
+
+Define personalized defaults in a configuration file and apply them consistently across all runs. You can also set project specific settings within the configuration file with their own specific filename patterns. Folders beneath the root path of projects will be indexed and used to move files into.
+
+To set default settings, you'll need to create a configuration file. Neatfile will look for a file at `~/.config/neatfile/config.toml` or your `$XDG_CONFIG_HOME/neatfile/config.toml` if set.
+
+Preferences can also be set on a per project basis within the configuration file.
+
+Values are set in the following order of precedence:
+
+1. CLI arguments
+2. Project specific settings
+3. Default values in the user configuration file
+4. Default values as specified below in the sample configuration file.
+
+### Sample configuration file
+
+```toml
+# Global settings
+# These can be overridden on a per project basis in the [projects] section.
+
+# Ambiguous date formats can be specified by region
+# Useful when searching a filename for a date and the date format is ambiguous such as 030425
+# The US would see this as March 4, 2025, the EU would see this as April 3, 2025, and Japan would see this as 25th April, 2003
+# options: "US", "EU", "JP"
+date_region        = "US"
+
+# date format
+# If specified, the date will be added to the filename following this format.
+# See https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes for details on how to specify a format.
+date_format        = ""
+
+# Ignores dotfiles (files that start with a period) when cleaning a directory.
+# true or false
+ignore_dotfiles    = true
+
+# File names matching this regex will be ignored
+ignore_file_regex  = ''
+
+# List of file names to ignore
+# Useful if there are consistently recurring files that you don't want to clean.
+ignored_files      = []
+
+# Where to insert the date.
+# "before" or "after"
+insert_location    = "before"
+
+# Force the casing of certain words.
+# Useful for acronyms or proper nouns such as 'iMac', 'CEO', or 'John'
+match_case_list    = []
+
+# Overwrite existing files. true or false.
+# If false, unique integers will be appended to the filename.
+overwrite_existing = false
+
+# Separator to use between words.
+# Options: "ignore", "underscore", "space", "dash".
+# "ignore" does it's best to keep the original separator.
+separator          = "ignore"
+
+# Split CamelCase words into separate words.
+# true or false
+split_words        = false
+
+# List of specific stopwords to be stripped from filenames above and beyond the default English stopwords
+stopwords          = []
+
+# Strip stopwords from filenames.
+# true or false
+strip_stopwords    = true
+
+# Transform the case of the filename.
+# Options: "ignore", "lower", "upper", "title", "sentence"
+transform_case     = "ignore"
+
+# Override the global settings for specific projects and tell neatfile how to organize files into a directory tree.
+[projects]
+    [projects.project_name]
+        # The name of the project is used as a command line option. (e.g. --project=project_name)
+        name = ""
+
+        # The path to the project's directory
+        path = ""
+
+        # The type of project.
+        # Options: "jd" for Johnny Decimal, "folder" for a folder structure
+        type = "folder"
+
+        # The depth of folders to index beneath the project's root path
+        depth = 2
+
+        # Default configuration values specified above can be overridden here on a per project basis
+```
+
+## Directory Matching
+
+neatfile uses smart matching to determine which directory a file belongs in:
+
+1. **Word Extraction**: Words are extracted from your filename and compared with directory names in your project structure.
+2. **Intelligent Matching**: The system uses both exact matches and vector similarity to find the best directory. For example, a file containing "budget" might match with a "Finance" directory through vector similarity.
+3. **Hierarchical Navigation**: neatfile considers your project's directory tree (up to the configured depth) when finding directories to match files to.
+
+### Customizing Match Behavior
+
+You can influence how files match to directories in two ways:
+
+1. **Using `--term` Flags**: Specify additional matching terms when running a command:
+
+    ```bash
+    neatfile sort --project=work --term=legal contract.pdf
+    ```
+
+    This tells neatfile to include directories that match "legal" when sorting the file.
+
+1. **Creating `.neatfile` Files**: Add a .neatfile text file to any directory containing additional terms that should match to that location:
+
+    ```bash
+    # In /path/to/work/admin/legal/.neatfile
+    contract
+    agreement
+    nda
+    ```
+
+    Now any file containing these terms will preferentially match to the legal directory.
+
+### Example Scenario
+
+With a project structure like:
+
+```shell
+work/
+├── admin/
+│   ├── hr/
+│   │   └── .neatfile # Contains the term "handbook"
+│   └── legal/
+├── finance/
+│   ├── budgets/
+│   └── invoices/
+└── marketing/
+    ├── campaigns/
+    └── social-media/
+```
+
+Configured in config.toml:
+
+```toml
+[projects.work]
+name = "Work Files"
+path = "/path/to/work"
+depth = 2
+```
+
+neatfile would automatically:
+
+-   Move `2023_employee_handbook.pdf` to the `hr` directory
+-   Sort `Q2_budget_forecast.xlsx` into the `budgets` directory
+-   Place `new_campaign_assets.zip` in the `campaigns` directory
+
+### Vector matching
+
+Behind the scenes, neatfile uses a language model to find similar terms in a filename and a directory name by comparing their vector embeddings. This is useful for matching terms that are similar but not exactly the same. For example, this will match the term `mockups` with the directory name `mockup` or the term `budget` with the term `finance`.
 
 ## Caveats
 
-`jdfile` is built for my own personal use. YMMV depending on your system and requirements. I make no warranties for any data loss that may result from use. I strongly recommend running in `--dry-run` mode prior to updating files.
+`neatfile` is built for my own personal use. While this cli is thoroughly tested, I make no warranties for any data loss or other issuesthat may result from use. I strongly recommend running in `--dry-run` mode prior to committing changes.
 
-# Contributing
+## Contributing
 
-## Setup
-
-1. Install [uv](https://docs.astral.sh/uv/)
-2. Clone this repository `git clone https://github.com/natelandau/jdfile.git`
-3. Install dependencies `uv sync`
-4. Activate pre-commit hooks `uv run pre-commit install`
-
-## Development
-
--   Run the development version of the project `uv run jdfile`
--   Run tests `uv run poe test`
--   Run linting `uv run poe lint`
--   Enter the virtual environment with `source .venv/bin/activate`
--   Add or remove dependencies with `uv add/remove <package>`
--   Upgrade dependencies with `uv run poe upgrade`
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more information.

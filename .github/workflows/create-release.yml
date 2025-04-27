@@ -57,7 +57,7 @@ jobs:
 
             - name: Run tests
               shell: bash
-              run: uv run poe test
+              run: uv run duty test
 
             - name: Build the package
               shell: bash

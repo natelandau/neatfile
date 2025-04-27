@@ -14,4 +14,4 @@
 
 # Add words to the dictionary from the common misspellings list
 [files]
-    extend-exclude = ["*_cache", ".venv", "src/jdfile/utils/strings.py"]
+    extend-exclude = ["*_cache", ".venv", "src/neatfile/utils/strings.py"]

@@ -1,0 +1,36 @@
+---
+description: Writing pytest tests, editing pytest tests
+globs: tests/**/*.py
+alwaysApply: false
+---
+# Standards for writing pytest tests
+
+Always follow these rules and standards for writing Python tests.
+
+1. Write single sentence docstrings in imperative voice
+2. Docstrings should always start with the word "Verify"
+3. Structure test body with given/when/then comments
+4. Use pytest-mock plugin. Do not use unittest.
+5. Include unit and integration tests.
+
+## Examples of good tests
+
+```python
+def test_backup_file_creates_backup(tmp_path: Path, mocker) -> None:
+    """Verify creating backups file with .bak extension."""
+    # Given a constant return from module.function
+    mock_function = mocker.patch('module.function')
+    mock_function.return_value = 'mocked'
+
+    # Given: A test file exists
+    file = tmp_path / "test.txt"
+    file.write_text("test")
+
+    # When: Creating a backup
+    backup_file(file)
+
+    # Then: Backup file exists and original is moved
+    expected_backup = file.parent / (file.name + ".bak")
+    assert expected_backup.exists()
+    assert not file.exists()
+```

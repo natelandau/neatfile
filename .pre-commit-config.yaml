@@ -5,12 +5,11 @@ default_stages: [pre-commit, manual]
 fail_fast: true
 repos:
   - repo: "https://github.com/commitizen-tools/commitizen"
-    rev: v4.1.0
+    rev: v4.6.0
     hooks:
       - id: commitizen
       - id: commitizen-branch
         stages:
-          - post-commit
           - pre-push
 
   - repo: "https://github.com/pre-commit/pygrep-hooks"
@@ -33,6 +32,7 @@ repos:
       - id: check-builtin-literals
       - id: check-case-conflict
       - id: check-docstring-first
+      - id: check-executables-have-shebangs
       - id: check-json
         exclude: .devcontainer/|.vscode/
       - id: check-merge-conflict
@@ -43,6 +43,7 @@ repos:
       - id: check-xml
       - id: check-yaml
       - id: debug-statements
+      - id: destroyed-symlinks
       - id: detect-private-key
       - id: fix-byte-order-marker
       - id: mixed-line-ending
@@ -53,14 +54,14 @@ repos:
         types: [python]
 
   - repo: "https://github.com/adrienverge/yamllint.git"
-    rev: v1.35.1
+    rev: v1.37.0
     hooks:
       - id: yamllint
         files: ^.*\.(yaml|yml)$
         entry: yamllint --strict --config-file .yamllint.yml
 
   - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-    rev: "v0.9.1"
+    rev: "v0.11.6"
     hooks:
       - id: ruff
         exclude: tests/
@@ -69,28 +70,25 @@ repos:
         args: [--check]
 
   - repo: "https://github.com/crate-ci/typos"
-    rev: dictgen-v0.3.1
+    rev: v1.30.3
     hooks:
       - id: typos
         args: ["--force-exclude"]
+        stages: [commit-msg, pre-commit]
 
-  - repo: "https://github.com/fpgmaas/deptry.git"
-    rev: "0.22.0"
+  - repo: "https://github.com/crate-ci/committed"
+    rev: v1.1.7
     hooks:
-      - id: deptry
+      - id: committed
+        stages: [commit-msg]
+
+  - repo: "https://github.com/gitleaks/gitleaks"
+    rev: v8.24.3
+    hooks:
+      - id: gitleaks
 
   - repo: local
     hooks:
-      # This calls a custom pre-commit script.
-      # Disable if you don't have it.
-      - id: stopwords
-        name: stopwords
-        entry: git-stopwords
-        # args: ["-v"]
-        language: system
-        pass_filenames: true
-        types: [text]
-
       - id: shellcheck
         name: shellcheck
         entry: shellcheck --check-sourced --severity=warning
@@ -100,20 +98,20 @@ repos:
       - id: mypy
         name: mypy
         entry: mypy --config-file pyproject.toml
-        exclude: tests/
+        exclude: "tests/|duties.py"
         language: system
         types: [python]
 
       - id: pytest
         name: pytest
-        entry: poe test
+        entry: pytest -c pyproject.toml src/
         language: system
         pass_filenames: false
         files: |
           (?x)^(
           src/|
           tests/|
-          poetry\.lock|
+          uv\.lock|
           pyproject\.toml
           )
 
@@ -122,8 +120,8 @@ ci:
     fix: auto fixes from pre-commit.com hooks
 
     for more information, see https://pre-commit.ci
-  autofix_prs: false
+  autofix_prs: true
   autoupdate_commit_msg: "build: pre-commit autoupdate"
   autoupdate_schedule: quarterly
-  skip: [stopwords, pytest, mypy, shellcheck, deptry]
+  skip: [pytest, mypy, shellcheck]
   submodules: false

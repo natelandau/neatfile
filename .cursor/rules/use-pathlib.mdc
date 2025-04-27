@@ -1,0 +1,9 @@
+---
+description: Always use pathlib instead of the os module whenever possible
+globs: **/*.py
+alwaysApply: false
+---
+
+# Always use pathlib
+
+When writing Python code always use the `pathlib` module instead of the `os` module whenever possible.
