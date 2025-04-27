@@ -16,6 +16,7 @@ from neatfile.config import SettingsManager
 from neatfile.constants import (
     DEFAULT_CONFIG_PATH,
     USER_CONFIG_PATH,
+    VERSION,
     PrintLevel,
     Separator,
     TransformCase,
@@ -67,7 +68,11 @@ def config_subcommand(neatfile: NeatFile) -> None:
 
     if pp.is_trace:
         print_debug(
-            custom=[{"Settings": settings.to_dict()}, {"neatfile": neatfile.__dict__}],
+            custom=[
+                {"Settings": settings.to_dict()},
+                {"neatfile": neatfile.__dict__},
+                {"Neatfile Version": VERSION},
+            ],
             envar_prefix="neatfile",
             packages=["questionary", "cappa", "dynaconf", "rich", "spacy"],
         )
