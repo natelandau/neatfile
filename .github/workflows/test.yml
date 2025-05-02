@@ -5,7 +5,7 @@ on:
     workflow_dispatch:
     push:
         paths:
-            - ".github/workflows/automated-tests.yml"
+            - ".github/workflows/test.yml"
             - ".github/actions/**"
             - "**.py"
             - "pyproject.toml"
@@ -18,7 +18,7 @@ on:
             - reopened
             - synchronize
         paths:
-            - ".github/workflows/automated-tests.yml"
+            - ".github/workflows/test.yml"
             - ".github/actions/**"
             - "**.py"
             - "pyproject.toml"
@@ -50,7 +50,7 @@ jobs:
               if: ${{ matrix.python-version == '3.12' }}
               uses: codecov/codecov-action@v5
               with:
-                  files: .reports/coverage.xml
+                  files: .cache/coverage.xml
               env:
                   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -67,10 +67,6 @@ jobs:
 
             - name: Setup Python, uv, and the package
               uses: ./.github/actions/setup_python_env
-
-            - name: check mypy version
-              shell: bash
-              run: uv run -- mypy --version
 
             - name: run all linters
               shell: bash

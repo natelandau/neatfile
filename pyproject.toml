@@ -15,7 +15,7 @@
         "regex>=2024.11.6",
         "rich>=14.0.0",
         "spacy>=3.8.5",
-]
+    ]
     description = "CLI to automatically normalize and organize your files based on customizable rules."
     license = { file = "LICENSE" }
     name = "neatfile"
@@ -45,9 +45,9 @@
         "pytest-sugar>=1.0.0",
         "pytest-xdist>=3.6.1",
         "pytest>=8.3.5",
-        "ruff>=0.11.7",
+        "ruff>=0.11.8",
         "types-python-dateutil>=2.9.0.20241206",
-        "typos>=1.31.1",
+        "typos>=1.31.2",
         "yamllint>=1.37.0",
     ]
 
@@ -84,11 +84,11 @@
 [tool.coverage.run]
     branch       = true
     command_line = "--module pytest"
-    data_file    = ".reports/.coverage"
+    data_file    = ".cache/.coverage"
     source       = ["src"]
 
 [tool.coverage.xml]
-    output = ".reports/coverage.xml"
+    output = ".cache/coverage.xml"
 
 [tool.mypy] # https://mypy.readthedocs.io/en/latest/config_file.html
     cache_dir                   = ".cache/mypy"
@@ -99,7 +99,7 @@
     exclude                     = ["tests/"]
     follow_imports              = "normal"
     ignore_missing_imports      = true
-    junit_xml                   = ".reports/mypy.xml"
+    junit_xml                   = ".cache/mypy.xml"
     no_implicit_optional        = true
     pretty                      = false
     show_column_numbers         = true
@@ -111,7 +111,7 @@
     warn_unused_ignores         = true
 
 [tool.pytest.ini_options]
-    addopts             = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --junitxml=.reports/pytest.xml"
+    addopts             = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --junitxml=.cache/pytest.xml"
     cache_dir           = ".cache/pytest"
     doctest_optionflags = ["IGNORE_EXCEPTION_DETAIL", "NORMALIZE_WHITESPACE"]
     filterwarnings      = ["error", "ignore::DeprecationWarning", "ignore::ResourceWarning"]
