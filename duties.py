@@ -145,7 +145,6 @@ def pyprefix(title: str) -> str:
 def clean(ctx: Context) -> None:
     """Clean the project."""
     ctx.run("rm -rf .cache")
-    ctx.run("rm -rf .reports")
     ctx.run("rm -rf build")
     ctx.run("rm -rf dist")
     ctx.run("rm -rf pip-wheel-metadata")
