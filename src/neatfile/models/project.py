@@ -5,10 +5,10 @@ from collections.abc import Generator
 from pathlib import Path
 
 import cappa
+from nclutils import pp
 from rich.tree import Tree
 
 from neatfile.constants import FolderType, ProjectType
-from neatfile.utils import pp
 
 from .folder import Folder
 

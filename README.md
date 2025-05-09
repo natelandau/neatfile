@@ -53,7 +53,7 @@ What's the problem here?
 
 ## Installation
 
-neatfile requires python 3.9 up to 3.12. Python 3.13 is not supported [until spacy supports it](https://github.com/explosion/spaCy/issues/13658).
+neatfile requires python 3.11 or 3.12. Python 3.13 is not supported [until spacy supports it](https://github.com/explosion/spaCy/issues/13658).
 
 ```bash
 # With uv
@@ -161,7 +161,7 @@ insert_location    = "before"
 match_case_list    = []
 
 # Overwrite existing files. true or false.
-# If false, unique integers will be appended to the filename.
+# If false, a backup of the original file will be created before a new file is written.
 overwrite_existing = false
 
 # Separator to use between words.

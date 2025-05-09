@@ -7,6 +7,7 @@ from pathlib import Path  # noqa: TC003
 from typing import Annotated
 
 import cappa
+from nclutils import console, pp, print_debug
 from rich.markdown import Markdown
 from rich.traceback import install
 
@@ -21,8 +22,6 @@ from neatfile.constants import (
     Separator,
     TransformCase,
 )
-from neatfile.utils import console, pp
-from neatfile.views import print_debug
 
 
 def config_subcommand(neatfile: NeatFile) -> None:
@@ -32,6 +31,9 @@ def config_subcommand(neatfile: NeatFile) -> None:
 
     Args:
         neatfile (NeatFile): The main CLI application object containing command and configuration options.
+
+    Raises:
+        cappa.Exit: If the command is not found.
     """
     pp.configure(
         debug=neatfile.verbosity in {PrintLevel.DEBUG, PrintLevel.TRACE},
@@ -232,7 +234,7 @@ class CleanCommand:
     overwrite: Annotated[
         bool,
         cappa.Arg(
-            help="Overwrite existing files",
+            help="Overwrite existing files rather than creating a backup",
             show_default=False,
         ),
     ] = False
@@ -258,7 +260,7 @@ class CleanCommand:
     ] = None
 
     def __call__(self) -> None:
-        """Call the command."""
+        """Call the command."""  # noqa: DOC501
         if settings.date_only and not settings.date_format:
             pp.error("`date_format` is not specified")
             raise cappa.Exit(code=1)
@@ -276,7 +278,7 @@ class ConfigCommand:
     ] = False
 
     def __call__(self) -> None:
-        """Call the command."""
+        """Call the command."""  # noqa: DOC501
         if self.create:
             if USER_CONFIG_PATH.exists():
                 pp.info(f"User configuration file already exists: {USER_CONFIG_PATH}")
@@ -402,7 +404,7 @@ class ProcessCommand:
     overwrite: Annotated[
         bool,
         cappa.Arg(
-            help="Overwrite existing files",
+            help="Overwrite existing files rather than creating a backup",
             show_default=False,
         ),
     ] = False
@@ -428,7 +430,7 @@ class ProcessCommand:
     ] = None
 
     def __call__(self) -> None:
-        """Call the command."""
+        """Call the command."""  # noqa: DOC501
         if settings.date_only and not settings.date_format:
             pp.error("`date_format` is not specified")
             raise cappa.Exit(code=1)
@@ -490,7 +492,7 @@ class SortCommand:
     overwrite: Annotated[
         bool,
         cappa.Arg(
-            help="Overwrite existing files",
+            help="Overwrite existing files rather than creating a backup",
             show_default=False,
         ),
     ] = False
@@ -506,7 +508,7 @@ class SortCommand:
     ] = ()
 
     def __call__(self) -> None:
-        """Call the command."""
+        """Call the command."""  # noqa: DOC501
         if not settings.get("project", {}):
             pp.error("`project` is not specified")
             raise cappa.Exit(code=1)
@@ -519,7 +521,7 @@ class TreeCommand:
     """Print a tree representation of the project folder."""
 
     def __call__(self) -> None:
-        """Call the command."""
+        """Call the command."""  # noqa: DOC501
         if settings.get("project"):
             console.print(settings.project.tree())
         else:
@@ -528,7 +530,13 @@ class TreeCommand:
 
 
 def main() -> None:  # pragma: no cover
-    """Run the CLI."""
+    """Initialize and execute the command line interface.
+
+    Parse command line arguments, configure settings, and execute the appropriate command. Handle keyboard interrupts gracefully by exiting with a status code of 1.
+
+    Raises:
+        cappa.Exit: If a keyboard interrupt occurs.
+    """
     install(show_locals=False)
 
     try:

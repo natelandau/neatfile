@@ -5,8 +5,7 @@ import sys
 
 import cappa
 import spacy
-
-from .pretty_print import pp
+from nclutils import pp
 
 try:
     nlp = spacy.load("en_core_web_md")

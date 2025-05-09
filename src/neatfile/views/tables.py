@@ -1,11 +1,11 @@
 """Rich tables for the neatfile package."""
 
+from nclutils import pp
 from rich import box
 from rich.table import Table
 
 from neatfile import settings
 from neatfile.models import File
-from neatfile.utils import pp
 
 
 def confirmation_table(files: list[File], total_files: int | None = None) -> Table:
