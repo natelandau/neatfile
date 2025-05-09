@@ -8,6 +8,7 @@ from typing import Any
 
 import cappa
 from dynaconf import Dynaconf, ValidationError, Validator
+from nclutils import console, pp
 
 from neatfile.constants import (
     DEFAULT_CONFIG_PATH,
@@ -18,7 +19,6 @@ from neatfile.constants import (
     Separator,
     TransformCase,
 )
-from neatfile.utils import console, pp
 
 
 @dataclass
@@ -38,6 +38,9 @@ class SettingsManager:
 
         Returns:
             Dynaconf: The configured settings instance with all validators registered.
+
+        Raises:
+            cappa.Exit: If settings are not initialized or project name is not found in config.
         """
         if cls._instance is not None:
             return cls._instance

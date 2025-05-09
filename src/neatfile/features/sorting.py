@@ -5,11 +5,11 @@ from pathlib import Path
 
 import cappa
 import spacy
+from nclutils import pp
 
 from neatfile import settings
 from neatfile.constants import ProjectType
 from neatfile.models import File, Folder, MatchResult
-from neatfile.utils import pp
 from neatfile.utils.nlp import nlp
 from neatfile.utils.strings import strip_special_chars, strip_stopwords, tokenize_string
 from neatfile.views import select_folder
@@ -284,6 +284,9 @@ def sort_file(file: File) -> Path:
 
     Returns:
         Path: The path of the best matching folder
+
+    Raises:
+        cappa.Exit: If no matching directories are found.
     """
     if jd_match := _match_by_jd_number(settings.user_terms):
         pp.trace(f"SORT: '{file.stem}' matched by jd number: {jd_match}")

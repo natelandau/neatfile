@@ -4,10 +4,10 @@ import re
 from pathlib import Path
 
 import cappa
+from nclutils import console, pp
 
 from neatfile import settings
 from neatfile.constants import ALWAYS_IGNORE_FILES_REGEXES, SPINNER
-from neatfile.utils import console, pp
 
 
 def _is_ignored_file(file: Path) -> bool:

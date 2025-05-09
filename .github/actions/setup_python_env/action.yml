@@ -18,11 +18,10 @@ runs:
   using: composite
   steps:
     - name: Setup uv with cache
-      uses: astral-sh/setup-uv@v3
+      uses: astral-sh/setup-uv@v6
       with:
         version: "latest"
         enable-cache: true
-        cache-dependency-glob: "uv.lock"
 
     - name: Set up Python ${{ matrix.python-version }}
       shell: bash

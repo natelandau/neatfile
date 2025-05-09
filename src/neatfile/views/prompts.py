@@ -5,10 +5,10 @@ from pathlib import Path
 import cappa
 import inflect
 import questionary
+from nclutils import pp
 
 from neatfile import settings
 from neatfile.models import File, MatchResult
-from neatfile.utils import pp
 
 p = inflect.engine()
 

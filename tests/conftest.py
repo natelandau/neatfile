@@ -1,96 +1,14 @@
 """Shared fixtures for tests."""
 
-import re
-from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 import tomllib
+from nclutils import pp
+from nclutils.pytest_fixtures import clean_stdout, debug  # noqa: F401
 
 from neatfile import settings
 from neatfile.constants import DEFAULT_CONFIG_PATH, DateRegion
-from neatfile.utils import console, pp
-
-
-@pytest.fixture
-def clean_stdout(capsys: pytest.CaptureFixture[str], monkeypatch) -> Callable[[], str]:
-    r"""Return a function that cleans ANSI escape sequences from captured stdout.
-
-    This fixture is useful for testing CLI output where ANSI color codes and other escape sequences need to be stripped to verify the actual text content. The returned callable captures stdout using pytest's capsys fixture and removes all ANSI escape sequences, making it easier to write assertions against the cleaned output.
-
-    Args:
-        capsys (pytest.CaptureFixture[str]): Pytest fixture that captures stdout/stderr streams
-
-    Returns:
-        Callable[[], str]: A function that when called returns the current stdout with all ANSI escape sequences removed
-
-    Example:
-        def test_cli_output(clean_stdout):
-            print("\033[31mRed Text\033[0m")  # Colored output
-            assert clean_stdout() == "Red Text"  # Test against clean text
-    """
-    # Set the terminal width to 180 columns to avoid unwanted line breaks
-    monkeypatch.setenv("COLUMNS", "180")
-
-    ansi_chars = re.compile(r"(\x9B|\x1B\[)[0-?]*[ -\/]*[@-~]")
-
-    def _get_clean_stdout() -> str:
-        return ansi_chars.sub("", capsys.readouterr().out)
-
-    return _get_clean_stdout
-
-
-@pytest.fixture
-def debug() -> Callable[[str | Path, str, bool, int], bool]:
-    """Create a debug printing function for test development.
-
-    Return a function that prints formatted debug output with clear visual separation and optional breakpoints. Useful for inspecting variables, file contents, or directory structures during test development.
-
-    Returns:
-        Callable[[str | Path, str, bool, int], bool]: Debug printing function with parameters:
-            - value: Data to debug print (string or Path)
-            - label: Optional header text
-            - breakpoint: Whether to pause execution after printing
-            - width: Maximum output width in characters
-    """
-
-    def _debug_inner(
-        value: str | Path,
-        label: str = "",
-        *,
-        breakpoint: bool = False,
-        width: int = 80,
-    ) -> bool:
-        """Print formatted debug information during test development.
-
-        Format and display debug output with labeled headers and clear visual separation. Supports printing file contents, directory structures, and variable values with optional execution breakpoints.
-
-        Args:
-            value (str | Path): Value to debug print. For Path objects, prints directory tree
-            label (str): Optional header text for context
-            breakpoint (bool, optional): Pause execution after printing. Defaults to False
-            width (int, optional): Maximum output width. Defaults to 80
-
-        Returns:
-            bool: True unless breakpoint is True, then raises pytest.fail()
-        """
-        console.rule(label or "")
-
-        # If a directory is passed, print the contents
-        if isinstance(value, Path) and value.is_dir():
-            for p in value.rglob("*"):
-                console.print(p, width=width)
-        else:
-            console.print(value, width=width)
-
-        console.rule()
-
-        if breakpoint:
-            return pytest.fail("Breakpoint")
-
-        return True
-
-    return _debug_inner
 
 
 @pytest.fixture(autouse=True)
@@ -196,12 +114,12 @@ def mock_project(tmp_path):
 def create_dir(tmp_path):
     """Create a directory for testing."""  # noqa: DOC201
 
-    def _inner(name: str, parent: Path | None = None):
+    def _inner(name: str, parent: Path | None = None) -> Path:
         """Create a directory with the provided name and path.
 
         Args:
             name (str): The name of the directory to create.
-            path (Path, optional): The path to create the directory in. Defaults to None.
+            parent (Path, optional): The path to create the directory in. Defaults to None.
 
         Returns:
             Path: The path to the created directory.
@@ -222,7 +140,7 @@ def create_dir(tmp_path):
 def create_file(tmp_path):
     """Create a file for testing."""  # noqa: DOC201
 
-    def _inner(name: str, path: str | None = None, content: str | None = None):
+    def _inner(name: str, path: str | None = None, content: str | None = None) -> Path:
         """Create a file with the provided name and content.
 
         Args:

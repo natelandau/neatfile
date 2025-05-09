@@ -49,6 +49,9 @@ class FolderType(str, Enum):
         Returns:
             str: The regex pattern for the folder type.
 
+        Raises:
+            ValueError: If the folder type is unknown.
+
         Example:
             >>> FolderType.AREA.pattern
             '^\\d{2}-\\d{2}[- _]'
