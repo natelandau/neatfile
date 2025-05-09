@@ -8,7 +8,7 @@
         "cappa>=0.27.2",
         "dynaconf>=3.2.11",
         "inflect>=7.5.0",
-        "nclutils>=0.2.0",
+        "nclutils>=0.2.1",
         "pip>=25.1.1",
         "questionary>=2.1.0",
         "regex>=2024.11.6",

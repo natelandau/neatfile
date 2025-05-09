@@ -391,10 +391,18 @@ def test_unique_filename_directory(create_file, tmp_path, clean_stdout, debug):
     with pytest.raises(cappa.Exit):
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
-    # # Then: Command output is verified
-    # output = clean_stdout()
-    # assert "directory -> directory_1" in output
-    # assert directory.exists()
-    # assert directory.is_dir()
-    # assert not second.exists()
-    # assert Path(second.parent, "directory_1").exists()
+    # find the backup directory
+    backup_dir = None
+    for path in tmp_path.iterdir():
+        if path.name.endswith(".bak"):
+            backup_dir = path
+            break
+
+    # Then: Command output is verified
+    output = clean_stdout()
+    assert "directory -> directory" in output
+    assert backup_dir.exists()
+    assert backup_dir.is_dir()
+    assert directory.exists()
+    assert directory.is_file()
+    assert not second.exists()

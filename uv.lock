@@ -1,6 +1,6 @@
 version = 1
 revision = 2
-requires-python = ">=3.11, <=3.12"
+requires-python = ">=3.11, <3.13"
 
 [[package]]
 name = "annotated-types"
@@ -554,16 +554,16 @@ wheels = [
 
 [[package]]
 name = "nclutils"
-version = "0.2.0"
+version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "questionary" },
     { name = "rich" },
     { name = "sh" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/11/f5/7b7666005006134bfe625b6e4120792a30ee3cb6466198f0706eb667b611/nclutils-0.2.0.tar.gz", hash = "sha256:642e8dd91327c9b386117688e6db36e0db10f93b704412c3614131ec53d40785", size = 83438, upload-time = "2025-05-09T18:01:19.925Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/e6/4c083fc775e1655f9d6be16ab9f529d69420ca47609f82ce7d23bf616f3d/nclutils-0.2.1.tar.gz", hash = "sha256:5ef3a9697dd54f2a9a155d4da3978e233824d6e25c1fba151bfd73eebb432fb5", size = 83605, upload-time = "2025-05-09T21:26:34.487Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3a/62/eb9f95316c5627f5637cb001c95278eb07523295bf778bc7bb555b2fb8fa/nclutils-0.2.0-py3-none-any.whl", hash = "sha256:e9022e0912ea2c84b33f9d5e75ffacaddb062da57fbc7f56381da4ae9453aaa9", size = 31672, upload-time = "2025-05-09T18:01:18.79Z" },
+    { url = "https://files.pythonhosted.org/packages/1d/4e/0cbad8eee306dbdf5cfc897edafe9390ce5b694fd0855b4f5e57e1c000a8/nclutils-0.2.1-py3-none-any.whl", hash = "sha256:0545823d5c6178464186d478285c654bc33028344c9dd3c8e7f9f5ef4d686b50", size = 31780, upload-time = "2025-05-09T21:26:33.403Z" },
 ]
 
 [[package]]
@@ -608,7 +608,7 @@ requires-dist = [
     { name = "cappa", specifier = ">=0.27.2" },
     { name = "dynaconf", specifier = ">=3.2.11" },
     { name = "inflect", specifier = ">=7.5.0" },
-    { name = "nclutils", specifier = ">=0.2.0" },
+    { name = "nclutils", specifier = ">=0.2.1" },
     { name = "pip", specifier = ">=25.1.1" },
     { name = "questionary", specifier = ">=2.1.0" },
     { name = "regex", specifier = ">=2024.11.6" },
@@ -1092,11 +1092,11 @@ wheels = [
 
 [[package]]
 name = "setuptools"
-version = "80.3.1"
+version = "80.4.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/70/dc/3976b322de9d2e87ed0007cf04cc7553969b6c7b3f48a565d0333748fbcd/setuptools-80.3.1.tar.gz", hash = "sha256:31e2c58dbb67c99c289f51c16d899afedae292b978f8051efaf6262d8212f927", size = 1315082, upload-time = "2025-05-04T18:47:04.397Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/95/32/0cc40fe41fd2adb80a2f388987f4f8db3c866c69e33e0b4c8b093fdf700e/setuptools-80.4.0.tar.gz", hash = "sha256:5a78f61820bc088c8e4add52932ae6b8cf423da2aff268c23f813cfbb13b4006", size = 1315008, upload-time = "2025-05-09T20:42:27.972Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/53/7e/5d8af3317ddbf9519b687bd1c39d8737fde07d97f54df65553faca5cffb1/setuptools-80.3.1-py3-none-any.whl", hash = "sha256:ea8e00d7992054c4c592aeb892f6ad51fe1b4d90cc6947cc45c45717c40ec537", size = 1201172, upload-time = "2025-05-04T18:47:02.575Z" },
+    { url = "https://files.pythonhosted.org/packages/b1/93/dba5ed08c2e31ec7cdc2ce75705a484ef0be1a2fecac8a58272489349de8/setuptools-80.4.0-py3-none-any.whl", hash = "sha256:6cdc8cb9a7d590b237dbe4493614a9b75d0559b888047c1f67d49ba50fc3edb2", size = 1200812, upload-time = "2025-05-09T20:42:25.325Z" },
 ]
 
 [[package]]
