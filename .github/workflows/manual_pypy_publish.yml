@@ -1,0 +1,36 @@
+---
+name: "Manual PyPy Publish"
+
+on:
+    workflow_dispatch:
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: write
+
+jobs:
+    publish-to-pypi:
+        runs-on: ubuntu-latest
+        env:
+            TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
+            TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+        strategy:
+            matrix:
+                python-version: ["3.11"]
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Setup Python, uv, and the package
+              uses: ./.github/actions/setup_python_env
+
+            - name: Build the package
+              shell: bash
+              run: uv build
+
+            - name: Upload to PyPi
+              shell: bash
+              run: uvx twine upload dist/*
