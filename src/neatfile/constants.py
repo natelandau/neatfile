@@ -111,9 +111,9 @@ class InsertLocation(str, Enum):
     BEFORE = "before"
 
 
-class DateRegion(str, Enum):
+class DateFirst(str, Enum):
     """Define choices for date region."""
 
-    US = "US"
-    EU = "EU"
-    JP = "JP"
+    DAY = "day"
+    MONTH = "month"
+    YEAR = "year"

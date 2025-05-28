@@ -9,12 +9,13 @@ from typing import Any
 import cappa
 from dynaconf import Dynaconf, ValidationError, Validator
 from nclutils import pp
+from tzlocal import get_localzone
 
 from neatfile.constants import (
     DEFAULT_CONFIG_PATH,
     DEV_CONFIG_PATH,
     USER_CONFIG_PATH,
-    DateRegion,
+    DateFirst,
     InsertLocation,
     Separator,
     TransformCase,
@@ -55,7 +56,7 @@ class SettingsManager:
         # Register all validators at once
         settings.validators.register(
             Validator("date_format", default="%Y-%m-%d", cast=str),
-            Validator("date_region", default="US", cast=lambda v: DateRegion[v.upper()]),
+            Validator("date_first", default="month", cast=lambda v: DateFirst[v.upper()]),
             Validator("ignore_dotfiles", cast=bool, default=True),
             Validator("ignore_file_regex", default="^$", cast=lambda v: str(v) or "^$"),
             Validator("ignored_files", default=[], cast=list),
@@ -79,6 +80,7 @@ class SettingsManager:
                 default="ignore",
                 cast=lambda v: TransformCase[v.upper()],
             ),
+            Validator("tz", default=get_localzone()),
         )
 
         try:

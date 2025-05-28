@@ -1,14 +1,15 @@
 """Filename cleaning feature module."""
 
 import re
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import assert_never
 
+from datefind import find_dates
 from nclutils import pp
 
 from neatfile import settings
 from neatfile.constants import InsertLocation, Separator
-from neatfile.models import Date, File
+from neatfile.models import File
 from neatfile.utils.strings import (
     match_case,
     split_camel_case,
@@ -41,29 +42,6 @@ def _add_date_to_filename(file: File, new_date: str) -> None:
             assert_never(settings.insert_location)
 
 
-def _find_and_format_date(file: File) -> str:
-    """Search for a date in the filename, remove it, and store a reformatted version.
-
-    Extract any date found in the filename's stem, remove the original date text, and store a reformatted version based on the configured date format. Uses file creation time as a fallback for relative dates.
-
-    Args:
-        file (File): The file object containing the filename to process.
-
-    Returns:
-        str: The reformatted date.
-    """
-    date_object = Date(
-        string=file.new_stem,
-        ctime=datetime.fromtimestamp(file.path.stat().st_ctime, tz=timezone.utc),
-    )
-
-    # If a date was found in the filename, remove it so we can format it and re-add it later
-    if date_object.found_string:
-        file.new_stem = re.sub(re.escape(date_object.found_string), "", file.new_stem)
-
-    return date_object.reformatted_date
-
-
 def clean_filename(file: File) -> None:
     """Process and clean filenames according to configured settings.
 
@@ -72,10 +50,16 @@ def clean_filename(file: File) -> None:
     Args:
         file (File): The file object to process.
     """
-    if settings.get("date", None):
-        new_date = Date(string=settings.date).reformatted_date
-    else:
-        new_date = _find_and_format_date(file) if settings.date_format else ""
+    new_date = datetime.fromtimestamp(file.path.stat().st_ctime, tz=settings.tz).strftime(
+        settings.date_format
+    )
+    for date in find_dates(
+        text=settings.get("date", None) or file.stem,
+        first=settings.date_first.value,
+    ):
+        new_date = date.date.strftime(settings.date_format)
+        file.new_stem = re.sub(re.escape(date.match), "", file.new_stem)
+        break
 
     if not settings.date_only:
         stem_tokens = tokenize_string(file.new_stem)
@@ -109,6 +93,7 @@ def clean_filename(file: File) -> None:
     if new_date:
         _add_date_to_filename(file, new_date)
         pp.trace(f"CLEAN (add date): {file.new_stem}")
+
     if file.is_dotfile and not file.new_stem.startswith("."):
         file.new_stem = f".{file.new_stem}"
         pp.trace(f"CLEAN (add dotfile): {file.new_stem}")

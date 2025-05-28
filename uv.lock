@@ -261,6 +261,19 @@ wheels = [
 ]
 
 [[package]]
+name = "datefind"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "regex" },
+    { name = "tzlocal" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0a/79/d950b9b55bc743d789ee248efa588c72000f5cdc954dafabd7d45070319b/datefind-0.2.0.tar.gz", hash = "sha256:bf3c4bd4925b5ce5c9a41cbe46a0478ed1cd7d28954b359971da5a2d18a4a262", size = 61612, upload-time = "2025-05-27T20:46:32.014Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/18/6f/10615e10e11d0f4b64a97e8d966a1170c1b59a86cba31b5696cac796e960/datefind-0.2.0-py3-none-any.whl", hash = "sha256:be58ab793236a68776ccfff4c41b5f2c5b5aca49c48cb5ac36d90dedbc0573be", size = 9273, upload-time = "2025-05-27T20:46:30.745Z" },
+]
+
+[[package]]
 name = "decli"
 version = "0.6.2"
 source = { registry = "https://pypi.org/simple" }
@@ -588,6 +601,7 @@ version = "3.0.6"
 source = { editable = "." }
 dependencies = [
     { name = "cappa" },
+    { name = "datefind" },
     { name = "dynaconf" },
     { name = "inflect" },
     { name = "nclutils" },
@@ -596,6 +610,7 @@ dependencies = [
     { name = "regex" },
     { name = "rich" },
     { name = "spacy" },
+    { name = "tzlocal" },
 ]
 
 [package.dev-dependencies]
@@ -622,6 +637,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "cappa", specifier = ">=0.27.3" },
+    { name = "datefind", specifier = ">=0.2.0" },
     { name = "dynaconf", specifier = ">=3.2.11" },
     { name = "inflect", specifier = ">=7.5.0" },
     { name = "nclutils", specifier = ">=0.3.0" },
@@ -630,6 +646,7 @@ requires-dist = [
     { name = "regex", specifier = ">=2024.11.6" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "spacy", specifier = ">=3.8.7" },
+    { name = "tzlocal", specifier = ">=5.3.1" },
 ]
 
 [package.metadata.requires-dev]
@@ -646,7 +663,7 @@ dev = [
     { name = "pytest-mock", specifier = ">=3.14.1" },
     { name = "pytest-pretty-terminal", specifier = ">=1.1.0" },
     { name = "pytest-sugar", specifier = ">=1.0.0" },
-    { name = "pytest-xdist", specifier = ">=3.6.1" },
+    { name = "pytest-xdist", specifier = ">=3.7.0" },
     { name = "ruff", specifier = ">=0.11.11" },
     { name = "types-python-dateutil", specifier = ">=2.9.0.20250516" },
     { name = "typos", specifier = ">=1.32.0" },
@@ -970,15 +987,15 @@ wheels = [
 
 [[package]]
 name = "pytest-xdist"
-version = "3.6.1"
+version = "3.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "execnet" },
     { name = "pytest" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/41/c4/3c310a19bc1f1e9ef50075582652673ef2bfc8cd62afef9585683821902f/pytest_xdist-3.6.1.tar.gz", hash = "sha256:ead156a4db231eec769737f57668ef58a2084a34b2e55c4a8fa20d861107300d", size = 84060, upload-time = "2024-04-28T19:29:54.414Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/49/dc/865845cfe987b21658e871d16e0a24e871e00884c545f246dd8f6f69edda/pytest_xdist-3.7.0.tar.gz", hash = "sha256:f9248c99a7c15b7d2f90715df93610353a485827bc06eefb6566d23f6400f126", size = 87550, upload-time = "2025-05-26T21:18:20.251Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6d/82/1d96bf03ee4c0fdc3c0cbe61470070e659ca78dc0086fb88b66c185e2449/pytest_xdist-3.6.1-py3-none-any.whl", hash = "sha256:9ed4adfb68a016610848639bb7e02c9352d5d9f03d04809919e2dafc3be4cca7", size = 46108, upload-time = "2024-04-28T19:29:52.813Z" },
+    { url = "https://files.pythonhosted.org/packages/0d/b2/0e802fde6f1c5b2f7ae7e9ad42b83fd4ecebac18a8a8c2f2f14e39dce6e1/pytest_xdist-3.7.0-py3-none-any.whl", hash = "sha256:7d3fbd255998265052435eb9daa4e99b62e6fb9cfb6efd1f858d4d8c0c7f0ca0", size = 46142, upload-time = "2025-05-26T21:18:18.759Z" },
 ]
 
 [[package]]
@@ -1112,11 +1129,11 @@ wheels = [
 
 [[package]]
 name = "setuptools"
-version = "80.8.0"
+version = "80.9.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/8d/d2/ec1acaaff45caed5c2dedb33b67055ba9d4e96b091094df90762e60135fe/setuptools-80.8.0.tar.gz", hash = "sha256:49f7af965996f26d43c8ae34539c8d99c5042fbff34302ea151eaa9c207cd257", size = 1319720, upload-time = "2025-05-20T14:02:53.503Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/18/5d/3bf57dcd21979b887f014ea83c24ae194cfcd12b9e0fda66b957c69d1fca/setuptools-80.9.0.tar.gz", hash = "sha256:f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c", size = 1319958, upload-time = "2025-05-27T00:56:51.443Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/58/29/93c53c098d301132196c3238c312825324740851d77a8500a2462c0fd888/setuptools-80.8.0-py3-none-any.whl", hash = "sha256:95a60484590d24103af13b686121328cc2736bee85de8936383111e421b9edc0", size = 1201470, upload-time = "2025-05-20T14:02:51.348Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl", hash = "sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922", size = 1201486, upload-time = "2025-05-27T00:56:49.664Z" },
 ]
 
 [[package]]
@@ -1414,6 +1431,27 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/12/45/f3662fa65757c617749f81749f8ed0a57bb50cef9f0713f76eb09b25270c/typos-1.32.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:fd5d39f41210b7983c22e49caf654085da42fb0707bca5cbc2f9ad62a70a11e4", size = 7588936, upload-time = "2025-05-02T14:55:49.603Z" },
     { url = "https://files.pythonhosted.org/packages/94/ae/c7564a6dace962d9baa671e1d1d3efc0a3188991ef3394f7f002464e0db2/typos-1.32.0-py3-none-win32.whl", hash = "sha256:3a267fae0c23a8b0a7e1013a1b553f91a5d0b03da8882e852349bff75750fa7d", size = 2748480, upload-time = "2025-05-02T14:55:51.57Z" },
     { url = "https://files.pythonhosted.org/packages/21/a2/457b98bda8e61a8b381c741ce3e6c901a6eed1d45beada7d293cb0f31d31/typos-1.32.0-py3-none-win_amd64.whl", hash = "sha256:eed297ec4bf29bd8680ed78f2d27d4cbde77444aef58531dcad07d68a46e4ad0", size = 2898377, upload-time = "2025-05-02T14:55:53.542Z" },
+]
+
+[[package]]
+name = "tzdata"
+version = "2025.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/95/32/1a225d6164441be760d75c2c42e2780dc0873fe382da3e98a2e1e48361e5/tzdata-2025.2.tar.gz", hash = "sha256:b60a638fcc0daffadf82fe0f57e53d06bdec2f36c4df66280ae79bce6bd6f2b9", size = 196380, upload-time = "2025-03-23T13:54:43.652Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5c/23/c7abc0ca0a1526a0774eca151daeb8de62ec457e77262b66b359c3c7679e/tzdata-2025.2-py2.py3-none-any.whl", hash = "sha256:1a403fada01ff9221ca8044d701868fa132215d84beb92242d9acd2147f667a8", size = 347839, upload-time = "2025-03-23T13:54:41.845Z" },
+]
+
+[[package]]
+name = "tzlocal"
+version = "5.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "tzdata", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8b/2e/c14812d3d4d9cd1773c6be938f89e5735a1f11a9f184ac3639b93cef35d5/tzlocal-5.3.1.tar.gz", hash = "sha256:cceffc7edecefea1f595541dbd6e990cb1ea3d19bf01b2809f362a03dd7921fd", size = 30761, upload-time = "2025-03-05T21:17:41.549Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c2/14/e2a54fabd4f08cd7af1c07030603c3356b74da07f7cc056e600436edfa17/tzlocal-5.3.1-py3-none-any.whl", hash = "sha256:eb1a66c3ef5847adf7a834f1be0800581b683b5608e74f86ecbcef8ab91bb85d", size = 18026, upload-time = "2025-03-05T21:17:39.857Z" },
 ]
 
 [[package]]

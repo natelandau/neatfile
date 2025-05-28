@@ -8,7 +8,7 @@ from nclutils import pp
 from nclutils.pytest_fixtures import clean_stdout, debug  # noqa: F401
 
 from neatfile import settings
-from neatfile.constants import DEFAULT_CONFIG_PATH, DateRegion
+from neatfile.constants import DEFAULT_CONFIG_PATH, DateFirst
 
 
 @pytest.fixture(autouse=True)
@@ -25,8 +25,8 @@ def set_default_settings(tmp_path, mock_project, mocker):
         settings.update({"project": {}})
     if settings.get("date"):
         settings.update({"date": None})
-    if settings.get("date_region"):
-        settings.update({"date_region": DateRegion.US})
+    if settings.get("date_first"):
+        settings.update({"date_first": DateFirst.MONTH})
     if settings.get("file_search_depth"):
         settings.update({"file_search_depth": 1})
 
