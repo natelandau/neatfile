@@ -63,7 +63,7 @@ uv tool install neatfile
 python -m pip install --user neatfile
 ```
 
-**Note:** neatfile relies on a ~35mb language model to provide vector matching used to identify similarities between filenames and directory names. This file will be downloaded when you first run `neatfile`.
+> [!NOTE] A ~35mb language model will be downloaded on first run to provide vector matching between filenames and directory names.
 
 ## Quickstart
 
