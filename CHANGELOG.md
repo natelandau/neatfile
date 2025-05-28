@@ -1,3 +1,18 @@
+## v4.0.0 (2025-05-28)
+
+### BREAKING CHANGE
+
+- `date_region` configuration value renamed to `date_first` with possible values of "day", "month", "year"
+
+### Feat
+
+- support python 3.13 (#111)
+- use datefind library for finding dates in text (#110)
+
+### Fix
+
+- improve behavior when writing to existing files (#108)
+
 ## v3.0.6 (2025-04-27)
 
 ### Fix
