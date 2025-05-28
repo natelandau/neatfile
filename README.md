@@ -53,11 +53,11 @@ What's the problem here?
 
 ## Installation
 
-neatfile requires python 3.11 or 3.12. Python 3.13 is not supported [until spacy supports it](https://github.com/explosion/spaCy/issues/13658).
+neatfile requires python 3.11 or higher.
 
 ```bash
 # With uv
-uv tool install --python 3.12 neatfile
+uv tool install neatfile
 
 # With pip
 python -m pip install --user neatfile
