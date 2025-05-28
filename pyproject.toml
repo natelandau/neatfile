@@ -1,5 +1,5 @@
 [project]
-    authors = [{ name = "Nate Landau", email = "github@natenate.org" }]
+    authors = [{ name = "Nate Landau", email = "neatfile@natenate.org" }]
     classifiers = [
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
@@ -19,7 +19,7 @@
         "tzlocal>=5.3.1",
     ]
     description = "CLI to automatically normalize and organize your files based on customizable rules."
-    license = { file = "LICENSE" }
+    license = "AGPL-3.0-only"
     name = "neatfile"
     readme = "README.md"
     requires-python = ">=3.11, <3.14"
