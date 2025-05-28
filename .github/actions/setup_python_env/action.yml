@@ -22,10 +22,7 @@ runs:
       with:
         version: "latest"
         enable-cache: true
-
-    - name: Set up Python ${{ matrix.python-version }}
-      shell: bash
-      run: uv python install ${{ matrix.python-version }}
+        python-version: ${{ matrix.python-version }}
 
     - name: Install the project
       shell: bash
