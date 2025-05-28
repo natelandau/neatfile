@@ -6,6 +6,7 @@
     ]
     dependencies = [
         "cappa>=0.27.3",
+        "datefind>=0.2.0",
         "dynaconf>=3.2.11",
         "inflect>=7.5.0",
         "nclutils>=0.3.0",
@@ -14,6 +15,7 @@
         "regex>=2024.11.6",
         "rich>=14.0.0",
         "spacy>=3.8.7",
+        "tzlocal>=5.3.1",
     ]
     description = "CLI to automatically normalize and organize your files based on customizable rules."
     license = { file = "LICENSE" }
@@ -42,7 +44,7 @@
         "pytest-mock>=3.14.1",
         "pytest-pretty-terminal>=1.1.0",
         "pytest-sugar>=1.0.0",
-        "pytest-xdist>=3.6.1",
+        "pytest-xdist>=3.7.0",
         "pytest>=8.3.5",
         "ruff>=0.11.11",
         "types-python-dateutil>=2.9.0.20250516",

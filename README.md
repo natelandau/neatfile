@@ -130,11 +130,10 @@ Values are set in the following order of precedence:
 # Global settings
 # Override on a per project basis in the [projects] section if needed.
 
-# Ambiguous date formats can be specified by region
-# Useful when searching a filename for a date and the date format is ambiguous such as 030425
-# The US would see this as March 4, 2025, the EU would see this as April 3, 2025, and Japan would see this as 25th April, 2003
-# options: "US", "EU", "JP"
-date_region        = "US"
+# How to interpret ambiguous date formats such as 03-04-12.
+# Defaults to US format with month first.
+# options "day", "month", "year"
+date_first = "month"
 
 # date format
 # If specified, the date will be added to the filename following this format.
