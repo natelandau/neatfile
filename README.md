@@ -63,7 +63,8 @@ uv tool install neatfile
 python -m pip install --user neatfile
 ```
 
-> [!NOTE] A ~35mb language model will be downloaded on first run to provide vector matching between filenames and directory names.
+> [!NOTE]\
+>  A ~35mb language model will be downloaded on first run to provide vector matching between filenames and directory names.
 
 ## Quickstart
 
