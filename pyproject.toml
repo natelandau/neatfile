@@ -6,11 +6,11 @@
         "Programming Language :: Python :: 3.13",
     ]
     dependencies = [
-        "cappa>=0.27.3",
-        "datefind>=0.2.0",
+        "cappa>=0.28.0",
+        "datefind>=0.2.1",
         "dynaconf>=3.2.11",
         "inflect>=7.5.0",
-        "nclutils>=0.3.0",
+        "nclutils>=1.0.1",
         "pip>=25.1.1",
         "questionary>=2.1.0",
         "regex>=2024.11.6",
@@ -34,22 +34,22 @@
 
 [dependency-groups]
     dev = [
-        "commitizen>=4.8.2",
-        "coverage>=7.8.2",
+        "commitizen>=4.8.3",
+        "coverage>=7.9.1",
         "duty>=1.6.0",
-        "mypy>=1.15.0",
+        "mypy>=1.16.1",
         "pre-commit>=4.2.0",
         "pytest-clarity>=1.0.1",
-        "pytest-cov>=6.1.1",
+        "pytest-cov>=6.2.1",
         "pytest-env>=1.1.5",
         "pytest-mock>=3.14.1",
         "pytest-pretty-terminal>=1.1.0",
         "pytest-sugar>=1.0.0",
-        "pytest-xdist>=3.7.0",
-        "pytest>=8.3.5",
-        "ruff>=0.11.11",
+        "pytest-xdist>=3.8.0",
+        "pytest>=8.4.1",
+        "ruff>=0.12.1",
         "types-python-dateutil>=2.9.0.20250516",
-        "typos>=1.32.0",
+        "typos>=1.34.0",
         "yamllint>=1.37.1",
     ]
 
@@ -63,7 +63,7 @@
     tag_format                 = "v$version"
     update_changelog_on_bump   = true
     version_files              = ["src/neatfile/constants.py:VERSION"]
-    version_provider           = "pep621"
+    version_provider           = "uv"
 
 [tool.coverage.report] # https://coverage.readthedocs.io/en/latest/config.html#report
     exclude_lines = [
@@ -180,7 +180,6 @@
             "S101",
             "SLF001",  # Private member accessed
         ], "duties.py" = ["ANN001"] }
-        preview = true
         select = ["ALL"]
         unfixable = [
             "ERA001", # Commented out code

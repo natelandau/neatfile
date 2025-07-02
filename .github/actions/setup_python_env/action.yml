@@ -9,11 +9,6 @@ inputs:
     required: false
     default: "3.12"
 
-outputs:
-  python-version:
-    description: The installed python version. Useful when given a version range as input.
-    value: ${{ steps.setup-python.outputs.python-version }}
-
 runs:
   using: composite
   steps:
@@ -22,11 +17,19 @@ runs:
       with:
         version: "latest"
         enable-cache: true
-        python-version: ${{ matrix.python-version }}
+        python-version: ${{ inputs.python-version }}
 
     - name: Install the project
       shell: bash
       run: uv sync --all-extras --dev
+
+    - name: Debug Python version
+      shell: bash
+      run: |
+        echo "Input python-version: ${{ inputs.python-version }}"
+        echo "Python version: $(python --version)"
+        echo "Python location: $(which python)"
+        echo "uv Python version: $(uv python --version)"
 
     - name: Minimize uv cache
       shell: bash

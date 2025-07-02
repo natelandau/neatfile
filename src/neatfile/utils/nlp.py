@@ -1,6 +1,6 @@
 """Natural language processing utilities."""
 
-import subprocess  # noqa: S404
+import subprocess
 import sys
 
 import cappa

@@ -1,0 +1,57 @@
+---
+name: "Reusable Tests"
+
+on:
+    workflow_call:
+        inputs:
+            run-coverage:
+                description: "Run coverage"
+                required: false
+                type: boolean
+                default: false
+
+jobs:
+    test-python-code:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: true
+            matrix:
+                python-version: ["3.11", "3.12", "3.13"]
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Setup Python, uv, and the package
+              uses: ./.github/actions/setup_python_env
+              with:
+                  python-version: ${{ matrix.python-version }}
+
+            - name: Run tests
+              shell: bash
+              run: uv run duty test
+
+            - name: Upload coverage to Codecov
+              if: ${{ inputs.run-coverage && matrix.python-version == '3.13' }}
+              uses: codecov/codecov-action@v5
+              with:
+                  files: .cache/coverage.xml
+              env:
+                  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+    lint-project:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - uses: actions/cache@v4
+              with:
+                  path: ~/.cache/pre-commit
+                  key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
+            - name: Setup Python, uv, and the package
+              uses: ./.github/actions/setup_python_env
+
+            - name: run all linters
+              shell: bash
+              run: uv run duty lint

@@ -260,7 +260,7 @@ class CleanCommand:
     ] = None
 
     def __call__(self) -> None:
-        """Call the command."""  # noqa: DOC501
+        """Call the command."""
         if settings.date_only and not settings.date_format:
             pp.error("`date_format` is not specified")
             raise cappa.Exit(code=1)
@@ -278,7 +278,7 @@ class ConfigCommand:
     ] = False
 
     def __call__(self) -> None:
-        """Call the command."""  # noqa: DOC501
+        """Call the command."""
         if self.create:
             if USER_CONFIG_PATH.exists():
                 pp.info(f"User configuration file already exists: {USER_CONFIG_PATH}")
@@ -430,7 +430,7 @@ class ProcessCommand:
     ] = None
 
     def __call__(self) -> None:
-        """Call the command."""  # noqa: DOC501
+        """Call the command."""
         if settings.date_only and not settings.date_format:
             pp.error("`date_format` is not specified")
             raise cappa.Exit(code=1)
@@ -508,7 +508,7 @@ class SortCommand:
     ] = ()
 
     def __call__(self) -> None:
-        """Call the command."""  # noqa: DOC501
+        """Call the command."""
         if not settings.get("project", {}):
             pp.error("`project` is not specified")
             raise cappa.Exit(code=1)
@@ -521,7 +521,7 @@ class TreeCommand:
     """Print a tree representation of the project folder."""
 
     def __call__(self) -> None:
-        """Call the command."""  # noqa: DOC501
+        """Call the command."""
         if settings.get("project"):
             console.print(settings.project.tree())
         else:

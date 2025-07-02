@@ -54,3 +54,6 @@ dist/
 
 # act run workflows locally
 bin/act
+
+.cursor/
+GEMINI.md

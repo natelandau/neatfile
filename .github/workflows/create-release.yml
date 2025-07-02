@@ -15,13 +15,14 @@ permissions:
     contents: write
 
 jobs:
-    auto-release:
+    run-tests:
+        uses: ./.github/workflows/reusable-tests.yml
+        secrets: inherit
+
+    autorelease:
         name: Create Release
         runs-on: "ubuntu-latest"
-        strategy:
-            fail-fast: true
-            matrix:
-                python-version: ["3.11"]
+        needs: run-tests
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
@@ -30,19 +31,13 @@ jobs:
 
             - name: Setup Python, uv, and the package
               uses: ./.github/actions/setup_python_env
-
-            # ----------------------------------------------
-            #    Grab version number
-            # ----------------------------------------------
+              with:
+                  python-version: "3.13"
 
             - name: Add version to environment vars
               run: |
                   PROJECT_VERSION=$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
                   echo "PROJECT_VERSION=$PROJECT_VERSION" >> $GITHUB_ENV
-
-            # ----------------------------------------------
-            # Confirm we did, in fact, update the version
-            # ----------------------------------------------
 
             - name: Check if tag version matches project version
               run: |
@@ -52,21 +47,9 @@ jobs:
                   if [[ "$TAG" != "v$PROJECT_VERSION" ]]; then exit 1; fi
                   echo "CURRENT_TAG=refs/tags/${TAG}" >> $GITHUB_ENV
 
-            # ----------------------------------------------
-            # Test and then build the package
-            # ----------------------------------------------
-
-            - name: Run tests
-              shell: bash
-              run: uv run duty test
-
             - name: Build the package
               shell: bash
               run: uv build
-
-            # ----------------------------------------------
-            # Generate release notes
-            # ----------------------------------------------
 
             # - name: Release Notes
             #   run: git log $(git describe HEAD~ --tags --abbrev=0)..HEAD --pretty='format:* %h %s' --no-merges >> ".github/RELEASE-TEMPLATE.md"
@@ -78,15 +61,10 @@ jobs:
                   tag_name: ${{ env.CURRENT_TAG }}
                   changelog: CHANGELOG.md
 
-            # ----------------------------------------------
-            # Build draft release (Note: Will need to manually publish)
-            # ----------------------------------------------
-
-            - name: Create Github Release
+            - name: Create Release
               uses: softprops/action-gh-release@v2
               with:
                   body: ${{join(fromJson(steps.generate_notes.outputs.notes).notes, '')}}
-                  draft: false
                   files: |
                       dist/*-${{env.PROJECT_VERSION}}-py3-none-any.whl
                       dist/*-${{env.PROJECT_VERSION}}.tar.gz
@@ -95,19 +73,17 @@ jobs:
 
     publish-to-pypi:
         runs-on: ubuntu-latest
-        needs: auto-release
         env:
             TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
             TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
-        strategy:
-            matrix:
-                python-version: ["3.11"]
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
 
             - name: Setup Python, uv, and the package
               uses: ./.github/actions/setup_python_env
+              with:
+                  python-version: "3.13"
 
             - name: Build the package
               shell: bash

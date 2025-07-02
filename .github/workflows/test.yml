@@ -29,45 +29,9 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
-    test-python-code:
-        runs-on: ubuntu-latest
-        strategy:
-            fail-fast: true
-            matrix:
-                python-version: ["3.11", "3.12", "3.13"]
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
-
-            - name: Setup Python, uv, and the package
-              uses: ./.github/actions/setup_python_env
-
-            - name: Run tests
-              shell: bash
-              run: uv run duty test
-
-            - name: Upload coverage to Codecov
-              if: ${{ matrix.python-version == '3.12' }}
-              uses: codecov/codecov-action@v5
-              with:
-                  files: .cache/coverage.xml
-              env:
-                  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-    lint-project:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
-
-            - uses: actions/cache@v4
-              with:
-                  path: ~/.cache/pre-commit
-                  key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-
-            - name: Setup Python, uv, and the package
-              uses: ./.github/actions/setup_python_env
-
-            - name: run all linters
-              shell: bash
-              run: uv run duty lint
+    run-tests:
+        if: ${{ !contains(github.event.head_commit.message, 'bump(release)') }}
+        uses: ./.github/workflows/reusable-tests.yml
+        secrets: inherit
+        with:
+            run-coverage: true
