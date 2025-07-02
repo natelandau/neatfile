@@ -17,15 +17,14 @@ jobs:
         env:
             TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
             TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
-        strategy:
-            matrix:
-                python-version: ["3.11"]
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
 
             - name: Setup Python, uv, and the package
               uses: ./.github/actions/setup_python_env
+              with:
+                  python-version: "3.13"
 
             - name: Build the package
               shell: bash

@@ -112,7 +112,7 @@ def mock_project(tmp_path):
 
 @pytest.fixture
 def create_dir(tmp_path):
-    """Create a directory for testing."""  # noqa: DOC201
+    """Create a directory for testing."""
 
     def _inner(name: str, parent: Path | None = None) -> Path:
         """Create a directory with the provided name and path.
@@ -138,7 +138,7 @@ def create_dir(tmp_path):
 
 @pytest.fixture
 def create_file(tmp_path):
-    """Create a file for testing."""  # noqa: DOC201
+    """Create a file for testing."""
 
     def _inner(name: str, path: str | None = None, content: str | None = None) -> Path:
         """Create a file with the provided name and content.
