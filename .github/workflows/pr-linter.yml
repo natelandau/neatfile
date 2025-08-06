@@ -14,14 +14,14 @@ concurrency:
     group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
     cancel-in-progress: true
 
-permissions: # added using https://github.com/step-security/secure-workflows
+permissions:
     contents: read
 
 jobs:
     lint:
         permissions:
-            pull-requests: read # for amannn/action-semantic-pull-request to analyze PRs
-            statuses: write # for amannn/action-semantic-pull-request to mark status of analyzed PR
+            pull-requests: read
+            statuses: write
         runs-on: ubuntu-latest
 
         steps:

@@ -6,15 +6,15 @@
         "Programming Language :: Python :: 3.13",
     ]
     dependencies = [
-        "cappa>=0.28.0",
+        "cappa>=0.29.0",
         "datefind>=0.2.1",
         "dynaconf>=3.2.11",
         "inflect>=7.5.0",
-        "nclutils>=1.0.1",
+        "nclutils>=2.0.0",
         "pip>=25.1.1",
         "questionary>=2.1.0",
         "regex>=2024.11.6",
-        "rich>=14.0.0",
+        "rich>=14.1.0",
         "spacy>=3.8.7",
         "tzlocal>=5.3.1",
     ]
@@ -35,9 +35,9 @@
 [dependency-groups]
     dev = [
         "commitizen>=4.8.3",
-        "coverage>=7.9.1",
-        "duty>=1.6.0",
-        "mypy>=1.16.1",
+        "coverage>=7.10.1",
+        "duty>=1.6.2",
+        "mypy>=1.17.0",
         "pre-commit>=4.2.0",
         "pytest-clarity>=1.0.1",
         "pytest-cov>=6.2.1",
@@ -47,15 +47,15 @@
         "pytest-sugar>=1.0.0",
         "pytest-xdist>=3.8.0",
         "pytest>=8.4.1",
-        "ruff>=0.12.1",
-        "types-python-dateutil>=2.9.0.20250516",
+        "ruff>=0.12.5",
+        "types-python-dateutil>=2.9.0.20250708",
         "typos>=1.34.0",
         "yamllint>=1.37.1",
     ]
 
 [build-system]
-    build-backend = "hatchling.build"
-    requires      = ["hatchling"]
+    build-backend = "uv_build"
+    requires      = ["uv_build>=0.8.4,<0.9.0"]
 
 [tool.commitizen]
     bump_message               = "bump(release): v$current_version → v$new_version"
@@ -135,28 +135,16 @@
     [tool.ruff.lint]
         ignore = [
             "ANN204",  # Missing return type annotation for special method `__init__`
-            "B006",    # mutable-argument-default
-            "B008",    # function-call-in-default-argument
             "COM812",  # Trailing comma missing"
             "CPY001",  # Missing copyright notice at top of file
             "D107",    # undocumented-public-init
-            "D213",    # multi-line-summary-second-line
-            "D215",    # section-underline-not-over-indented
-            "D406",    # new-line-after-section-name
-            "D407",    # dashed-underline-after-section
-            "D408",    # section-underline-after-name
-            "D409",    # section-underline-matches-section-length
-            "D413",    # blank-line-after-last-section
             "E501",    # line-too-long
             "FIX002",  # Line contains TODO, consider resolving the issue
-            "ISC001",  # single-line-implicit-string-concatenation
-            "N805",    # invalid-first-argument-name-for-method
             "PLR0913", # too-many-arguments
             "RSE102",  # Unnecessary parentheses on raised exception
             "S311",    # suspicious-non-cryptographic-random-usage
             "TD002",   # Missing author in TODO
             "TD003",   # Missing issue link on the line following this TODO
-            "UP007",   # non-pep604-annotation
         ]
         per-file-ignores = { "tests/*.py" = [
             "A002",
