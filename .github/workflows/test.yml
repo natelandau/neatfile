@@ -6,6 +6,7 @@ on:
     push:
         paths:
             - ".github/workflows/test.yml"
+            - ".github/workflows/reusable-tests.yml"
             - ".github/actions/**"
             - "**.py"
             - "pyproject.toml"
@@ -19,6 +20,7 @@ on:
             - synchronize
         paths:
             - ".github/workflows/test.yml"
+            - ".github/workflows/reusable-tests.yml"
             - ".github/actions/**"
             - "**.py"
             - "pyproject.toml"

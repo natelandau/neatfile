@@ -15,15 +15,15 @@ concurrency:
     group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
     cancel-in-progress: true
 
-permissions: # added using https://github.com/step-security/secure-workflows
+permissions:
     contents: read
 
 jobs:
     lint-commits:
-        if: "!contains(github.event.head_commit.message, 'bump(release)')"
+        if: ${{ !contains(github.event.head_commit.message, 'bump(release)') }}
         permissions:
-            contents: read # for actions/checkout to fetch code
-            pull-requests: read # for wagoid/commitlint-github-action to get commits in PR
+            contents: read
+            pull-requests: read
         runs-on: ubuntu-latest
         steps:
             - name: Checkout repository

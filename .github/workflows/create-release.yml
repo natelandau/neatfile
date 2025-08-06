@@ -73,6 +73,7 @@ jobs:
 
     publish-to-pypi:
         runs-on: ubuntu-latest
+        needs: run-tests
         env:
             TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
             TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}

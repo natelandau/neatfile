@@ -1,59 +1,21 @@
 # Scratch folder for temporary files
+.cache/
+.cursor/
+.dev/
+.development/
+.github/copilot-instructions.md
+.github/instructions/
+dev-config.toml
+development/
+GEMINI.md
 scratch/
 tmp/
-development/
-.development/
-dev-config.toml
-
-# Caches
-*_cache/
-__pycache__/
-.cache/
-
-# Coverage.py
-htmlcov/
-reports/
-.reports/
-
-# cruft
-*.rej
-
-# Data
-*.csv*
-*.dat*
-*.pickle*
-*.xls*
-*.zip*
-
-.envrc
-.env
-
-# Jupyter
-*.ipynb
-.ipynb_checkpoints/
-notebooks/
 
 # macOS
 .DS_Store
 
-# mypy
-.dmypy.json
-
-# Node.js
-node_modules/
-
-# Poetry
+# Python
 .venv/
 dist/
-
-# PyCharm
-.idea/
-
-# Python
-*.py[cdo]
-
-# act run workflows locally
-bin/act
-
-.cursor/
-GEMINI.md
+*_cache/
+__pycache__/
