@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from neatfile.constants import ProjectType
+from neatfile.constants import NEATFILE_IGNORE_NAME, ProjectType
 from neatfile.features.sorting import (
     _calculate_folder_score,
     _calculate_token_similarity,
@@ -234,3 +234,27 @@ def test_find_matching_folders_with_matches(tmp_path: Path) -> None:
     assert all(matches[i].score >= matches[i + 1].score for i in range(len(matches) - 1))
     # Verify the folders actually exist
     assert all(match.folder.path.exists() for match in matches)
+
+
+def test_find_matching_folders_with_ignored_folders(tmp_path: Path) -> None:
+    """Verify finding matching folders with ignored folders."""
+    # Given: Filename tokens and matching folders
+    path1 = tmp_path / "test_folder1"
+    path2 = tmp_path / "test_folder2"
+    path1.mkdir()
+    path2.mkdir()
+    (path2 / NEATFILE_IGNORE_NAME).touch()
+
+    filename_tokens = ["test"]
+    folders = [
+        Folder(path=path1, folder_type=ProjectType.FOLDER),
+        Folder(path=path2, folder_type=ProjectType.FOLDER),
+    ]
+    threshold = 0.6
+
+    # When: Finding matching folders
+    matches = _find_matching_folders(filename_tokens, folders, threshold)
+
+    # Then: Should return one match
+    assert len(matches) == 1
+    assert matches[0].folder.path == path1

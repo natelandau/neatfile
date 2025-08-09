@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 
 from neatfile import settings
-from neatfile.constants import FolderType
+from neatfile.constants import NEATFILE_IGNORE_NAME, NEATFILE_NAME, FolderType
 from neatfile.utils.strings import strip_special_chars, strip_stopwords, tokenize_string
 
 
@@ -39,6 +39,7 @@ class Folder:
         self.type = folder_type
         self.area = area
         self.category = category
+        self.is_ignored = Path(self.path, NEATFILE_IGNORE_NAME).exists()
 
     def __str__(self) -> str:  # pragma: no cover
         """Return string representation of the folder.
@@ -101,8 +102,8 @@ class Folder:
             # Keep original tokens if stripping stopwords would remove everything
             terms = filtered_tokens or terms
 
-        if Path(self.path, ".neatfile").exists():
-            content = Path(self.path, ".neatfile").read_text(encoding="utf-8").splitlines()
+        if Path(self.path, NEATFILE_NAME).exists():
+            content = Path(self.path, NEATFILE_NAME).read_text(encoding="utf-8").splitlines()
             for line in content:
                 if line.startswith("#") or line in terms:
                     continue

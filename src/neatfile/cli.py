@@ -540,7 +540,7 @@ def main() -> None:  # pragma: no cover
     install(show_locals=False)
 
     try:
-        cappa.invoke(obj=NeatFile, deps=[config_subcommand])
+        cappa.invoke(obj=NeatFile, deps=[config_subcommand], completion=False)
     except KeyboardInterrupt as e:
         pp.info("Exiting...")
         raise cappa.Exit(code=1) from e

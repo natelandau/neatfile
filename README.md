@@ -50,6 +50,7 @@ What's the problem here?
 -   Use vector matching to find similar terms
 -   Respect the [Johnny Decimal](https://johnnydecimal.com) system, if you use it
 -   Optionally, add `.neatfile` files to directories containing a list of words that will match files
+-   Add a `.neatfileignore` file to directories to exclude that directory from being matched to a project. This will not exclude children of the directory.
 
 ## Installation
 
@@ -212,6 +213,7 @@ neatfile uses smart matching to determine which directory a file belongs in:
 1. **Word Extraction**: Words are extracted from your filename and compared with directory names in your project structure.
 2. **Intelligent Matching**: The system uses both exact matches and vector similarity to find the best directory. For example, a file containing "budget" might match with a "Finance" directory through vector similarity.
 3. **Hierarchical Navigation**: neatfile considers your project's directory tree (up to the configured depth) when finding directories to match files to.
+4. **Ignoring Folders**: If a folder contains a `.neatfileignore` file, it will be ignored when matching files to directories but it's children will still be considered.
 
 ### Customizing Match Behavior
 
@@ -249,6 +251,8 @@ work/
 ├── finance/
 │   ├── budgets/
 │   └── invoices/
+├── ignore-me/
+│   └── .neatfileignore # Ignore this directory
 └── marketing/
     ├── campaigns/
     └── social-media/
