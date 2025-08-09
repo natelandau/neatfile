@@ -8,7 +8,7 @@ import cappa
 from nclutils import pp
 from rich.tree import Tree
 
-from neatfile.constants import FolderType, ProjectType
+from neatfile.constants import NEATFILE_NAME, FolderType, ProjectType
 
 from .folder import Folder
 
@@ -77,6 +77,7 @@ class Project:
                         yield from traverse_directory(item, depth + 1)
 
         non_jd_folders = list(traverse_directory(self.path, 0))
+
         pp.trace(f"{len(non_jd_folders)} non-JD folders indexed in project: {self.name}")
         return sorted(non_jd_folders, key=lambda folder: folder.path)
 
@@ -129,7 +130,7 @@ class Project:
             for folder in folder_list:
                 if (
                     not any(existing.path == folder.path for existing in all_folders)
-                    or Path(folder.path / ".neatfile").exists()
+                    or Path(folder.path / NEATFILE_NAME).exists()
                 ):
                     # pp.trace(f"PROJECT: Add '{folder.path.name}'")  # noqa: ERA001
                     all_folders.append(folder)

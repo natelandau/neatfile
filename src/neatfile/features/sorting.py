@@ -157,8 +157,7 @@ def _process_folder_matches(
 ) -> MatchResult | None:
     """Process a single folder to find matches with the filename tokens.
 
-    Calculate similarity scores between filename tokens and folder tokens, tracking matches
-    and computing an overall score for the folder.
+    Calculate similarity scores between filename tokens and folder tokens, tracking matches and computing an overall score for the folder.
 
     Args:
         folder (Folder): The folder to evaluate for matches
@@ -235,7 +234,7 @@ def _find_matching_folders(
     pp.trace(f"SORT: {filename_lemmas=}")
 
     matches = []
-    for folder in folders:
+    for folder in [x for x in folders if not x.is_ignored]:
         match_result = _process_folder_matches(
             folder,
             filename_docs,
