@@ -1,3 +1,9 @@
+## v4.1.0 (2025-08-09)
+
+### Feat
+
+- support `.neatfileignore` files (#115)
+
 ## v4.0.0 (2025-05-28)
 
 ### BREAKING CHANGE
