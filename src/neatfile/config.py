@@ -142,19 +142,26 @@ class SettingsManager:
                     "date_format",
                     "ignore_dotfiles",
                     "ignore_file_regex",
-                    "ignored_files",
                     "insert_location",
-                    "match_case_list",
                     "overwrite_existing",
                     "separator",
                     "split_words",
-                    "stopwords",
                     "strip_stopwords",
                     "transform_case",
                     "user_terms",
                 ]
             },
         }
+
+        overrides["match_case_list"] = sorted(
+            set(project_config.get("match_case_list", []) + settings.get("match_case_list", []))
+        )
+        overrides["stopwords"] = sorted(
+            set(project_config.get("stopwords", []) + settings.get("stopwords", []))
+        )
+        overrides["ignored_files"] = sorted(
+            set(project_config.get("ignored_files", []) + settings.get("ignored_files", []))
+        )
         settings.update(overrides)
 
     @classmethod

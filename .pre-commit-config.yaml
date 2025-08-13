@@ -70,7 +70,7 @@ repos:
         args: [--check]
 
   - repo: "https://github.com/adhtruong/mirrors-typos"
-    rev: v1.35.3
+    rev: v1.35.4
     hooks:
       - id: typos
         args: ["--force-exclude"]

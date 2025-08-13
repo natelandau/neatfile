@@ -206,6 +206,7 @@ def _process_folder_matches(
     folder_score = _calculate_folder_score(total_score, match_count, filename_token_count)
 
     if folder_score >= threshold:
+        pp.trace(f"SORT: {folder.path} matched with score {folder_score} and terms {matched_terms}")
         return MatchResult(folder, folder_score, matched_terms)
 
     return None
