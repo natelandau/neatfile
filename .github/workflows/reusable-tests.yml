@@ -19,7 +19,7 @@ jobs:
                 python-version: ["3.11", "3.12", "3.13"]
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
 
             - name: Setup Python, uv, and the package
               uses: ./.github/actions/setup_python_env
@@ -42,7 +42,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
 
             - uses: actions/cache@v4
               with:
