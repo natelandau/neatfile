@@ -1,6 +1,7 @@
 # Scratch folder for temporary files
 .cache/
 .cursor/
+.claude/
 .dev/
 .development/
 .github/copilot-instructions.md
@@ -8,7 +9,6 @@
 .worktrees/
 dev-config.toml
 development/
-GEMINI.md
 scratch/
 tmp/
 
