@@ -65,7 +65,7 @@ python -m pip install --user neatfile
 ```
 
 > [!NOTE]\
->  A ~35mb language model will be downloaded on first run to provide vector matching between filenames and directory names.
+>  Installation bundles a ~35mb English language model used for vector matching between filenames and directory names.
 
 ## Quickstart
 
