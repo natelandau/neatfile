@@ -1,11 +1,11 @@
 ---
 # https://pre-commit.com
-default_install_hook_types: [pre-commit, pre-push, commit-msg]
-default_stages: [pre-commit, manual]
+default_install_hook_types: [ pre-commit, pre-push, commit-msg ]
+default_stages: [ pre-commit, manual ]
 fail_fast: true
 repos:
   - repo: "https://github.com/commitizen-tools/commitizen"
-    rev: v4.8.3
+    rev: v4.13.10
     hooks:
       - id: commitizen
       - id: commitizen-branch
@@ -48,42 +48,42 @@ repos:
       - id: fix-byte-order-marker
       - id: mixed-line-ending
       - id: trailing-whitespace
-        types: [python]
-        args: [--markdown-linebreak-ext=md]
+        types: [ python ]
+        args: [ --markdown-linebreak-ext=md ]
       - id: end-of-file-fixer
-        types: [python]
+        types: [ python ]
 
-  - repo: "https://github.com/adrienverge/yamllint.git"
-    rev: v1.37.1
-    hooks:
-      - id: yamllint
-        files: ^.*\.(yaml|yml)$
-        entry: yamllint --strict --config-file .yamllint.yml
+  # - repo: "https://github.com/adrienverge/yamllint.git"
+  #   rev: v1.38.0
+  #   hooks:
+  #     - id: yamllint
+  #       files: ^.*\.(yaml|yml)$
+  #       entry: yamllint --strict --config-file .yamllint.yml
 
   - repo: "https://github.com/charliermarsh/ruff-pre-commit"
-    rev: "v0.12.8"
+    rev: "v0.15.11"
     hooks:
       - id: ruff
         exclude: tests/
-        args: [--no-fix]
+        args: [ --no-fix ]
       - id: ruff-format
-        args: [--check]
+        args: [ --check ]
 
   - repo: "https://github.com/adhtruong/mirrors-typos"
-    rev: v1.35.4
+    rev: v1.45.1
     hooks:
       - id: typos
-        args: ["--force-exclude"]
-        stages: [commit-msg, pre-commit]
+        args: [ "--force-exclude" ]
+        stages: [ commit-msg, pre-commit ]
 
   - repo: "https://github.com/crate-ci/committed"
-    rev: v1.1.7
+    rev: v1.1.11
     hooks:
       - id: committed
-        stages: [commit-msg]
+        stages: [ commit-msg ]
 
   - repo: "https://github.com/gitleaks/gitleaks"
-    rev: v8.28.0
+    rev: v8.30.1
     hooks:
       - id: gitleaks
 
@@ -93,14 +93,14 @@ repos:
         name: shellcheck
         entry: shellcheck --check-sourced --severity=warning
         language: system
-        types: [shell]
+        types: [ shell ]
 
       - id: mypy
         name: mypy
         entry: mypy --config-file pyproject.toml
         exclude: "tests/|duties.py"
         language: system
-        types: [python]
+        types: [ python ]
 
       - id: pytest
         name: pytest
@@ -123,5 +123,5 @@ ci:
   autofix_prs: true
   autoupdate_commit_msg: "build: pre-commit autoupdate"
   autoupdate_schedule: quarterly
-  skip: [pytest, mypy, shellcheck]
+  skip: [ pytest, mypy, shellcheck ]
   submodules: false

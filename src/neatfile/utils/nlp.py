@@ -12,7 +12,7 @@ try:
 except OSError as e:
     python = str(sys.executable)
     pp.rule("Downloading spaCy model...")
-    subprocess.run([sys.executable, "-m", "spacy", "download", "en_core_web_md"], check=False)  # noqa: S603
+    subprocess.run([sys.executable, "-m", "spacy", "download", "en_core_web_md"], check=False)
     pp.rule()
     pp.info(":rocket: Model downloaded successfully. Run `neatfile` again.")
     raise cappa.Exit() from e

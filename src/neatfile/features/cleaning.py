@@ -57,7 +57,7 @@ def clean_filename(file: File) -> None:
         text=settings.get("date", None) or file.stem,
         first=settings.date_first.value,
     ):
-        new_date = date.date.strftime(settings.date_format)
+        new_date = date.datetime.strftime(settings.date_format)
         file.new_stem = re.sub(re.escape(date.match), "", file.new_stem)
         break
 
