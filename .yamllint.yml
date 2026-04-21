@@ -25,8 +25,7 @@ rules:
       - "^http://"
       - "^https://"
       - "ftp://"
-      - 'ssh \w.*'
-    extra-allowed: []
+      - "ssh \\w.*"
   truthy:
     level: error
     check-keys: false
