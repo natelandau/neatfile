@@ -1,3 +1,10 @@
+## v4.2.0 (2026-04-21)
+
+### Feat
+
+- **deps**: bundle spaCy en_core_web_md model (#122)
+- **config**: combine global and project specific lists (#116)
+
 ## v4.1.0 (2025-08-09)
 
 ### Feat
