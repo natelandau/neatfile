@@ -5,6 +5,7 @@
 .development/
 .github/copilot-instructions.md
 .github/instructions/
+.worktrees/
 dev-config.toml
 development/
 GEMINI.md
