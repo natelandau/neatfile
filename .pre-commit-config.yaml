@@ -104,7 +104,7 @@ repos:
 
       - id: pytest
         name: pytest
-        entry: pytest -c pyproject.toml src/
+        entry: uv run duty test
         language: system
         pass_filenames: false
         files: |
@@ -114,14 +114,3 @@ repos:
           uv\.lock|
           pyproject\.toml
           )
-
-ci:
-  autofix_commit_msg: |
-    fix: auto fixes from pre-commit.com hooks
-
-    for more information, see https://pre-commit.ci
-  autofix_prs: true
-  autoupdate_commit_msg: "build: pre-commit autoupdate"
-  autoupdate_schedule: quarterly
-  skip: [ pytest, mypy, shellcheck ]
-  submodules: false

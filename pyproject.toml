@@ -9,7 +9,7 @@
         "cappa>=0.31.0",
         "datefind>=0.4.0",
         "dynaconf>=3.2.13",
-        "en-core-web-md @ https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl",
+        "en-core-web-md",
         "inflect>=7.5.0",
         "nclutils>=2.1.0",
         "questionary>=2.1.1,<3",
@@ -56,6 +56,11 @@
 [build-system]
     build-backend = "uv_build"
     requires      = ["uv_build>=0.8.4,<0.9.0"]
+
+[tool.uv.sources]
+    # Kept out of `dependencies` so the wheel's published PyPI metadata does not
+    # contain a direct URL reference (PyPI rejects uploads that include one).
+    en-core-web-md = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl" }
 
 [tool.commitizen]
     bump_message               = "bump(release): v$current_version → v$new_version"

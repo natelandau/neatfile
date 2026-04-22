@@ -28,11 +28,12 @@ jobs:
 
             - name: Run tests
               shell: bash
-              run: uv run duty test
+              run: |
+                  uv run pytest tests/ src/ --config-file pyproject.toml --color=yes --cov --cov-config=pyproject.toml --cov-report=xml --cov-report=term
 
             - name: Upload coverage to Codecov
               if: ${{ inputs.run-coverage && matrix.python-version == '3.13' }}
-              uses: codecov/codecov-action@v5
+              uses: codecov/codecov-action@v6
               with:
                   files: .cache/coverage.xml
               env:
@@ -46,8 +47,8 @@ jobs:
 
             - uses: actions/cache@v5
               with:
-                  path: ~/.cache/pre-commit
-                  key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+                  path: ~/.cache/prek
+                  key: prek-${{ hashFiles('.pre-commit-config.yaml') }}
 
             - name: Setup Python, uv, and the package
               uses: ./.github/actions/setup_python_env
