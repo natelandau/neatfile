@@ -10,6 +10,10 @@ rules:
     level: error
     max-spaces-inside: 1
     min-spaces-inside: 1
+  brackets:
+    level: error
+    max-spaces-inside: 1
+    min-spaces-inside: 1
   comments-indentation: disable
   comments:
     min-spaces-from-content: 1
