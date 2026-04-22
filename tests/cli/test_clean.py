@@ -1,6 +1,6 @@
 """Test the clean command."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
 import cappa
@@ -9,7 +9,10 @@ import pytest
 from neatfile import settings
 from neatfile.cli import NeatFile, config_subcommand
 
-TODAY = datetime.now(tz=timezone.utc).date().strftime("%Y-%m-%d")
+# Use local time to match how the `clean` command stamps filenames.
+# UTC would disagree with the app during the evening US window, when
+# UTC has rolled over to tomorrow but local time hasn't.
+TODAY = datetime.now().astimezone().date().strftime("%Y-%m-%d")
 
 
 @pytest.mark.parametrize(
