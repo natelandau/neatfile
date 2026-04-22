@@ -29,7 +29,7 @@ jobs:
             - name: Run tests
               shell: bash
               run: |
-                  uv run pytest tests/ src/ --config-file pyproject.toml --color=yes --cov --cov-config=pyproject.toml --cov-report=xml --cov-report=term -n auto
+                  uv run pytest tests/ src/ --config-file pyproject.toml --color=yes --cov --cov-config=pyproject.toml --cov-report=xml --cov-report=term
 
             - name: Upload coverage to Codecov
               if: ${{ inputs.run-coverage && matrix.python-version == '3.13' }}
