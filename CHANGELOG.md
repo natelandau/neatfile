@@ -1,3 +1,9 @@
+## v4.2.1 (2026-04-21)
+
+### Fix
+
+- **deps**: move spacy wheel URL to uv.sources (#123)
+
 ## v4.2.0 (2026-04-21)
 
 ### Feat
