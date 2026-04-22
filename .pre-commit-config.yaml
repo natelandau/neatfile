@@ -53,12 +53,12 @@ repos:
       - id: end-of-file-fixer
         types: [ python ]
 
-  # - repo: "https://github.com/adrienverge/yamllint.git"
-  #   rev: v1.38.0
-  #   hooks:
-  #     - id: yamllint
-  #       files: ^.*\.(yaml|yml)$
-  #       entry: yamllint --strict --config-file .yamllint.yml
+  - repo: "https://github.com/adrienverge/yamllint.git"
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        files: ^.*\.(yaml|yml)$
+        entry: yamllint --strict --config-file .yamllint.yml
 
   - repo: "https://github.com/charliermarsh/ruff-pre-commit"
     rev: "v0.15.11"

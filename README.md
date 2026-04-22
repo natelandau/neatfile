@@ -65,7 +65,7 @@ python -m pip install --user neatfile
 ```
 
 > [!NOTE]\
->  Installation bundles a ~35mb English language model used for vector matching between filenames and directory names.
+>  The first time you run neatfile, it will download a ~35mb English language model (`en_core_web_md`) used for vector matching between filenames and directory names. Subsequent runs load the cached model immediately.
 
 ## Quickstart
 
