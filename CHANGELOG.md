@@ -1,3 +1,9 @@
+## v4.2.2 (2026-04-22)
+
+### Fix
+
+- **deps**: download spacy model at runtime (#124)
+
 ## v4.2.1 (2026-04-21)
 
 ### Fix
