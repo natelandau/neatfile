@@ -115,11 +115,11 @@ wheels = [
 
 [[package]]
 name = "certifi"
-version = "2026.2.25"
+version = "2026.4.22"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/af/2d/7bf41579a8986e348fa033a31cdd0e4121114f6bce2457e8876010b092dd/certifi-2026.2.25.tar.gz", hash = "sha256:e887ab5cee78ea814d3472169153c2d12cd43b14bd03329a39a9c6e2e80bfba7", size = 155029, upload-time = "2026-02-25T02:54:17.342Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/25/ee/6caf7a40c36a1220410afe15a1cc64993a1f864871f698c0f93acb72842a/certifi-2026.4.22.tar.gz", hash = "sha256:8d455352a37b71bf76a79caa83a3d6c25afee4a385d632127b6afb3963f1c580", size = 137077, upload-time = "2026-04-22T11:26:11.191Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9a/3c/c17fb3ca2d9c3acff52e30b309f538586f9f5b9c9cf454f3845fc9af4881/certifi-2026.2.25-py3-none-any.whl", hash = "sha256:027692e4402ad994f1c42e52a4997a9763c646b73e4096e4d5d6db8af1d6f0fa", size = 153684, upload-time = "2026-02-25T02:54:15.766Z" },
+    { url = "https://files.pythonhosted.org/packages/22/30/7cd8fdcdfbc5b869528b079bfb76dcdf6056b1a2097a662e5e8c04f42965/certifi-2026.4.22-py3-none-any.whl", hash = "sha256:3cb2210c8f88ba2318d29b0388d1023c8492ff72ecdde4ebdaddbb13a31b1c4a", size = 135707, upload-time = "2026-04-22T11:26:09.372Z" },
 ]
 
 [[package]]
@@ -357,15 +357,15 @@ wheels = [
 
 [[package]]
 name = "datefind"
-version = "0.4.0"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "regex" },
     { name = "tzlocal" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/87/cf/c1a6247e7940dfa76e95e88d1e996445fb19b4457d6930bf08dc17191475/datefind-0.4.0.tar.gz", hash = "sha256:a1957f101c535df39a91e0b23182b20f56d8137f7a7879de652961766c538c59", size = 9544, upload-time = "2026-03-20T02:01:55.062Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/92/09/851e93c10836a54cc3da1c4e6f1ce043c482608c25e6d3e414c03a543bf3/datefind-0.5.0.tar.gz", hash = "sha256:da5c675c81a113294c30f4d0b4edc0872f34fc5060cef54eb7253315aeddb93c", size = 11528, upload-time = "2026-04-22T14:17:47.677Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ab/7d/2a1b7bc96d0880c77ad03610cf749a092774fa6370f6319463fc3619c603/datefind-0.4.0-py3-none-any.whl", hash = "sha256:42878a06aa95f30f48d090c3b3536ae1a3af8e59d42f6e22b0c3b9d7571ec151", size = 9934, upload-time = "2026-03-20T02:01:53.906Z" },
+    { url = "https://files.pythonhosted.org/packages/98/9c/4763cb4b9bc44249bdd90d2f4f860760fc30c53dede08cd84b169b08f1ed/datefind-0.5.0-py3-none-any.whl", hash = "sha256:15771d2f2780239220d2af3eedf3210aa847bf641c2ca81f9febb65f7a9c7237", size = 12006, upload-time = "2026-04-22T14:17:46.763Z" },
 ]
 
 [[package]]
@@ -797,7 +797,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "cappa", specifier = ">=0.31.0" },
-    { name = "datefind", specifier = ">=0.4.0" },
+    { name = "datefind", specifier = ">=0.5.0" },
     { name = "dynaconf", specifier = ">=3.2.13" },
     { name = "inflect", specifier = ">=7.5.0" },
     { name = "nclutils", specifier = ">=2.1.0" },

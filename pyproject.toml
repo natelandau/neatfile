@@ -7,11 +7,11 @@
     ]
     dependencies = [
         "cappa>=0.31.0",
-        "datefind>=0.4.0",
+        "datefind>=0.5.0",
         "dynaconf>=3.2.13",
         "inflect>=7.5.0",
         "nclutils>=2.1.0",
-        # Required at runtime: `spacy.cli.download` shells out to pip to
+        # Pip required at runtime: `spacy.cli.download` shells out to pip to
         # install the language model on first use. `uv tool install` does
         # not seed pip in its envs, so we must declare it explicitly.
         "pip>=26.0.1",
