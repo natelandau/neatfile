@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 import tomllib
 from nclutils import pp
-from nclutils.pytest_fixtures import clean_stdout, debug  # noqa: F401
 
 from neatfile import settings
 from neatfile.constants import DEFAULT_CONFIG_PATH, DateFirst

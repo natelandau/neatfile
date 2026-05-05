@@ -6,7 +6,7 @@ import pytest
 from neatfile.cli import NeatFile, config_subcommand
 
 
-def test_jd_tree(debug, clean_stdout):
+def test_jd_tree(debug, capsys):
     """Verify tree command displays correct JD project structure."""
     # Given: Arguments for tree command with JD project
     args = ["tree", "--project", "mock_jd_project"]
@@ -15,7 +15,7 @@ def test_jd_tree(debug, clean_stdout):
     cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Output matches expected JD structure
-    output = clean_stdout()
+    output = capsys.readouterr().out
 
     assert (
         """\
@@ -56,7 +56,7 @@ def test_jd_tree(debug, clean_stdout):
     )
 
 
-def test_folder_tree(debug, clean_stdout):
+def test_folder_tree(debug, capsys):
     """Verify tree command displays correct folder project structure."""
     # Given: Arguments for tree command with folder project
     args = ["tree", "-vv", "--project", "mock_folder_project"]
@@ -65,7 +65,7 @@ def test_folder_tree(debug, clean_stdout):
     cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Output matches expected folder structure
-    output = clean_stdout()
+    output = capsys.readouterr().out
 
     assert (
         """\
@@ -101,7 +101,7 @@ def test_folder_tree(debug, clean_stdout):
     )
 
 
-def test_tree_no_project(debug, clean_stdout):
+def test_tree_no_project(debug, capsys):
     """Verify tree command fails when no project specified."""
     # Given: Tree command with no project argument
     args = ["tree"]
@@ -111,13 +111,13 @@ def test_tree_no_project(debug, clean_stdout):
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command fails with appropriate error message
-    output = clean_stdout()
+    output = capsys.readouterr().out
 
     assert e.value.code == 1
     assert "You must specify a project name with the --project flag." in output
 
 
-def test_tree_name_not_found(debug, clean_stdout):
+def test_tree_name_not_found(debug, capsys):
     """Verify tree command fails when project name not found."""
     # Given: Tree command with non-existent project name
     args = ["tree", "--project", "non_existent_project"]
@@ -127,7 +127,7 @@ def test_tree_name_not_found(debug, clean_stdout):
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command fails with appropriate error message
-    output = clean_stdout()
+    output = capsys.readouterr().out
     # debug(output)
 
     assert e.value.code == 1

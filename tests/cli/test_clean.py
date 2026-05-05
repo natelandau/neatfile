@@ -156,7 +156,7 @@ def test_clean_single_file(
     extraargs,
     expected_output,
     debug,
-    clean_stdout,
+    capsys,
 ):
     """Verify clean command processes single files according to settings."""
     # Given: A test file exists
@@ -171,7 +171,7 @@ def test_clean_single_file(
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command output and file changes are verified
-    output = clean_stdout()
+    output = capsys.readouterr().out
     # debug(output, "output")
 
     assert e.value.code == 0
@@ -224,7 +224,7 @@ def test_clean_failure_states(
     extraargs,
     msg,
     debug,
-    clean_stdout,
+    capsys,
 ):
     """Verify clean command handles failure states correctly."""
     # Given: A test file exists
@@ -240,7 +240,7 @@ def test_clean_failure_states(
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command output and exit code are verified
-    output = clean_stdout()
+    output = capsys.readouterr().out
     # debug(output, "output")
 
     assert e.value.code > 0
@@ -248,7 +248,7 @@ def test_clean_failure_states(
         assert msg in output
 
 
-def test_clean_multiple_files(create_file, clean_stdout, debug):
+def test_clean_multiple_files(create_file, capsys, debug):
     """Verify clean command processes multiple files correctly."""
     # Given: Multiple test files exist
     filenames = [
@@ -267,7 +267,7 @@ def test_clean_multiple_files(create_file, clean_stdout, debug):
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command output is verified
-    output = clean_stdout()
+    output = capsys.readouterr().out
     # debug(output, "output")
 
     assert "Ignored:" in output
@@ -275,7 +275,7 @@ def test_clean_multiple_files(create_file, clean_stdout, debug):
     assert f"New File.txt -> {TODAY}-New-File.txt" in output
 
 
-def test_overwrite_file(create_file, clean_stdout, debug):
+def test_overwrite_file(create_file, capsys, debug):
     """Verify clean command overwrites existing files when --overwrite flag is used."""
     # Given: Two test files exist - one to clean and one to be overwritten
     new = create_file("file#$%.txt", content="foo bar baz")
@@ -289,7 +289,7 @@ def test_overwrite_file(create_file, clean_stdout, debug):
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command output and file changes are verified
-    output = clean_stdout()
+    output = capsys.readouterr().out
     # debug(output, "output")
 
     assert "file#$%.txt -> file.txt" in output
@@ -297,7 +297,7 @@ def test_overwrite_file(create_file, clean_stdout, debug):
     assert original.read_text() == "foo bar baz"
 
 
-def test_view_diff_table_confirm_changes(create_file, clean_stdout, mocker, debug):
+def test_view_diff_table_confirm_changes(create_file, capsys, mocker, debug):
     """Verify confirmation table displays and applies changes when user confirms."""
     # Given: Mock user confirmation to return True
     mocker.patch("neatfile.commands.Confirm.ask", return_value=True)
@@ -313,7 +313,7 @@ def test_view_diff_table_confirm_changes(create_file, clean_stdout, mocker, debu
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Confirmation table and changes are displayed and applied
-    output = clean_stdout()
+    output = capsys.readouterr().out
     # debug(output, "output")
 
     assert "Pending changes for 1 of 1 files" in output
@@ -324,7 +324,7 @@ def test_view_diff_table_confirm_changes(create_file, clean_stdout, mocker, debu
     assert Path(original.parent, "file.txt").exists()
 
 
-def test_view_diff_table_not_confirm_changes(create_file, clean_stdout, mocker, debug):
+def test_view_diff_table_not_confirm_changes(create_file, capsys, mocker, debug):
     """Verify confirmation table displays but no changes applied when user declines."""
     # Given: Mock user confirmation to return False
     mocker.patch("neatfile.commands.Confirm.ask", return_value=False)
@@ -340,7 +340,7 @@ def test_view_diff_table_not_confirm_changes(create_file, clean_stdout, mocker, 
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Confirmation table displayed but no changes applied
-    output = clean_stdout()
+    output = capsys.readouterr().out
 
     assert "Pending changes for 1 of 1 files" in output
     assert "#   Original Name   New Name      Diff" in output
@@ -350,7 +350,7 @@ def test_view_diff_table_not_confirm_changes(create_file, clean_stdout, mocker, 
     assert not Path(original.parent, "file.txt").exists()
 
 
-def test_unique_filename_first(create_file, clean_stdout, tmp_path, debug):
+def test_unique_filename_first(create_file, capsys, tmp_path, debug):
     """Verify unique filename command works."""
     # Given: A test file exists
     original = create_file("file.txt")
@@ -364,7 +364,7 @@ def test_unique_filename_first(create_file, clean_stdout, tmp_path, debug):
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command output is verified
-    output = clean_stdout()
+    output = capsys.readouterr().out
 
     # find the backup file
     backup_file = None
@@ -380,7 +380,7 @@ def test_unique_filename_first(create_file, clean_stdout, tmp_path, debug):
     assert not second.exists()
 
 
-def test_unique_filename_directory(create_file, tmp_path, clean_stdout, debug):
+def test_unique_filename_directory(create_file, tmp_path, capsys, debug):
     """Verify unique filename command works."""
     # Given: A test file exists
     directory = tmp_path / "directory"
@@ -402,7 +402,7 @@ def test_unique_filename_directory(create_file, tmp_path, clean_stdout, debug):
             break
 
     # Then: Command output is verified
-    output = clean_stdout()
+    output = capsys.readouterr().out
     assert "directory -> directory" in output
     assert backup_dir.exists()
     assert backup_dir.is_dir()

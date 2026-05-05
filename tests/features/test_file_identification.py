@@ -47,7 +47,7 @@ def mock_files(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def test_respect_ignore_file_regex(mock_files, clean_stdout, debug):
+def test_respect_ignore_file_regex(mock_files, debug):
     """Verify ignore_file_regex is respected."""
     # Given: ignore_file_regex is configured to ignore file2.txt
     settings.update({"ignore_file_regex": "^file2.txt$"})
@@ -61,7 +61,7 @@ def test_respect_ignore_file_regex(mock_files, clean_stdout, debug):
     assert mock_files / "file2.txt" not in files
 
 
-def test_respect_ignore_files(mock_files, clean_stdout, debug):
+def test_respect_ignore_files(mock_files, debug):
     """Verify ignore_files is respected."""
     # Given: ignored_files is configured to ignore file2.txt
     settings.update({"ignored_files": ["file2.txt"]})
@@ -75,7 +75,7 @@ def test_respect_ignore_files(mock_files, clean_stdout, debug):
     assert mock_files / "file2.txt" not in files
 
 
-def test_dont_find_symlink(mock_files, clean_stdout, debug):
+def test_dont_find_symlink(mock_files, capsys, debug):
     """Verify symlinks are skipped and not processed."""
     # Given: A symlink file path
     args = ["clean", "-v", f"{mock_files}/file3.txt"]
@@ -85,12 +85,12 @@ def test_dont_find_symlink(mock_files, clean_stdout, debug):
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Warning is shown and no files are found
-    output = clean_stdout()
+    output = capsys.readouterr().out
     assert "Warning: Symlink" in output
     assert "No files found" in output
 
 
-def test_dont_find_dotfiles(mock_files, clean_stdout, debug):
+def test_dont_find_dotfiles(mock_files, capsys, debug):
     """Verify dotfiles are ignored and not processed."""
     # Given: A dotfile path
     args = ["clean", "-v", f"{mock_files}/.dotfile"]
@@ -100,7 +100,7 @@ def test_dont_find_dotfiles(mock_files, clean_stdout, debug):
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: File is ignored and no files are found
-    output = clean_stdout()
+    output = capsys.readouterr().out
     assert "Ignored:" in output
     assert "No files found" in output
 

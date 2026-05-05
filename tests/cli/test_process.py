@@ -44,7 +44,7 @@ def test_process_failure_states(
     extraargs,
     msg,
     debug,
-    clean_stdout,
+    capsys,
 ):
     """Verify process command handles failure states correctly."""
     # Given: A test file exists
@@ -59,7 +59,7 @@ def test_process_failure_states(
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command output and exit code are verified
-    output = clean_stdout()
+    output = capsys.readouterr().out
     # debug(output, "output")
 
     assert e.value.code == 1
@@ -67,7 +67,7 @@ def test_process_failure_states(
         assert msg in output
 
 
-def test_process_command_match(tmp_path, create_file, clean_stdout, mocker, debug):
+def test_process_command_match(tmp_path, create_file, capsys, mocker, debug):
     """Verify sorting files into project folder based on name matching."""
     # Given: Mock questionary select to return first option
     mock_select = mocker.patch("questionary.select")
@@ -83,7 +83,7 @@ def test_process_command_match(tmp_path, create_file, clean_stdout, mocker, debu
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: File is moved to matching folder
-    output = clean_stdout()
+    output = capsys.readouterr().out
     assert "Found 5 possible folders" in output
     assert "this is a foo $$$$ file.txt -> 10-19 foo/foo-file.txt" in output
     assert not file.exists()
