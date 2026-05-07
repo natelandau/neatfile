@@ -85,7 +85,7 @@ def test_dont_find_symlink(mock_files, capsys, debug):
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Warning is shown and no files are found
-    stdout, stderr = capsys.readouterr()
+    _, stderr = capsys.readouterr()
     assert "Symlink: `file3.txt`" in stderr
     assert "No files found" in stderr
 

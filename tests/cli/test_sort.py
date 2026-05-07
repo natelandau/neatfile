@@ -17,7 +17,7 @@ def test_sort_fail_no_project(tmp_path, create_file, capsys, mocker, debug):
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command fails with error and file remains in original location
-    stdout, stderr = capsys.readouterr()
+    _, stderr = capsys.readouterr()
     assert "`project` is not specified" in stderr
     assert e.value.code == 1
     assert file.exists()
@@ -99,7 +99,7 @@ def test_sort_no_match(tmp_path, create_file, capsys, mocker, debug):
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Error is shown and file remains in place
-    stdout, stderr = capsys.readouterr()
+    _, stderr = capsys.readouterr()
     assert "No matching directories found for `no matches.txt`" in stderr
     assert file.exists()
 
@@ -119,7 +119,7 @@ def test_sort_command_match_term(tmp_path, create_file, capsys, mocker, debug):
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: File is moved to folder matching term
-    stdout, stderr = capsys.readouterr()
+    stdout, _ = capsys.readouterr()
     assert "Found 2 possible folders" in stdout
     assert "no matches.txt -> 10-19 foo/11 bar/11.03 koala/no matches.txt" in stdout.replace(
         "\n", " "

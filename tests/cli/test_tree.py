@@ -111,7 +111,7 @@ def test_tree_no_project(debug, capsys):
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command fails with appropriate error message
-    stdout, stderr = capsys.readouterr()
+    _, stderr = capsys.readouterr()
 
     assert e.value.code == 1
     assert "You must specify a project name with the `--project` flag." in stderr
@@ -127,7 +127,7 @@ def test_tree_name_not_found(debug, capsys):
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command fails with appropriate error message
-    stdout, stderr = capsys.readouterr()
+    _, stderr = capsys.readouterr()
     # debug(output)
 
     assert e.value.code == 1

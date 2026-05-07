@@ -240,7 +240,7 @@ def test_clean_failure_states(
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command output and exit code are verified
-    stdout, stderr = capsys.readouterr()
+    _, stderr = capsys.readouterr()
     # debug(stdout, "stdout")
     # debug(stderr, "stderr")
 
