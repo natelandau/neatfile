@@ -1,3 +1,9 @@
+## v5.0.0 (2026-05-07)
+
+### Feat
+
+- **build**: drop support for python <3.12
+
 ## v4.2.2 (2026-04-22)
 
 ### Fix
