@@ -1,10 +1,10 @@
 """Shared fixtures for tests."""
 
+import tomllib
 from collections.abc import Callable
 from pathlib import Path
 
 import pytest
-import tomllib
 from nclutils import pp
 from pytest_mock import MockerFixture
 

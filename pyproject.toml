@@ -1,7 +1,6 @@
 [project]
     authors = [{ name = "Nate Landau", email = "neatfile@natenate.org" }]
     classifiers = [
-        "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
     ]
@@ -25,7 +24,7 @@
     license = "AGPL-3.0-only"
     name = "neatfile"
     readme = "README.md"
-    requires-python = ">=3.11, <3.14"
+    requires-python = ">=3.12, <3.14"
     version = "4.2.2"
 
     [project.urls]
@@ -137,7 +136,7 @@
     line-length    = 100
     output-format  = "grouped"
     src            = ["src", "tests"]
-    target-version = "py310"
+    target-version = "py312"
 
     [tool.ruff.lint]
         ignore = [

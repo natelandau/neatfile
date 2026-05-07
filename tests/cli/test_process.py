@@ -1,6 +1,6 @@
 """Test process command."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import cappa
 import pytest
@@ -8,7 +8,7 @@ import pytest
 from neatfile import settings
 from neatfile.cli import NeatFile, config_subcommand
 
-TODAY = datetime.now(tz=timezone.utc).date().strftime("%Y-%m-%d")
+TODAY = datetime.now(tz=UTC).date().strftime("%Y-%m-%d")
 
 
 @pytest.mark.parametrize(
