@@ -1,7 +1,7 @@
 """Constants for the neatfile package."""
 
 import os
-from enum import Enum
+from enum import Enum, StrEnum
 from pathlib import Path
 
 PACKAGE_NAME = __package__.replace("_", "-").replace(".", "-").replace(" ", "-")
@@ -20,7 +20,6 @@ DEV_DIR = PROJECT_ROOT_PATH / ".development"
 DEV_CONFIG_PATH = DEV_DIR / "dev-config.toml"
 VERSION = "4.2.2"
 ALWAYS_IGNORE_FILES_REGEXES = [r"\.DS_Store$", r"\.neatfile$", r"\.stignore$", r"__pycache__"]
-SPINNER = "bouncingBall"
 NEATFILE_NAME = ".neatfile"
 NEATFILE_IGNORE_NAME = ".neatfileignore"
 
@@ -36,7 +35,7 @@ class PrintLevel(Enum):
     TRACE = 2
 
 
-class FolderType(str, Enum):
+class FolderType(StrEnum):
     """Enum for folder types."""
 
     AREA = "area"
@@ -77,7 +76,7 @@ class FolderType(str, Enum):
                 raise ValueError(msg)
 
 
-class ProjectType(str, Enum):
+class ProjectType(StrEnum):
     """Enum for project types."""
 
     JD = "jd"
@@ -95,7 +94,7 @@ class Separator(Enum):
     PERIOD = "."
 
 
-class TransformCase(str, Enum):
+class TransformCase(StrEnum):
     """Define choices for case transformation."""
 
     CAMELCASE = "camelcase"
@@ -106,14 +105,14 @@ class TransformCase(str, Enum):
     UPPER = "upper"
 
 
-class InsertLocation(str, Enum):
+class InsertLocation(StrEnum):
     """Define choices for inserting text."""
 
     AFTER = "after"
     BEFORE = "before"
 
 
-class DateFirst(str, Enum):
+class DateFirst(StrEnum):
     """Define choices for date region."""
 
     DAY = "day"

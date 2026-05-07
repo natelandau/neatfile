@@ -1,16 +1,15 @@
 [project]
     authors = [{ name = "Nate Landau", email = "neatfile@natenate.org" }]
     classifiers = [
-        "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
     ]
     dependencies = [
         "cappa>=0.31.0",
-        "datefind>=0.5.0",
-        "dynaconf>=3.2.13",
-        "inflect>=7.5.0",
-        "nclutils>=2.1.0",
+        "datefind>=0.5.0, <1",
+        "dynaconf>=3.2.13, <4",
+        "inflect>=7.5.0, <8",
+        "nclutils>=3.0.1,<4",
         # Pip required at runtime: `spacy.cli.download` shells out to pip to
         # install the language model on first use. `uv tool install` does
         # not seed pip in its envs, so we must declare it explicitly.
@@ -25,7 +24,7 @@
     license = "AGPL-3.0-only"
     name = "neatfile"
     readme = "README.md"
-    requires-python = ">=3.11, <3.14"
+    requires-python = ">=3.12, <3.14"
     version = "4.2.2"
 
     [project.urls]
@@ -37,10 +36,10 @@
 
 [dependency-groups]
     dev = [
-        "commitizen>=4.15.0",
+        "commitizen>=4.15.1",
         "coverage>=7.13.5",
         "duty>=1.9.0",
-        "mypy>=1.20.2",
+        "mypy>=2.0.0",
         "prek>=0.3.13",
         "pytest-clarity>=1.0.1",
         "pytest-cov>=7.1.0",
@@ -117,15 +116,16 @@
     warn_unused_ignores         = true
 
 [tool.pytest.ini_options]
-    addopts             = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --junitxml=.cache/pytest.xml"
-    cache_dir           = ".cache/pytest"
-    columns             = 180
-    doctest_optionflags = ["IGNORE_EXCEPTION_DETAIL", "NORMALIZE_WHITESPACE"]
-    filterwarnings      = ["error", "ignore::DeprecationWarning", "ignore::ResourceWarning"]
-    markers             = ["no_db: marks tests as not needing a database"]
-    set_columns         = true
-    testpaths           = ["src", "tests"]
-    xfail_strict        = true
+    addopts               = "--color=yes --doctest-modules --exitfirst --failed-first --strict-config --strict-markers --junitxml=.cache/pytest.xml"
+    cache_dir             = ".cache/pytest"
+    capsys_strip_tmp_path = true
+    columns               = 180
+    doctest_optionflags   = ["IGNORE_EXCEPTION_DETAIL", "NORMALIZE_WHITESPACE"]
+    filterwarnings        = ["error", "ignore::DeprecationWarning", "ignore::ResourceWarning"]
+    markers               = ["no_db: marks tests as not needing a database"]
+    set_columns           = true
+    testpaths             = ["src", "tests"]
+    xfail_strict          = true
 
 [tool.hatch.metadata]
     allow-direct-references = true
@@ -136,7 +136,7 @@
     line-length    = 100
     output-format  = "grouped"
     src            = ["src", "tests"]
-    target-version = "py310"
+    target-version = "py312"
 
     [tool.ruff.lint]
         ignore = [

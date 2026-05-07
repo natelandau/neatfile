@@ -85,9 +85,9 @@ def test_dont_find_symlink(mock_files, capsys, debug):
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Warning is shown and no files are found
-    output = capsys.readouterr().out
-    assert "Warning: Symlink" in output
-    assert "No files found" in output
+    _, stderr = capsys.readouterr()
+    assert "Symlink: `file3.txt`" in stderr
+    assert "No files found" in stderr
 
 
 def test_dont_find_dotfiles(mock_files, capsys, debug):
@@ -100,9 +100,9 @@ def test_dont_find_dotfiles(mock_files, capsys, debug):
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: File is ignored and no files are found
-    output = capsys.readouterr().out
-    assert "Ignored:" in output
-    assert "No files found" in output
+    stdout, stderr = capsys.readouterr()
+    assert "Ignored: `.dotfile`" in stdout
+    assert "No files found" in stderr
 
 
 def test_find_multiple_files_in_directory_path(mock_files, debug):

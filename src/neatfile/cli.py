@@ -7,7 +7,7 @@ from pathlib import Path  # noqa: TC003
 from typing import Annotated
 
 import cappa
-from nclutils import console, pp, print_debug
+from nclutils import pp
 from rich.markdown import Markdown
 from rich.traceback import install
 
@@ -17,7 +17,6 @@ from neatfile.config import SettingsManager
 from neatfile.constants import (
     DEFAULT_CONFIG_PATH,
     USER_CONFIG_PATH,
-    VERSION,
     PrintLevel,
     Separator,
     TransformCase,
@@ -36,8 +35,11 @@ def config_subcommand(neatfile: NeatFile) -> None:
         cappa.Exit: If the command is not found.
     """
     pp.configure(
-        debug=neatfile.verbosity in {PrintLevel.DEBUG, PrintLevel.TRACE},
-        trace=neatfile.verbosity == PrintLevel.TRACE,
+        verbosity=1
+        if neatfile.verbosity == PrintLevel.DEBUG
+        else 2
+        if neatfile.verbosity == PrintLevel.TRACE
+        else 0
     )
 
     # Apply command-specific settings
@@ -67,17 +69,6 @@ def config_subcommand(neatfile: NeatFile) -> None:
         except ValueError as e:
             pp.error(str(e))
             raise cappa.Exit(code=1) from e
-
-    if pp.is_trace:
-        print_debug(
-            custom=[
-                {"Settings": settings.to_dict()},
-                {"neatfile": neatfile.__dict__},
-                {"Neatfile Version": VERSION},
-            ],
-            envar_prefix="neatfile",
-            packages=["questionary", "cappa", "dynaconf", "rich", "spacy"],
-        )
 
 
 @cappa.command(
@@ -295,13 +286,17 @@ class ConfigCommand:
 
         current_config = USER_CONFIG_PATH if USER_CONFIG_PATH.exists() else DEFAULT_CONFIG_PATH
 
-        pp.rule("Current Configuration")
-        console.print(Markdown("```toml\n" + current_config.read_text() + "\n```"))
+        pp.header("Current Configuration")
+        pp.console().print(Markdown("```toml\n" + current_config.read_text() + "\n```"))
 
         if not USER_CONFIG_PATH.exists():
-            pp.info("Using default configuration.")
-            pp.secondary(f"No user configuration file found: {USER_CONFIG_PATH}")
-            pp.secondary("To create a user configuration file, run `neatfile config --create`")
+            pp.info(
+                "Using default configuration.",
+                details=[
+                    f"No user configuration file found: {USER_CONFIG_PATH}",
+                    "To create a user configuration file, run `neatfile config --create`",
+                ],
+            )
         else:
             pp.info(f"User configuration file found: {USER_CONFIG_PATH}")
 
@@ -523,7 +518,7 @@ class TreeCommand:
     def __call__(self) -> None:
         """Call the command."""
         if settings.get("project"):
-            console.print(settings.project.tree())
+            pp.console().print(settings.project.tree())
         else:
             pp.error("You must specify a project name with the `--project` flag.")
             raise cappa.Exit(code=1)

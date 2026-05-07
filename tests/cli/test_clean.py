@@ -198,7 +198,7 @@ def test_clean_single_file(
             "file.txt",
             ["--date-only"],
             {"date_format": ""},
-            "date_format is not specified",
+            "`date_format` is not specified",
             id="fail-no-date-format",
         ),
         pytest.param(
@@ -240,12 +240,13 @@ def test_clean_failure_states(
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command output and exit code are verified
-    output = capsys.readouterr().out
-    # debug(output, "output")
+    _, stderr = capsys.readouterr()
+    # debug(stdout, "stdout")
+    # debug(stderr, "stderr")
 
     assert e.value.code > 0
     if msg:
-        assert msg in output
+        assert msg in stderr
 
 
 def test_clean_multiple_files(create_file, capsys, debug):

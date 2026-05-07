@@ -1,7 +1,7 @@
 """Execute CLI commands."""
 
 import cappa
-from nclutils import console, pp
+from nclutils import pp
 from rich.prompt import Confirm
 
 from neatfile import settings
@@ -43,7 +43,7 @@ def execute_command() -> None:
         raise cappa.Exit(code=0)
 
     if settings.confirm_changes and not settings.force:
-        console.print(
+        pp.console().print(
             confirmation_table(
                 files_with_changes,
                 total_files=len(files_to_process) + len(files_without_changes),

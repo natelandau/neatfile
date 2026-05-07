@@ -1,6 +1,6 @@
 """Test process command."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import cappa
 import pytest
@@ -8,7 +8,7 @@ import pytest
 from neatfile import settings
 from neatfile.cli import NeatFile, config_subcommand
 
-TODAY = datetime.now(tz=timezone.utc).date().strftime("%Y-%m-%d")
+TODAY = datetime.now(tz=UTC).date().strftime("%Y-%m-%d")
 
 
 @pytest.mark.parametrize(
@@ -25,14 +25,14 @@ TODAY = datetime.now(tz=timezone.utc).date().strftime("%Y-%m-%d")
             "file.txt",
             ["--date-only"],
             {"date_format": ""},
-            "date_format is not specified",
+            "`date_format` is not specified",
             id="fail-no-date-format",
         ),
         pytest.param(
             "file.txt",
             [],
             {"project": None},
-            "project is not specified",
+            "`project` is not specified",
             id="fail-no-project",
         ),
     ],
@@ -59,12 +59,12 @@ def test_process_failure_states(
         cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command output and exit code are verified
-    output = capsys.readouterr().out
+    _, stderr = capsys.readouterr()
     # debug(output, "output")
 
     assert e.value.code == 1
     if msg:
-        assert msg in output
+        assert msg in stderr
 
 
 def test_process_command_match(tmp_path, create_file, capsys, mocker, debug):

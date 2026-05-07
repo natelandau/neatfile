@@ -52,7 +52,7 @@ def select_folder(matching_dirs: list[MatchResult], file: File) -> Path:
         matching_terms = ", ".join(set(obj.matched_terms))
         folder_path = str(obj.folder.path.relative_to(settings.project.path))
 
-        if pp.is_debug:
+        if pp.get_default().verbosity >= 1:
             display_name = (
                 f"{folder_path:{max_length}} [score: {obj.score:.2f}] [matching: {matching_terms}]"
             )

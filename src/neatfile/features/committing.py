@@ -1,6 +1,9 @@
 """Commit changes to files."""
 
-from nclutils import copy_file, pp
+import shutil
+
+from nclutils import pp
+from nclutils.fs import copy_file
 
 from neatfile import settings
 from neatfile.models import File
@@ -25,7 +28,18 @@ def commit_changes(file: File) -> bool:
         pp.dryrun(f"{file.name} -> {msg_file_name}")
         return True
 
-    new_file = copy_file(file.path, file.new_path, keep_backup=not settings.overwrite)
+    try:
+        new_file = copy_file(
+            file.path,
+            file.new_path,
+            keep_backup=not settings.overwrite,
+            console=pp.console(),
+            strict=True,
+        )
+    except (ValueError, shutil.SameFileError) as e:
+        pp.error(f"Error copying file: {e}")
+        return False
+
     if new_file:
         file.path.unlink()
         pp.success(f"{file.name} -> {msg_file_name}")
