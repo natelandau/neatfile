@@ -1,17 +1,21 @@
 """Shared fixtures for tests."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 import tomllib
 from nclutils import pp
+from pytest_mock import MockerFixture
 
 from neatfile import settings
 from neatfile.constants import DEFAULT_CONFIG_PATH, DateFirst
 
 
 @pytest.fixture(autouse=True)
-def set_default_settings(tmp_path, mock_project, mocker):
+def set_default_settings(
+    tmp_path: Path, mock_project: tuple[Path, Path], mocker: MockerFixture
+) -> None:
     """Verify default settings are configured correctly for tests."""
     # Given: Mock config file paths to force using the default config
     mock_config = tmp_path / "config.toml"
@@ -45,11 +49,11 @@ def set_default_settings(tmp_path, mock_project, mocker):
     settings.update({"projects": mock_project_config})
 
     # Lastly: Configure pretty printer
-    pp.configure(debug=False, trace=False)
+    pp.configure(verbosity=0)
 
 
 @pytest.fixture
-def mock_project(tmp_path):
+def mock_project(tmp_path: Path) -> tuple[Path, Path]:
     """Fixture to create a mock project folder structure and original files which can be filed.
 
     Returns:
@@ -110,7 +114,7 @@ def mock_project(tmp_path):
 
 
 @pytest.fixture
-def create_dir(tmp_path):
+def create_dir(tmp_path: Path) -> Callable[[str, Path | None], Path]:
     """Create a directory for testing."""
 
     def _inner(name: str, parent: Path | None = None) -> Path:
@@ -136,7 +140,7 @@ def create_dir(tmp_path):
 
 
 @pytest.fixture
-def create_file(tmp_path):
+def create_file(tmp_path: Path) -> Callable[[str, str | None, str | None], Path]:
     """Create a file for testing."""
 
     def _inner(name: str, path: str | None = None, content: str | None = None) -> Path:

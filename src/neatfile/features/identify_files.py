@@ -4,10 +4,10 @@ import re
 from pathlib import Path
 
 import cappa
-from nclutils import console, pp
+from nclutils import pp
 
 from neatfile import settings
-from neatfile.constants import ALWAYS_IGNORE_FILES_REGEXES, SPINNER
+from neatfile.constants import ALWAYS_IGNORE_FILES_REGEXES
 
 
 def _is_ignored_file(file: Path) -> bool:
@@ -56,8 +56,7 @@ def _process_path(path: Path, files: list[Path], start_path: Path) -> None:
         return
 
     if _is_ignored_file(path):
-        if pp.is_debug:
-            pp.secondary(f"Ignored: `{display_path}`")
+        pp.debug(f"Ignored: `{display_path}`")
         return
 
     if path.is_file():
@@ -92,9 +91,8 @@ def find_processable_files(paths: list[Path]) -> list[Path]:
         return []
 
     files: list[Path] = []
-    with console.status(
-        "Processing Files...  [dim](Can take a while for large directory trees)[/]",
-        spinner=SPINNER,
+    with pp.step(
+        "Processing Files...",
     ):
         for path in paths:
             file_path = path.expanduser().absolute()

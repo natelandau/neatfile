@@ -4,11 +4,7 @@
 .claude/
 .dev/
 .development/
-.github/copilot-instructions.md
-.github/instructions/
 .worktrees/
-dev-config.toml
-development/
 scratch/
 tmp/
 

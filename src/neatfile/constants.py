@@ -20,7 +20,6 @@ DEV_DIR = PROJECT_ROOT_PATH / ".development"
 DEV_CONFIG_PATH = DEV_DIR / "dev-config.toml"
 VERSION = "4.2.2"
 ALWAYS_IGNORE_FILES_REGEXES = [r"\.DS_Store$", r"\.neatfile$", r"\.stignore$", r"__pycache__"]
-SPINNER = "bouncingBall"
 NEATFILE_NAME = ".neatfile"
 NEATFILE_IGNORE_NAME = ".neatfileignore"
 

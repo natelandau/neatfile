@@ -39,7 +39,7 @@ def confirmation_table(files: list[File], total_files: int | None = None) -> Tab
         table.add_column("New Path", overflow="fold")
     else:
         table.add_column("")
-    if pp.is_debug:
+    if pp.get_default().verbosity >= 1:
         table.add_column("Diff", overflow="fold")
 
     for _n, file in enumerate(files, start=1):
@@ -50,7 +50,9 @@ def confirmation_table(files: list[File], total_files: int | None = None) -> Tab
             str("…/" + str(file.new_parent.relative_to(project_path)) + "/")
             if organized_files and file.has_new_parent
             else "",
-            file.get_filename_diff() if pp.is_debug and file.has_new_name else "",
+            file.get_filename_diff()
+            if pp.get_default().verbosity >= 1 and file.has_new_name
+            else "",
         )
 
     return table
