@@ -6,6 +6,8 @@
     ]
     dependencies = [
         "cappa>=0.31.0",
+        # Spacy relies on Typer which recently vendored the click code into its own package. There's an upstrem error when spacy needs to install click or work around the typer update. until they do, we import click ourselves.
+        "click>=8.4.1, <9",
         "datefind>=0.5.0, <1",
         "dynaconf>=3.2.13, <4",
         "inflect>=7.5.0, <8",
@@ -18,7 +20,7 @@
         "regex>=2026.4.4",
         "rich>=15.0.0",
         "spacy>=3.8.14,<4",
-        "tzlocal>=5.3.1",
+        "tzlocal>=5.3.1, <6",
     ]
     description = "CLI to automatically normalize and organize your files based on customizable rules."
     license = "AGPL-3.0-only"
