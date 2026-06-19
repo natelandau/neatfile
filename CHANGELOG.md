@@ -1,3 +1,9 @@
+## v5.0.1 (2026-06-19)
+
+### Fix
+
+- **deps**: fix upstream error with missing click package
+
 ## v5.0.0 (2026-05-07)
 
 ### Feat
