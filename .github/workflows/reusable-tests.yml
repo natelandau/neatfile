@@ -19,7 +19,7 @@ jobs:
                 python-version: ["3.12", "3.13"]
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v6
+              uses: actions/checkout@v7
 
             - name: Setup Python, uv, and the package
               uses: ./.github/actions/setup_python_env
@@ -43,9 +43,9 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v6
+              uses: actions/checkout@v7
 
-            - uses: actions/cache@v5
+            - uses: actions/cache@v6
               with:
                   path: ~/.cache/prek
                   key: prek-${{ hashFiles('.pre-commit-config.yaml') }}
