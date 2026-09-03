@@ -6,8 +6,9 @@ inputs:
   python-version:
     description: >
       Version range or exact version of a Python version to use, using SemVer's version range syntax.
+      Defaults to the version in .python-version.
     required: false
-    default: "3.13"
+    default: ""
 
   install-groups:
     description: "Groups to install with uv sync"
@@ -18,7 +19,7 @@ runs:
   using: composite
   steps:
     - name: Setup uv with cache
-      uses: astral-sh/setup-uv@v7
+      uses: astral-sh/setup-uv@v10.0.1
       with:
         version: "latest"
         enable-cache: true
@@ -28,14 +29,6 @@ runs:
       shell: bash
       run: uv sync ${{ inputs.install-groups }}
 
-    - name: Debug Python version
+    - name: Show the Python version
       shell: bash
-      run: |
-        echo "Input python-version: ${{ inputs.python-version }}"
-        echo "Python version: $(python --version)"
-        echo "Python location: $(which python)"
-        echo "uv Python version: $(uv python --version)"
-
-    - name: Minimize uv cache
-      shell: bash
-      run: uv cache prune --ci
+      run: uv run python --version

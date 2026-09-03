@@ -1,0 +1,42 @@
+---
+name: "Automated Tests"
+
+on:
+    workflow_dispatch:
+    push:
+        branches:
+            - main
+        paths-ignore:
+            - "**.md"
+            - "docs/**"
+            - "LICENSE"
+            - ".github/dependabot.yml"
+            - ".github/workflows/pr-linter.yml"
+            - ".github/workflows/create-release.yml"
+    pull_request:
+        types:
+            - opened
+            - reopened
+            - synchronize
+        paths-ignore:
+            - "**.md"
+            - "docs/**"
+            - "LICENSE"
+            - ".github/dependabot.yml"
+            - ".github/workflows/pr-linter.yml"
+            - ".github/workflows/create-release.yml"
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    run-tests:
+        if: ${{ !contains(github.event.head_commit.message, 'bump(release)') }}
+        uses: ./.github/workflows/reusable-tests.yml
+        secrets: inherit
+        with:
+            upload-coverage: true
