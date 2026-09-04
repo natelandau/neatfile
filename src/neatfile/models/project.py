@@ -126,13 +126,12 @@ class Project:
 
         # Filtering to avoid duplicates and include folders with .neatfile
         all_folders: list[Folder] = []
+        seen_paths: set[Path] = set()
         for folder_list in (areas, categories, subcategories):
             for folder in folder_list:
-                if (
-                    not any(existing.path == folder.path for existing in all_folders)
-                    or Path(folder.path / NEATFILE_NAME).exists()
-                ):
+                if folder.path not in seen_paths or Path(folder.path / NEATFILE_NAME).exists():
                     # pp.trace(f"PROJECT: Add '{folder.path.name}'")  # noqa: ERA001
+                    seen_paths.add(folder.path)
                     all_folders.append(folder)
 
         pp.trace(f"{len(all_folders)} folders indexed in project: {self.name}")

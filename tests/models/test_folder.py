@@ -53,3 +53,14 @@ def test_name_and_number_strip_jd_prefix(
 
     assert folder.name == expected_name
     assert folder.number == expected_number
+
+
+def test_number_is_none_when_jd_prefix_missing(tmp_path) -> None:
+    """Verify a JD-typed folder without a JD prefix reports no number instead of raising."""
+    directory = tmp_path / "Finance"
+    directory.mkdir()
+
+    folder = Folder(directory, FolderType.AREA)
+
+    assert folder.number is None
+    assert folder.name == "Finance"

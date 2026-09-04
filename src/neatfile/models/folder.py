@@ -56,34 +56,23 @@ class Folder:
         Returns:
             str: Name of the folder with JD prefix removed.
         """
-        if self.type == FolderType.AREA:
-            return re.sub(r"^\d{2}-\d{2}[- _]", "", str(self.path.name)).strip()
+        if self.type == FolderType.OTHER:
+            return self.path.name
 
-        if self.type == FolderType.CATEGORY:
-            return re.sub(r"^\d{2}[- _]", "", str(self.path.name)).strip()
-
-        if self.type == FolderType.SUBCATEGORY:
-            return re.sub(r"^\d{2}\.\d{2}[- _]", "", str(self.path.name)).strip()
-
-        return self.path.name
+        return re.sub(self.type.pattern, "", self.path.name).strip()
 
     @property
     def number(self) -> str | None:
         """Extract the Johnny Decimal number from the folder name.
 
         Returns:
-            str | None: The JD number if folder is a JD type, None otherwise.
+            str | None: The JD number if folder is a JD type and its name carries a JD prefix, None otherwise.
         """
-        if self.type == FolderType.AREA:
-            return re.match(r"^(\d{2}-\d{2})[- _]", str(self.path.name)).group(0).strip("- _")
+        if self.type == FolderType.OTHER:
+            return None
 
-        if self.type == FolderType.CATEGORY:
-            return re.match(r"^(\d{2})[- _]", str(self.path.name)).group(0).strip("- _")
-
-        if self.type == FolderType.SUBCATEGORY:
-            return re.match(r"^(\d{2}\.\d{2})[- _]", str(self.path.name)).group(0).strip("- _")
-
-        return None
+        match = re.match(self.type.pattern, self.path.name)
+        return match.group(0).strip("- _") if match else None
 
     @functools.cached_property
     def terms(self) -> set[str]:
