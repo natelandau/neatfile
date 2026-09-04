@@ -11,7 +11,6 @@
         "datefind>=0.5.0, <1",
         "dynaconf>=3.3.5,<4",
         "huggingface-hub>=1,<2",
-        "inflect>=7.5.0, <8",
         "model2vec>=0.9,<1",
         "nclutils>=3.4.4,<4",
         "numpy>=2,<3",
@@ -79,7 +78,7 @@
         'pragma: no cover',
         'raise cappa\.Exit',
     ]
-    fail_under = 20
+    fail_under = 90
     # omit = ["src/neatfile/constants.py"]
     precision    = 1
     show_missing = true

@@ -8,7 +8,6 @@ from typing import Annotated
 
 import cappa
 from nclutils import pp
-from rich.markdown import Markdown
 from rich.traceback import install
 
 from neatfile import settings
@@ -284,6 +283,8 @@ class ConfigCommand:
             raise cappa.Exit(code=0)
 
         current_config = USER_CONFIG_PATH if USER_CONFIG_PATH.exists() else DEFAULT_CONFIG_PATH
+
+        from rich.markdown import Markdown  # noqa: PLC0415
 
         pp.header("Current Configuration")
         pp.console().print(Markdown("```toml\n" + current_config.read_text() + "\n```"))

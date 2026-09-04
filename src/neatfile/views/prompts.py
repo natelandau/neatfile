@@ -3,28 +3,21 @@
 from pathlib import Path
 
 import cappa
-import inflect
-import questionary
 from nclutils import pp
 
 from neatfile import settings
 from neatfile.models import File, MatchResult
 
-p = inflect.engine()
-
-
-STYLE = questionary.Style(
-    [
-        ("qmark", ""),
-        ("question", "bold"),
-        ("separator", "fg:#808080"),
-        ("answer", "fg:#FF9D00"),
-        ("instruction", "fg:#808080"),
-        ("highlighted", "bold underline"),
-        ("text", ""),
-        ("pointer", "bold"),
-    ]
-)
+STYLE = [
+    ("qmark", ""),
+    ("question", "bold"),
+    ("separator", "fg:#808080"),
+    ("answer", "fg:#FF9D00"),
+    ("instruction", "fg:#808080"),
+    ("highlighted", "bold underline"),
+    ("text", ""),
+    ("pointer", "bold"),
+]
 
 
 def select_folder(matching_dirs: list[MatchResult], file: File) -> Path:
@@ -41,6 +34,8 @@ def select_folder(matching_dirs: list[MatchResult], file: File) -> Path:
     Raises:
         cappa.Exit: If the user chooses to abort.
     """
+    import questionary  # noqa: PLC0415
+
     choices: list[dict[str, str] | questionary.Separator] = [questionary.Separator()]
 
     # Calculate the maximum length of the folder path to visually align the output
@@ -74,10 +69,11 @@ def select_folder(matching_dirs: list[MatchResult], file: File) -> Path:
         ]
     )
 
-    pp.info(
-        f"Found {len(matching_dirs)} possible {p.plural_noun('folder', len(matching_dirs))} for '[cyan bold]{file.name}[/]'"
-    )
-    result = questionary.select("Select a folder", choices=choices, style=STYLE).ask()
+    noun = "folder" if len(matching_dirs) == 1 else "folders"
+    pp.info(f"Found {len(matching_dirs)} possible {noun} for '[cyan bold]{file.name}[/]'")
+    result = questionary.select(
+        "Select a folder", choices=choices, style=questionary.Style(STYLE)
+    ).ask()
 
     if result is None or result == "abort":
         pp.info("Aborting...")
