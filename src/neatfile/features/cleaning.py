@@ -2,6 +2,7 @@
 
 import re
 from datetime import datetime
+from pathlib import Path
 from typing import assert_never
 
 from datefind import find_dates
@@ -42,6 +43,22 @@ def _add_date_to_filename(file: File, new_date: str) -> None:
             assert_never(settings.insert_location)
 
 
+def _creation_timestamp(path: Path) -> float:
+    """Return the best available creation time for a file.
+
+    Birth time is only reported on some platforms. Modification time is the fallback because
+    ctime on Unix is the inode change time and moves on every chmod or rename.
+
+    Args:
+        path (Path): The file to inspect.
+
+    Returns:
+        float: Seconds since the epoch.
+    """
+    stat = path.stat()
+    return getattr(stat, "st_birthtime", stat.st_mtime)
+
+
 def clean_filename(file: File) -> None:
     """Process and clean filenames according to configured settings.
 
@@ -50,7 +67,7 @@ def clean_filename(file: File) -> None:
     Args:
         file (File): The file object to process.
     """
-    new_date = datetime.fromtimestamp(file.path.stat().st_ctime, tz=settings.tz).strftime(
+    new_date = datetime.fromtimestamp(_creation_timestamp(file.path), tz=settings.tz).strftime(
         settings.date_format
     )
     for date in find_dates(
