@@ -28,6 +28,13 @@ def commit_changes(file: File) -> bool:
         pp.dryrun(f"{file.name} -> {msg_file_name}")
         return True
 
+    # On a case-insensitive filesystem a case-only rename resolves to the same file, which
+    # copy_file refuses. Renaming in place is safe there because nothing else is overwritten.
+    if file.new_path.exists() and file.path.samefile(file.new_path):
+        file.path.rename(file.new_path)
+        pp.success(f"{file.name} -> {msg_file_name}")
+        return True
+
     try:
         new_file = copy_file(
             file.path,

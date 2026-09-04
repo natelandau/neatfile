@@ -115,6 +115,14 @@ TODAY = datetime.now().astimezone().date().strftime("%Y-%m-%d")
             id="compound-extension",
         ),
         pytest.param(
+            "Big Report.PDF",
+            "Big Report.pdf",
+            ["--date-format", ""],
+            {},
+            "Big Report.PDF -> Big Report.pdf",
+            id="case-only-rename",
+        ),
+        pytest.param(
             "Foo&Bar.txt",
             "FOO_BAR.txt",
             ["--date-format", "", "--case", "upper"],
@@ -201,11 +209,13 @@ def test_clean_single_file(
     assert e.value.code == 0
     if expected_output:
         assert expected_output in output
+    # Compare against listed names so case-only renames are detected on case-insensitive filesystems
+    on_disk = {path.name for path in filename.parent.iterdir()}
     if output_name:
-        assert not filename.exists()
-        assert Path(filename.parent, output_name).exists()
+        assert filename.name not in on_disk
+        assert output_name in on_disk
     else:
-        assert filename.exists()
+        assert filename.name in on_disk
 
 
 @pytest.mark.parametrize(
