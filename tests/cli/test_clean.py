@@ -91,6 +91,14 @@ TODAY = datetime.now().astimezone().date().strftime("%Y-%m-%d")
             id="split-words",
         ),
         pytest.param(
+            "FooBar.txt",
+            "",
+            ["--date-format", ""],
+            {"split_words": False},
+            "No changes",
+            id="split-words-disabled",
+        ),
+        pytest.param(
             "Foo&Bar.txt",
             "FOO_BAR.txt",
             ["--date-format", "", "--case", "upper"],

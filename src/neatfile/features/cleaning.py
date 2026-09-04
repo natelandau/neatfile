@@ -68,9 +68,6 @@ def clean_filename(file: File) -> None:
         stem_tokens = strip_special_chars(stem_tokens)
         pp.trace(f"CLEAN (strip special chars): {stem_tokens}")
 
-        stem_tokens = split_camel_case(stem_tokens, settings.match_case_list)
-        pp.trace(f"CLEAN (split camel case): {stem_tokens}")
-
         if settings.split_words:
             stem_tokens = split_camel_case(stem_tokens, settings.match_case_list)
             pp.trace(f"CLEAN (split words): {stem_tokens}")

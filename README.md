@@ -88,7 +88,7 @@ $ neatfile config --create
 ✅ Success: User config file created: ~/.config/neatfile/config.toml
 ```
 
-Clean all text files in a directory
+Clean all text files in a directory (with `split_words = true` in the config file)
 
 ```console
 $ neatfile clean *.txt
