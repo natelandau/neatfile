@@ -33,6 +33,33 @@ def match_case(tokens: list[str], match_case_list: tuple[str, ...] = ()) -> list
     return result
 
 
+def _split_on_case_boundaries(word: str) -> list[str]:
+    """Split a single word before each uppercase letter that starts a new camelCase segment.
+
+    A boundary sits before an uppercase letter that follows a lowercase letter or digit, or that ends an uppercase run and is followed by a lowercase letter (so 'HTMLParser' becomes ['HTML', 'Parser']). Character-level checks are used instead of a regex because the re module has no Unicode-aware uppercase class.
+
+    Args:
+        word (str): The word to split.
+
+    Returns:
+        list[str]: The camelCase segments, or the whole word when it has no boundaries.
+    """
+    words: list[str] = []
+    current = ""
+    for i, char in enumerate(word):
+        prev = word[i - 1] if i else ""
+        nxt = word[i + 1] if i + 1 < len(word) else ""
+        starts_segment = char.isupper() and (
+            prev.islower() or prev.isdigit() or (prev.isupper() and nxt.islower())
+        )
+        if current and starts_segment:
+            words.append(current)
+            current = ""
+        current += char
+    words.append(current)
+    return words
+
+
 def split_camel_case(string_list: list[str], match_case_list: tuple[str, ...] = ()) -> list[str]:
     """Split strings containing camelCase words into separate words.
 
@@ -55,9 +82,7 @@ def split_camel_case(string_list: list[str], match_case_list: tuple[str, ...] = 
             result.append(item)
             continue
 
-        words = re.findall(
-            r"[A-Z]{2,}(?=[A-Z][a-z]+|$|[^a-zA-Z])|[A-Z]?[a-z]+|[A-Z](?=[^A-Z]|$)", item
-        )
+        words = _split_on_case_boundaries(item)
 
         if len(words) > 1:
             result.extend(words)
@@ -80,7 +105,7 @@ def tokenize_string(
     Returns:
         list[str]: A list of non-empty tokens extracted from the input string.
     """
-    tokens = re.findall(r"[a-zA-Z0-9]+|[^a-zA-Z0-9]", string)
+    tokens = re.findall(r"[^\W_]+|[\W_]", string)
     return [token for token in tokens if token]
 
 
@@ -95,7 +120,7 @@ def strip_special_chars(tokens: list[str]) -> list[str]:
     Returns:
         list[str]: List of processed strings with special characters removed.
     """
-    parsed_tokens = [re.sub(r"[^[a-zA-Z0-9]", "", token).strip() for token in tokens if token]
+    parsed_tokens = [re.sub(r"[\W_]", "", token).strip() for token in tokens if token]
     return [token for token in parsed_tokens if token]
 
 

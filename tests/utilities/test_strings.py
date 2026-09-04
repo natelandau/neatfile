@@ -45,6 +45,13 @@ def test_match_case(
         (["fooBarBaz"], (), ["foo", "Bar", "Baz"]),
         (["fooBarBaz"], ("fooBarBaz",), ["fooBarBaz"]),
         (["fooBarBaz", "CEO"], ("BarBaz",), ["foo", "Bar", "Baz", "CEO"]),
+        (
+            ["caféMenü", "Ñandú", "日本語", "ÉCOLE"],
+            (),
+            ["café", "Menü", "Ñandú", "日本語", "ÉCOLE"],
+        ),
+        (["ÉcoleÑandú", "HTMLÜbung"], (), ["École", "Ñandú", "HTML", "Übung"]),
+        (["b9ar", "mp3Player", "fooBAR"], (), ["b9ar", "mp3", "Player", "foo", "BAR"]),
     ],
 )
 def test_split_camel_case(
@@ -66,6 +73,7 @@ def test_split_camel_case(
             ["-", "-", "-", "99", "_", " ", "_", "9foo", "-", "b9ar", "_", "baz9", " ", "9f9oo9"],
         ),
         ("123 a 456 B 789 c", ["123", " ", "a", " ", "456", " ", "B", " ", "789", " ", "c"]),
+        ("café_menü 日本語-Ñandú", ["café", "_", "menü", " ", "日本語", "-", "Ñandú"]),
     ],
 )
 def test_tokenize_string(input_string: str, expected: list[str]) -> None:
@@ -78,6 +86,7 @@ def test_tokenize_string(input_string: str, expected: list[str]) -> None:
     [
         (["foo", " ", "bar", "-", ".", "baz_123"], ["foo", "bar", "baz123"]),
         (["%foo~!@#$%^bar", "_", "b.az:123"], ["foobar", "baz123"]),
+        (["café", "(menü)", "日本語", "Ñandú!"], ["café", "menü", "日本語", "Ñandú"]),
     ],
 )
 def test_strip_special_chars(input_tokens: list[str], expected: list[str]) -> None:

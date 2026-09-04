@@ -99,6 +99,14 @@ TODAY = datetime.now().astimezone().date().strftime("%Y-%m-%d")
             id="split-words-disabled",
         ),
         pytest.param(
+            "café menü.pdf",
+            "",
+            ["--date-format", ""],
+            {},
+            "No changes",
+            id="non-ascii-letters",
+        ),
+        pytest.param(
             "Foo&Bar.txt",
             "FOO_BAR.txt",
             ["--date-format", "", "--case", "upper"],
