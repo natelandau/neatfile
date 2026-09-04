@@ -109,4 +109,4 @@ class Folder:
                     continue
                 terms.append(line)
 
-        return {x.lower().strip() for x in terms if x}
+        return {stripped for x in terms if (stripped := x.lower().strip())}
