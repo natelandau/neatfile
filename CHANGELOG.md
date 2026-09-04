@@ -1,3 +1,32 @@
+## v5.1.0 (2026-09-04)
+
+### Feat
+
+- **sort**: replace spacy with static word embeddings (#134)
+
+### Fix
+
+- **clean**: honor overwrite_existing from the configuration file
+- **cli**: count each file once in the confirmation table total
+- **sort**: verify the similarity model download is complete
+- **sort**: skip files with no folder match instead of aborting
+- **cli**: drop the unused full_tree option from settings
+- **clean**: use file birth time for the fallback date
+- **clean**: rename files that differ only by letter case
+- **clean**: keep compound extensions like .tar.gz whole
+- **clean**: preserve non-ASCII letters in filenames
+- **clean**: make split_words gate camelCase splitting
+
+### Refactor
+
+- **folder**: derive JD name and number from the type pattern
+
+### Perf
+
+- **sort**: score every folder with one matrix product per file
+- **clean**: walk directories once when searching for files
+- **cli**: cut startup time by dropping inflect and deferring imports
+
 ## v5.0.1 (2026-06-19)
 
 ### Fix
