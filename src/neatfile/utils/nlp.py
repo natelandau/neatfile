@@ -26,6 +26,8 @@ _MODEL_FILES = (
     "special_tokens_map.json",
     "vocab.txt",
 )
+# Written after a verified download. Holds the revision so a pin change forces a fresh download.
+_SENTINEL_NAME = ".neatfile-complete"
 
 
 def model_dir() -> Path:
@@ -51,8 +53,12 @@ def ensure_model() -> Path:
         cappa.Exit: If the model is absent and the download fails.
     """
     target = model_dir()
-    # Files land one at a time, so an interrupted download can leave a partial set behind.
-    if all((target / name).exists() for name in _MODEL_FILES):
+    sentinel = target / _SENTINEL_NAME
+    if (
+        sentinel.is_file()
+        and sentinel.read_text() == MODEL_REVISION
+        and _model_files_present(target)
+    ):
         return target
 
     pp.info(f"Downloading similarity model '{MODEL_DIR_NAME}' (one-time, ~30 MB) to {target}")
@@ -67,7 +73,28 @@ def ensure_model() -> Path:
         pp.error(f"Could not download '{MODEL_REPO}' to {target}: {e}")
         raise cappa.Exit(code=1) from e
 
+    # Files land one at a time, so an interrupted download can leave missing or empty files behind.
+    if not _model_files_present(target):
+        pp.error(f"Similarity model download to {target} is incomplete.")
+        pp.error("Delete that directory to download a fresh copy.")
+        raise cappa.Exit(code=1)
+
+    sentinel.write_text(MODEL_REVISION)
     return target
+
+
+def _model_files_present(target: Path) -> bool:
+    """Return True when every model file exists and is non-empty.
+
+    Args:
+        target (Path): The model directory.
+
+    Returns:
+        bool: Whether the file set looks complete.
+    """
+    return all(
+        (target / name).is_file() and (target / name).stat().st_size > 0 for name in _MODEL_FILES
+    )
 
 
 @cache
