@@ -35,7 +35,7 @@ insert_location = "before"
 match_case_list = []
 
 # Overwrite existing files. true or false.
-# If false, unique integers will be appended to the filename.
+# If false, a backup of the original file will be created before a new file is written.
 overwrite_existing = false
 
 # Separator to use between words.

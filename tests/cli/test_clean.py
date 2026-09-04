@@ -460,3 +460,30 @@ def test_view_diff_table_counts_each_file_once(create_file, capsys, mocker):
 
     # Then: The unchanged file is counted once, not twice
     assert "Pending changes for 1 of 2 files" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    ("overwrite_existing", "expect_backup"),
+    [
+        pytest.param(False, True, id="backup-by-default"),
+        pytest.param(True, False, id="overwrite-from-config"),
+    ],
+)
+def test_overwrite_existing_setting_controls_backup(
+    create_file, capsys, overwrite_existing, expect_backup
+):
+    """Verify the overwrite_existing config value decides whether a clobbered file is backed up."""
+    # Given: A file whose cleaned name already exists
+    original = create_file("file#$%.txt")
+    create_file("file.txt", content="keep me")
+    settings.update({"overwrite_existing": overwrite_existing})
+
+    # When: Cleaning without the --overwrite flag
+    args = ["clean", "--date-format", "", str(original)]
+    with pytest.raises(cappa.Exit):
+        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+
+    # Then: A backup exists only when overwriting is off
+    backups = list(original.parent.glob("*.bak"))
+    assert bool(backups) is expect_backup
+    assert not original.exists()

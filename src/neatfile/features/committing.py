@@ -39,7 +39,7 @@ def commit_changes(file: File) -> bool:
         new_file = copy_file(
             file.path,
             file.new_path,
-            keep_backup=not settings.overwrite,
+            keep_backup=not (settings.overwrite or settings.overwrite_existing),
             console=pp.console(),
             strict=True,
         )
