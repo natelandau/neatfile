@@ -16,7 +16,6 @@
         "nclutils>=3.4.4,<4",
         "numpy>=2,<3",
         "questionary>=2.1.1,<3",
-        "regex>=2026.9.3",
         "rich>=15.0.0",
         "simplemma>=2.0,<3",
         "tzlocal>=5.4.4,<6",
