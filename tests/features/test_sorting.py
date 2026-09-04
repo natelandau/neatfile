@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from neatfile.constants import NEATFILE_IGNORE_NAME, ProjectType
+from neatfile.constants import NEATFILE_IGNORE_NAME, FolderType
 from neatfile.features.sorting import (
     MATCH_THRESHOLD,
     TOKEN_THRESHOLD_FACTOR,
@@ -38,7 +38,7 @@ def mock_folder(tmp_path: Path):
     """
     test_dir = tmp_path / "test_folder"
     test_dir.mkdir()
-    return Folder(path=test_dir, folder_type=ProjectType.FOLDER)
+    return Folder(path=test_dir, folder_type=FolderType.OTHER)
 
 
 # Tests for _calculate_token_similarity
@@ -149,7 +149,7 @@ def test_process_folder_matches_empty_folder(tmp_path: Path, mocker) -> None:
     # Given: A folder that exposes no searchable terms
     empty_dir = tmp_path / "empty_folder"
     empty_dir.mkdir()
-    empty_folder = Folder(path=empty_dir, folder_type=ProjectType.FOLDER)
+    empty_folder = Folder(path=empty_dir, folder_type=FolderType.OTHER)
     mocker.patch.object(Folder, "terms", new_callable=mocker.PropertyMock, return_value=set())
 
     # When: Processing folder matches
@@ -175,7 +175,7 @@ def test_process_folder_matches_reports_original_folder_term(tmp_path: Path) -> 
     # Given: A folder whose only term contains digits
     folder_dir = tmp_path / "invoices2024"
     folder_dir.mkdir()
-    folder = Folder(path=folder_dir, folder_type=ProjectType.FOLDER)
+    folder = Folder(path=folder_dir, folder_type=FolderType.OTHER)
 
     # When: Matching a token that only matches the stripped variant
     result = _process_folder_matches(folder, (term("invoice"),), 0.5, 1, MATCH_THRESHOLD)
@@ -191,7 +191,7 @@ def test_find_matching_folders_ignores_blank_neatfile_lines(tmp_path: Path) -> N
     folder_dir = tmp_path / "finance"
     folder_dir.mkdir()
     (folder_dir / ".neatfile").write_text("budget\n   \n", encoding="utf-8")
-    folders = [Folder(path=folder_dir, folder_type=ProjectType.FOLDER)]
+    folders = [Folder(path=folder_dir, folder_type=FolderType.OTHER)]
 
     # When: Matching a token from the .neatfile
     matches = _find_matching_folders(["budget"], folders)
@@ -208,7 +208,7 @@ def test_find_matching_folders_no_matches(tmp_path: Path) -> None:
     test_dir = tmp_path / "finance"
     test_dir.mkdir()
     filename_tokens = ["dog"]
-    folders = [Folder(path=test_dir, folder_type=ProjectType.FOLDER)]
+    folders = [Folder(path=test_dir, folder_type=FolderType.OTHER)]
 
     # When: Finding matching folders
     matches = _find_matching_folders(filename_tokens, folders)
@@ -227,8 +227,8 @@ def test_find_matching_folders_with_matches(tmp_path: Path) -> None:
 
     filename_tokens = ["test"]
     folders = [
-        Folder(path=path1, folder_type=ProjectType.FOLDER),
-        Folder(path=path2, folder_type=ProjectType.FOLDER),
+        Folder(path=path1, folder_type=FolderType.OTHER),
+        Folder(path=path2, folder_type=FolderType.OTHER),
     ]
 
     # When: Finding matching folders
@@ -255,8 +255,8 @@ def test_find_matching_folders_with_ignored_folders(tmp_path: Path) -> None:
 
     filename_tokens = ["test"]
     folders = [
-        Folder(path=path1, folder_type=ProjectType.FOLDER),
-        Folder(path=path2, folder_type=ProjectType.FOLDER),
+        Folder(path=path1, folder_type=FolderType.OTHER),
+        Folder(path=path2, folder_type=FolderType.OTHER),
     ]
 
     # When: Finding matching folders
@@ -335,7 +335,7 @@ def test_single_similar_token_carries_a_folder(tmp_path: Path) -> None:
     # Given: A folder named for a topic and a filename token related to it
     finance_dir = tmp_path / "finance"
     finance_dir.mkdir()
-    folders = [Folder(path=finance_dir, folder_type=ProjectType.FOLDER)]
+    folders = [Folder(path=finance_dir, folder_type=FolderType.OTHER)]
 
     # When: Matching a single related token
     matches = _find_matching_folders(["budget"], folders)
