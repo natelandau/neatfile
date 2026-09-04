@@ -52,7 +52,6 @@ def config_subcommand(neatfile: NeatFile) -> None:
         "dryrun": getattr(neatfile, "dryrun", False),
         "files": getattr(neatfile.command, "files", []),
         "force": getattr(neatfile.command, "force", False),
-        "full_tree": getattr(neatfile.command, "full_tree", False),
         "overwrite": getattr(neatfile.command, "overwrite", False),
         "separator": getattr(neatfile.command, "separator", None),
         "transform_case": getattr(neatfile.command, "transform_case", None),
