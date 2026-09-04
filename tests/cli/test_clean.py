@@ -444,3 +444,19 @@ def test_unique_filename_directory(create_file, tmp_path, capsys, debug):
     assert directory.exists()
     assert directory.is_file()
     assert not second.exists()
+
+
+def test_view_diff_table_counts_each_file_once(create_file, capsys, mocker):
+    """Verify the confirmation table total matches the number of files processed."""
+    # Given: Two files, only one of which needs cleaning
+    mocker.patch("neatfile.commands.Confirm.ask", return_value=True)
+    changed = create_file("file#$%.txt")
+    unchanged = create_file("clean.txt")
+
+    # When: Invoking the clean command with confirmation
+    args = ["clean", "--date-format", "", "--confirm", str(changed), str(unchanged)]
+    with pytest.raises(cappa.Exit):
+        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+
+    # Then: The unchanged file is counted once, not twice
+    assert "Pending changes for 1 of 2 files" in capsys.readouterr().out

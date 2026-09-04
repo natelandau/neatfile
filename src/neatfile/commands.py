@@ -67,9 +67,7 @@ def execute_command() -> None:
         pp.info("No changes made")
         raise cappa.Exit(code=exit_code)
 
-    if not _user_approves(
-        files_with_changes, total_files=len(files_to_process) + len(files_without_changes)
-    ):
+    if not _user_approves(files_with_changes, total_files=len(files_to_process)):
         pp.info("Changes not applied")
         raise cappa.Exit(code=exit_code)
 
