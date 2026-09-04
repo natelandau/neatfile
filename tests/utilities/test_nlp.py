@@ -4,6 +4,7 @@ from collections.abc import Generator
 from pathlib import Path
 
 import cappa
+import numpy as np
 import pytest
 from pytest_mock import MockerFixture
 
@@ -31,10 +32,10 @@ def _mark_complete(target: Path) -> None:
 def _clear_model_caches() -> Generator[None, None, None]:
     """Reset cached model state so each test observes its own environment."""
     nlp._model.cache_clear()
-    nlp._embed.cache_clear()
+    nlp._vectors.clear()
     yield
     nlp._model.cache_clear()
-    nlp._embed.cache_clear()
+    nlp._vectors.clear()
 
 
 def test_model_dir_honors_env_override(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -259,3 +260,42 @@ def test_similarity_is_symmetric_and_bounded() -> None:
     assert forward > unrelated
     assert 0.0 <= unrelated <= 1.0
     assert 0.0 <= forward <= 1.0
+
+
+def test_embed_returns_one_unit_row_per_token() -> None:
+    """Verify embed returns a unit-length row per token in input order."""
+    # When: Embedding two tokens
+    matrix = nlp.embed(("invoice", "photo"))
+
+    # Then: One row per token, each of unit length
+    assert matrix.shape == (2, nlp._model().dim)
+    assert np.linalg.norm(matrix, axis=1) == pytest.approx([1.0, 1.0])
+
+
+def test_embed_is_case_insensitive() -> None:
+    """Verify embeddings ignore case."""
+    matrix = nlp.embed(("Invoice", "invoice"))
+
+    assert matrix[0] == pytest.approx(matrix[1])
+
+
+def test_embed_empty_input_returns_empty_matrix() -> None:
+    """Verify an empty token sequence yields a zero-row matrix instead of crashing the model."""
+    matrix = nlp.embed(())
+
+    assert matrix.shape == (0, nlp._model().dim)
+
+
+def test_embed_encodes_each_new_token_set_in_one_call(mocker: MockerFixture) -> None:
+    """Verify unseen tokens are encoded together and seen tokens are served from the cache."""
+    # Given: A spy on the model's encode
+    encode = mocker.spy(nlp._model(), "encode")
+
+    # When: Embedding three tokens, then two of them again plus a new one
+    nlp.embed(("alpha", "beta", "gamma"))
+    nlp.embed(("beta", "gamma", "delta"))
+
+    # Then: Two encode calls, the second holding only the unseen token
+    assert encode.call_count == 2
+    assert encode.call_args_list[0].args[0] == ["alpha", "beta", "gamma"]
+    assert encode.call_args_list[1].args[0] == ["delta"]

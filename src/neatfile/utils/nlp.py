@@ -1,7 +1,8 @@
 """Word similarity and lemmatization backend."""
 
 import os
-from functools import cache, lru_cache
+from collections.abc import Sequence
+from functools import cache
 from pathlib import Path
 
 import cappa
@@ -116,17 +117,30 @@ def _model() -> StaticModel:
         raise cappa.Exit(code=1) from e
 
 
-@lru_cache(maxsize=4096)
-def _embed(token: str) -> np.ndarray:
-    """Embed a single lowercased token.
+# Unit-length vectors keyed by lowercased token, filled in batches by embed().
+_vectors: dict[str, np.ndarray] = {}
+
+
+def embed(tokens: Sequence[str]) -> np.ndarray:
+    """Embed tokens as unit vectors, encoding any unseen tokens in a single model call.
 
     Args:
-        token (str): Word to embed. Case is ignored.
+        tokens (Sequence[str]): Words to embed. Case is ignored.
 
     Returns:
-        np.ndarray: One-dimensional embedding vector.
+        np.ndarray: Matrix with one row per token, in input order. Rows are unit length, except for tokens the model cannot represent, which are all zeros.
     """
-    return _model().encode([token.lower()])[0]
+    lowered = [token.lower() for token in tokens]
+    missing = list(dict.fromkeys(token for token in lowered if token not in _vectors))
+    if missing:
+        raw = _model().encode(missing)
+        norms = np.linalg.norm(raw, axis=1, keepdims=True)
+        unit = np.divide(raw, norms, out=np.zeros_like(raw), where=norms != 0)
+        _vectors.update(zip(missing, unit, strict=True))
+
+    if not lowered:
+        return np.empty((0, _model().dim), dtype=np.float32)
+    return np.stack([_vectors[token] for token in lowered])
 
 
 def lemmatize(token: str) -> str:
@@ -153,10 +167,6 @@ def similarity(a: str, b: str) -> float:
     Returns:
         float: Cosine similarity clamped to the range 0.0 to 1.0.
     """
-    vec_a = _embed(a)
-    vec_b = _embed(b)
-    denominator = float(np.linalg.norm(vec_a) * np.linalg.norm(vec_b))
-    if denominator == 0.0:
-        return 0.0
-    cosine = float(np.dot(vec_a, vec_b) / denominator)
+    vec_a, vec_b = embed((a, b))
+    cosine = float(np.dot(vec_a, vec_b))
     return min(max(cosine, 0.0), 1.0)

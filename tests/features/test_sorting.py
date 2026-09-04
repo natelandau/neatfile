@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from neatfile.constants import NEATFILE_IGNORE_NAME, FolderType
@@ -10,11 +11,10 @@ from neatfile.features.sorting import (
     TOKEN_THRESHOLD_FACTOR,
     Term,
     _calculate_folder_score,
-    _calculate_token_similarity,
-    _find_best_match_for_token,
     _find_matching_folders,
-    _process_folder_matches,
+    _folder_index,
     _process_tokens_with_digits,
+    _similarity_matrix,
 )
 from neatfile.models import Folder, MatchResult
 from neatfile.utils import nlp
@@ -29,6 +29,15 @@ def term(token: str) -> Term:
     return Term(token, nlp.lemmatize(token), token)
 
 
+def pair_score(file_token: str, folder_token: str) -> float:
+    """Score one filename token against one folder token through the matrix path.
+
+    Returns:
+        float: The similarity the matcher would use for the pair.
+    """
+    return float(_similarity_matrix((term(file_token),), (term(folder_token),))[0, 0])
+
+
 @pytest.fixture
 def mock_folder(tmp_path: Path):
     """Create a mock folder for testing.
@@ -41,51 +50,90 @@ def mock_folder(tmp_path: Path):
     return Folder(path=test_dir, folder_type=FolderType.OTHER)
 
 
-# Tests for _calculate_token_similarity
-def test_calculate_token_similarity_exact_match() -> None:
-    """Verify exact lemma matches return similarity score of 1.0."""
-    # Given: Two tokens sharing a lemma
-    # When: Calculating similarity
-    similarity = _calculate_token_similarity(term("tests"), term("testing"))
-
-    # Then: Score should be 1.0 for exact match
-    assert similarity == 1.0
+# Tests for _similarity_matrix
+def test_similarity_matrix_exact_lemma_match_scores_one() -> None:
+    """Verify tokens sharing a lemma score 1.0 regardless of their embeddings."""
+    assert pair_score("tests", "testing") == 1.0
 
 
-def test_calculate_token_similarity_vector_similarity() -> None:
-    """Verify vector similarity is used when lemmas differ."""
-    # Given: Two related tokens with different lemmas
-    similarity = _calculate_token_similarity(term("photo"), term("pictures"))
-
-    # Then: Score is a real similarity, not an exact-match sentinel
-    assert 0 < similarity < 1
+def test_similarity_matrix_uses_embeddings_when_lemmas_differ() -> None:
+    """Verify related tokens with different lemmas get a real similarity, not a sentinel."""
+    assert 0 < pair_score("photo", "pictures") < 1
 
 
-# Tests for _find_best_match_for_token
-def test_find_best_match_for_token_exact_match() -> None:
-    """Verify finding best match when exact match exists."""
-    # Given: A token and list of folder tokens including an exact match
-    folder_terms = (term("other"), term("test"), term("folder"))
+def test_similarity_matrix_matches_pairwise_similarity() -> None:
+    """Verify every cell equals the single-pair similarity for the same tokens."""
+    # Given: Filename and folder terms with no shared lemmas
+    file_terms = (term("photo"), term("budget"), term("dog"))
+    folder_terms = (term("pictures"), term("finance"))
 
-    # When: Finding best match
-    best_match, score = _find_best_match_for_token(term("test"), folder_terms, 0.5)
+    # When: Scoring the whole grid at once
+    scores = _similarity_matrix(file_terms, folder_terms)
 
-    # Then: Should return exact match with score 1.0
-    assert best_match == term("test")
-    assert score == 1.0
+    # Then: Each cell is the pairwise cosine similarity
+    assert scores.shape == (3, 2)
+    for row, file_term in enumerate(file_terms):
+        for col, folder_term in enumerate(folder_terms):
+            assert scores[row, col] == pytest.approx(
+                nlp.similarity(file_term.token, folder_term.token), abs=1e-6
+            )
 
 
-def test_find_best_match_for_token_below_threshold() -> None:
-    """Verify no match is returned when nothing clears the token threshold."""
-    # Given: Unrelated folder tokens
-    folder_terms = (term("finance"), term("taxes"))
+def test_similarity_matrix_empty_file_terms() -> None:
+    """Verify an empty filename term set yields a zero-row matrix."""
+    scores = _similarity_matrix((), (term("finance"),))
 
-    # When: Finding best match for an unrelated token
-    best_match, score = _find_best_match_for_token(term("dog"), folder_terms, 0.5)
+    assert scores.shape == (0, 1)
 
-    # Then: Nothing matched
-    assert best_match is None
-    assert score == 0.0
+
+# Tests for _folder_index
+def test_folder_index_lays_out_terms_in_folder_blocks(tmp_path: Path) -> None:
+    """Verify the index keeps each folder's terms contiguous and records where each block starts."""
+    # Given: A folder with a digit term and a folder with a plain term
+    invoices = tmp_path / "invoices2024"
+    photos = tmp_path / "photos"
+    invoices.mkdir()
+    photos.mkdir()
+    folders = (
+        Folder(path=invoices, folder_type=FolderType.OTHER),
+        Folder(path=photos, folder_type=FolderType.OTHER),
+    )
+
+    # When: Building the index
+    index = _folder_index(folders)
+
+    # Then: Terms follow folder order with stripped variants inside their folder's block
+    assert [t.token for t in index.terms] == ["invoices2024", "invoices", "photos"]
+    assert index.starts.tolist() == [0, 2]
+    assert index.matrix.shape == (3, nlp._model().dim)
+    assert np.linalg.norm(index.matrix, axis=1) == pytest.approx([1.0, 1.0, 1.0])
+    assert index.folders == folders
+
+
+def test_folder_index_skips_folders_without_terms(tmp_path: Path, mocker) -> None:
+    """Verify a folder that exposes no terms is left out of the index."""
+    # Given: A folder whose terms are empty
+    empty_dir = tmp_path / "empty_folder"
+    empty_dir.mkdir()
+    mocker.patch.object(Folder, "terms", new_callable=mocker.PropertyMock, return_value=set())
+    folders = (Folder(path=empty_dir, folder_type=FolderType.OTHER),)
+
+    # When: Building the index
+    index = _folder_index(folders)
+
+    # Then: Nothing is indexed
+    assert index.folders == ()
+    assert index.terms == ()
+    assert index.matrix.shape == (0, nlp._model().dim)
+
+
+def test_folder_index_is_built_once_per_folder_set(tmp_path: Path) -> None:
+    """Verify the same folder tuple reuses the index instead of re-embedding."""
+    finance = tmp_path / "finance"
+    finance.mkdir()
+    folders = (Folder(path=finance, folder_type=FolderType.OTHER),)
+
+    assert _folder_index(folders) is _folder_index(folders)
 
 
 # Tests for _calculate_folder_score
@@ -143,46 +191,99 @@ def test_process_tokens_with_digits_with_digits() -> None:
     assert terms[1] == Term("test", "test", "test123")
 
 
-# Tests for _process_folder_matches
-def test_process_folder_matches_empty_folder(tmp_path: Path, mocker) -> None:
-    """Verify handling of empty folder terms."""
-    # Given: A folder that exposes no searchable terms
+# Tests for _find_matching_folders
+def test_find_matching_folders_skips_folder_without_terms(tmp_path: Path, mocker) -> None:
+    """Verify a folder that exposes no searchable terms is never proposed."""
+    # Given: A folder with no terms
     empty_dir = tmp_path / "empty_folder"
     empty_dir.mkdir()
-    empty_folder = Folder(path=empty_dir, folder_type=FolderType.OTHER)
     mocker.patch.object(Folder, "terms", new_callable=mocker.PropertyMock, return_value=set())
+    folders = [Folder(path=empty_dir, folder_type=FolderType.OTHER)]
 
-    # When: Processing folder matches
-    result = _process_folder_matches(empty_folder, (term("test"),), 0.5, 1, MATCH_THRESHOLD)
+    # When: Matching
+    matches = _find_matching_folders(["test"], folders)
 
-    # Then: Should return None for empty folder
-    assert result is None
-
-
-def test_process_folder_matches_good_match(mock_folder) -> None:
-    """Verify matching process for good folder match."""
-    # When: Processing folder matches for a token in the folder name
-    result = _process_folder_matches(mock_folder, (term("test"),), 0.5, 1, MATCH_THRESHOLD)
-
-    # Then: Should return MatchResult with good score
-    assert isinstance(result, MatchResult)
-    assert result.score >= MATCH_THRESHOLD
-    assert "test" in result.matched_terms
+    # Then: Nothing is proposed
+    assert matches == []
 
 
-def test_process_folder_matches_reports_original_folder_term(tmp_path: Path) -> None:
+def test_find_matching_folders_reports_matched_terms(mock_folder) -> None:
+    """Verify a matching folder carries its score and the folder terms that matched."""
+    # When: Matching a token in the folder name
+    matches = _find_matching_folders(["test"], [mock_folder])
+
+    # Then: One MatchResult above the threshold naming the matched term
+    assert len(matches) == 1
+    assert isinstance(matches[0], MatchResult)
+    assert matches[0].score >= MATCH_THRESHOLD
+    assert "test" in matches[0].matched_terms
+
+
+def test_find_matching_folders_reports_original_folder_term(tmp_path: Path) -> None:
     """Verify a match against a digit-stripped variant reports the folder's real term."""
     # Given: A folder whose only term contains digits
     folder_dir = tmp_path / "invoices2024"
     folder_dir.mkdir()
-    folder = Folder(path=folder_dir, folder_type=FolderType.OTHER)
+    folders = [Folder(path=folder_dir, folder_type=FolderType.OTHER)]
 
     # When: Matching a token that only matches the stripped variant
-    result = _process_folder_matches(folder, (term("invoice"),), 0.5, 1, MATCH_THRESHOLD)
+    matches = _find_matching_folders(["invoice"], folders)
 
     # Then: The original folder term is reported
-    assert result is not None
-    assert result.matched_terms == {"invoices2024"}
+    assert len(matches) == 1
+    assert matches[0].matched_terms == {"invoices2024"}
+
+
+def test_find_matching_folders_empty_tokens_returns_nothing(tmp_path: Path) -> None:
+    """Verify a filename with no tokens left after filtering matches no folder."""
+    finance = tmp_path / "finance"
+    finance.mkdir()
+    folders = [Folder(path=finance, folder_type=FolderType.OTHER)]
+
+    assert _find_matching_folders([], folders) == []
+
+
+def test_find_matching_folders_scores_match_pairwise_reference(tmp_path: Path) -> None:
+    """Verify the batched scorer reproduces a plain per-pair best-match computation."""
+    # Given: Several folders and a multi-token filename with a digit token
+    names = ["finance-taxes", "photos", "travel-flight", "pets", "invoices2024"]
+    folders = []
+    for name in names:
+        (tmp_path / name).mkdir()
+        folders.append(Folder(path=tmp_path / name, folder_type=FolderType.OTHER))
+    tokens = ["budget", "receipt2023", "dog", "passport"]
+    token_threshold = MATCH_THRESHOLD * TOKEN_THRESHOLD_FACTOR
+
+    # And: A reference computed one pair at a time
+    expected = {}
+    file_terms = _process_tokens_with_digits(tuple(tokens))
+    for folder in folders:
+        folder_terms = _process_tokens_with_digits(tuple(sorted(folder.terms)))
+        total, count, matched = 0.0, 0, set()
+        for file_term in file_terms:
+            best_score, best_term = 0.0, None
+            for folder_term in folder_terms:
+                score = (
+                    1.0
+                    if file_term.lemma == folder_term.lemma
+                    else nlp.similarity(file_term.token, folder_term.token)
+                )
+                if score > best_score:
+                    best_score, best_term = score, folder_term
+            if best_score > token_threshold:
+                total += best_score
+                count += 1
+                matched.add(best_term.original)
+        folder_score = _calculate_folder_score(total, count, len(tokens))
+        if folder_score >= MATCH_THRESHOLD:
+            expected[folder.path] = (float(folder_score), matched)
+
+    # When: Scoring with the batched matcher
+    matches = _find_matching_folders(tokens, folders)
+
+    # Then: Same folders, scores, and matched terms
+    assert expected, "fixture must produce at least one match"
+    assert {m.folder.path: (pytest.approx(m.score), m.matched_terms) for m in matches} == expected
 
 
 def test_find_matching_folders_ignores_blank_neatfile_lines(tmp_path: Path) -> None:
@@ -201,7 +302,6 @@ def test_find_matching_folders_ignores_blank_neatfile_lines(tmp_path: Path) -> N
     assert "" not in folders[0].terms
 
 
-# Tests for _find_matching_folders
 def test_find_matching_folders_no_matches(tmp_path: Path) -> None:
     """Verify behavior when no matching folders found."""
     # Given: Filename tokens and an unrelated folder
@@ -299,7 +399,7 @@ TOKEN_THRESHOLD = MATCH_THRESHOLD * TOKEN_THRESHOLD_FACTOR
 )
 def test_calibration_pairs_that_must_match(file_token: str, folder_token: str) -> None:
     """Verify realistic filing vocabulary clears the token threshold."""
-    score = _calculate_token_similarity(term(file_token), term(folder_token))
+    score = pair_score(file_token, folder_token)
     assert score > TOKEN_THRESHOLD, f"{file_token}/{folder_token} scored {score:.2f}"
 
 
@@ -326,7 +426,7 @@ def test_calibration_pairs_that_must_match(file_token: str, folder_token: str) -
 )
 def test_calibration_pairs_that_must_not_match(file_token: str, folder_token: str) -> None:
     """Verify unrelated vocabulary stays below the token threshold."""
-    score = _calculate_token_similarity(term(file_token), term(folder_token))
+    score = pair_score(file_token, folder_token)
     assert score <= TOKEN_THRESHOLD, f"{file_token}/{folder_token} scored {score:.2f}"
 
 

@@ -5,6 +5,7 @@ from functools import cache
 from pathlib import Path
 from typing import NamedTuple
 
+import numpy as np
 from nclutils import pp
 
 from neatfile import settings
@@ -29,77 +30,113 @@ class Term(NamedTuple):
     """The token as it appeared in the name, before any digit stripping."""
 
 
-def _calculate_token_similarity(file_term: Term, folder_term: Term) -> float:
-    """Calculate semantic similarity between two terms by comparing lemmas and embeddings.
+class FolderIndex(NamedTuple):
+    """Folder terms laid out for batched scoring."""
 
-    Compare terms first by exact lemma matching, then by vector similarity if no exact match is found.
+    folders: tuple[Folder, ...]
+    """Folders that expose at least one term, in scoring order."""
+    terms: tuple[Term, ...]
+    """Every folder's terms, concatenated so each folder occupies one contiguous block."""
+    lemmas: np.ndarray
+    """Lemma of each entry in `terms`."""
+    matrix: np.ndarray
+    """Unit embedding of each entry in `terms`, one row per term."""
+    starts: np.ndarray
+    """Offset into `terms` where each folder's block begins."""
+
+
+@cache
+def _folder_index(folders: tuple[Folder, ...]) -> FolderIndex:
+    """Prepare and embed every folder's terms once so each file is scored with one matrix product.
 
     Args:
-        file_term (Term): Term from the filename
-        folder_term (Term): Term from the folder name
+        folders (tuple[Folder, ...]): Candidate folders. Folders with no terms are dropped.
 
     Returns:
-        float: Similarity score between 0.0 and 1.0, where 1.0 is an exact match
+        FolderIndex: The concatenated terms, their embeddings, and each folder's block offset.
     """
     # Imported lazily so commands that never sort do not load the embedding stack.
     from neatfile.utils import nlp  # noqa: PLC0415
 
-    if file_term.lemma == folder_term.lemma:
-        return 1.0
+    kept: list[Folder] = []
+    terms: list[Term] = []
+    starts: list[int] = []
+    for folder in folders:
+        folder_terms = _process_tokens_with_digits(tuple(sorted(folder.terms)))
+        if not folder_terms:
+            continue
+        kept.append(folder)
+        starts.append(len(terms))
+        terms.extend(folder_terms)
 
-    return nlp.similarity(file_term.token, folder_term.token)
+    return FolderIndex(
+        folders=tuple(kept),
+        terms=tuple(terms),
+        lemmas=np.array([t.lemma for t in terms], dtype=str),
+        matrix=nlp.embed([t.token for t in terms]),
+        starts=np.array(starts, dtype=int),
+    )
 
 
-def _find_best_match_for_token(
-    file_term: Term, folder_terms: tuple[Term, ...], token_match_threshold: float
-) -> tuple[Term | None, float]:
-    """Compare a filename term against folder terms to find the best semantic match.
+def _similarity_matrix(
+    file_terms: tuple[Term, ...],
+    folder_terms: tuple[Term, ...],
+    folder_matrix: np.ndarray | None = None,
+    folder_lemmas: np.ndarray | None = None,
+) -> np.ndarray:
+    """Score every filename term against every folder term in one matrix product.
+
+    A shared lemma counts as an exact match and overrides the embedding score.
 
     Args:
-        file_term (Term): Term from the filename
-        folder_terms (tuple[Term, ...]): Terms from the folder name
-        token_match_threshold (float): Minimum similarity score required for a match
+        file_terms (tuple[Term, ...]): Terms from the filename.
+        folder_terms (tuple[Term, ...]): Terms from the folders.
+        folder_matrix (np.ndarray | None, optional): Precomputed unit embeddings of `folder_terms`. Embedded on demand when omitted.
+        folder_lemmas (np.ndarray | None, optional): Precomputed lemmas of `folder_terms`. Built on demand when omitted.
 
     Returns:
-        tuple[Term | None, float]: Best matching folder term and its similarity score, or (None, 0.0) if no match found
+        np.ndarray: Scores in the range 0.0 to 1.0, shaped (len(file_terms), len(folder_terms)).
     """
-    best_token_score = 0.0
-    best_matching_term = None
+    from neatfile.utils import nlp  # noqa: PLC0415
 
-    for folder_term in folder_terms:
-        similarity = _calculate_token_similarity(file_term, folder_term)
+    if folder_matrix is None:
+        folder_matrix = nlp.embed([t.token for t in folder_terms])
+    if folder_lemmas is None:
+        folder_lemmas = np.array([t.lemma for t in folder_terms], dtype=str)
 
-        if similarity > best_token_score:
-            best_token_score = similarity
-            best_matching_term = folder_term
+    file_matrix = nlp.embed([t.token for t in file_terms])
+    scores = np.clip(file_matrix @ folder_matrix.T, 0.0, 1.0)
 
-    if best_token_score > token_match_threshold:
-        return best_matching_term, best_token_score
-
-    return None, 0.0
+    file_lemmas = np.array([t.lemma for t in file_terms], dtype=str)
+    scores[file_lemmas[:, None] == folder_lemmas[None, :]] = 1.0
+    return scores
 
 
-def _calculate_folder_score(total_score: float, match_count: int, total_tokens: int) -> float:
+def _calculate_folder_score(
+    total_score: float | np.ndarray, match_count: int | np.ndarray, total_tokens: int
+) -> np.ndarray:
     """Calculate a weighted score balancing match quality and coverage for folder matching.
 
-    Combine average similarity score with coverage ratio to determine overall folder match score. Coverage is weighted less (10%) than average similarity (90%) to prevent longer filenames from being penalized too heavily.
+    Combine average similarity score with coverage ratio to determine overall folder match score. Coverage is weighted less (10%) than average similarity (90%) to prevent longer filenames from being penalized too heavily. Accepts one folder's numbers or arrays holding every folder's numbers.
 
     Args:
-        total_score (float): Sum of individual token match similarity scores
-        match_count (int): Number of tokens that matched above threshold
+        total_score (float | np.ndarray): Sum of individual token match similarity scores
+        match_count (int | np.ndarray): Number of tokens that matched above threshold
         total_tokens (int): Total number of tokens being matched
 
     Returns:
-        float: Combined weighted score between 0.0 and 1.0
+        np.ndarray: Combined weighted score between 0.0 and 1.0, 0.0 where nothing matched
     """
-    if match_count == 0:
-        return 0.0
-
-    avg_similarity = total_score / match_count
-    coverage = match_count / total_tokens
+    total_score = np.asarray(total_score, dtype=float)
+    match_count = np.asarray(match_count, dtype=float)
+    matched = match_count > 0
+    avg_similarity = np.divide(
+        total_score, match_count, out=np.zeros_like(total_score), where=matched
+    )
+    coverage = np.divide(match_count, total_tokens, out=np.zeros_like(total_score), where=matched)
 
     # Balance between quality of matches and quantity of matches, favoring quality
-    return avg_similarity * (0.9 + 0.1 * coverage)
+    return np.where(matched, avg_similarity * (0.9 + 0.1 * coverage), 0.0)
 
 
 @cache
@@ -129,63 +166,12 @@ def _process_tokens_with_digits(tokens: tuple[str, ...]) -> tuple[Term, ...]:
     return tuple(terms)
 
 
-def _process_folder_matches(
-    folder: Folder,
-    filename_terms: tuple[Term, ...],
-    token_match_threshold: float,
-    filename_token_count: int,
-    threshold: float,
-) -> MatchResult | None:
-    """Process a single folder to find matches with the filename terms.
-
-    Calculate similarity scores between filename terms and folder terms, tracking matches and computing an overall score for the folder.
-
-    Args:
-        folder (Folder): The folder to evaluate for matches
-        filename_terms (tuple[Term, ...]): Filename terms, including digit-stripped variants
-        token_match_threshold (float): Minimum similarity score for individual token matches
-        filename_token_count (int): Total number of original filename tokens
-        threshold (float): Minimum overall score required for a folder match
-
-    Returns:
-        MatchResult | None: A MatchResult if the folder matches above the threshold, None otherwise
-    """
-    folder_tokens = tuple(sorted(folder.terms))
-    if not folder_tokens:
-        return None
-
-    folder_terms = _process_tokens_with_digits(folder_tokens)
-
-    total_score = 0.0
-    match_count = 0
-    matched_terms = set()
-
-    for file_term in filename_terms:
-        best_term, score = _find_best_match_for_token(
-            file_term, folder_terms, token_match_threshold
-        )
-
-        if best_term is not None:
-            total_score += score
-            match_count += 1
-            matched_terms.add(best_term.original)
-
-    # Calculate weighted folder score based on match quality and coverage
-    folder_score = _calculate_folder_score(total_score, match_count, filename_token_count)
-
-    if folder_score >= threshold:
-        pp.trace(f"SORT: {folder.path} matched with score {folder_score} and terms {matched_terms}")
-        return MatchResult(folder, folder_score, matched_terms)
-
-    return None
-
-
 def _find_matching_folders(
     filename_tokens: list[str], folders: list["Folder"], threshold: float = MATCH_THRESHOLD
 ) -> list[MatchResult]:
     """Compare filename tokens against folder names using semantic similarity to find matching folders.
 
-    Process each filename token to calculate semantic similarity scores against folder names. Return folders that exceed the similarity threshold, sorted by match quality.
+    Score every filename term against every folder term in one matrix product, keep each filename term's best folder term when it clears the token threshold, and weight each folder by match quality and coverage. Return folders that exceed the similarity threshold, sorted by match quality.
 
     Args:
         filename_tokens (list[str]): Tokens extracted from the filename to match against folders
@@ -197,20 +183,33 @@ def _find_matching_folders(
     """
     token_match_threshold = threshold * TOKEN_THRESHOLD_FACTOR
 
+    index = _folder_index(tuple(folder for folder in folders if not folder.is_ignored))
     filename_terms = _process_tokens_with_digits(tuple(filename_tokens))
     pp.trace(f"SORT: filename_lemmas={[term.lemma for term in filename_terms]}")
+    if not index.folders or not filename_terms:
+        return []
 
+    scores = _similarity_matrix(filename_terms, index.terms, index.matrix, index.lemmas)
+    # Best folder term for each filename term, one column per folder
+    best = np.maximum.reduceat(scores, index.starts, axis=1)
+    matched = best > token_match_threshold
+    folder_scores = _calculate_folder_score(
+        np.where(matched, best, 0.0).sum(axis=0), matched.sum(axis=0), len(filename_tokens)
+    )
+
+    block_ends = np.append(index.starts[1:], len(index.terms))
     matches = []
-    for folder in [x for x in folders if not x.is_ignored]:
-        match_result = _process_folder_matches(
-            folder,
-            filename_terms,
-            token_match_threshold,
-            len(filename_tokens),
-            threshold,
-        )
-        if match_result:
-            matches.append(match_result)
+    for folder_pos in np.flatnonzero(folder_scores >= threshold):
+        folder = index.folders[folder_pos]
+        block = slice(index.starts[folder_pos], block_ends[folder_pos])
+        # argmax picks the first of equal scores, so earlier folder terms win ties
+        best_terms = scores[:, block].argmax(axis=1) + block.start
+        matched_terms = {
+            index.terms[term_pos].original for term_pos in best_terms[matched[:, folder_pos]]
+        }
+        folder_score = float(folder_scores[folder_pos])
+        pp.trace(f"SORT: {folder.path} matched with score {folder_score} and terms {matched_terms}")
+        matches.append(MatchResult(folder, folder_score, matched_terms))
 
     matches.sort(key=lambda x: x.score, reverse=True)
     return matches
