@@ -16,3 +16,6 @@ tmp/
 dist/
 *_cache/
 __pycache__/
+
+# Local git worktrees
+.worktrees/

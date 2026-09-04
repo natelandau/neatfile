@@ -54,7 +54,7 @@ What's the problem here?
 
 ## Installation
 
-neatfile requires python 3.12 or higher.
+neatfile requires Python 3.12 to 3.15.
 
 ```bash
 # With uv
@@ -65,7 +65,7 @@ python -m pip install --user neatfile
 ```
 
 > [!NOTE]\
->  The first time you run neatfile, it will download a ~35mb English language model (`en_core_web_md`) used for vector matching between filenames and directory names. Subsequent runs load the cached model immediately.
+> The first time you run `neatfile sort`, it downloads a ~30 MB word-embedding model (`potion-base-8M`) used to match terms in filenames against directory names. The model is stored in `$XDG_DATA_HOME/neatfile/models` (default `~/.local/share/neatfile/models`) and is reused by every later run, including after upgrades. Set `NEATFILE_MODEL_DIR` to store it elsewhere.
 
 ## Quickstart
 

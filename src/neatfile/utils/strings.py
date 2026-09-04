@@ -2,8 +2,7 @@
 
 import re
 
-from neatfile.constants import Separator, TransformCase
-from neatfile.utils.nlp import nlp
+from neatfile.constants import ENGLISH_STOPWORDS, Separator, TransformCase
 
 
 def match_case(tokens: list[str], match_case_list: tuple[str, ...] = ()) -> list[str]:
@@ -103,7 +102,7 @@ def strip_special_chars(tokens: list[str]) -> list[str]:
 def strip_stopwords(tokens: list[str], stopwords: tuple[str, ...] = ()) -> list[str]:
     """Remove common English stopwords and any additional specified stopwords from a list of tokens.
 
-    Process the input string by removing both standard English stopwords (using spaCy's default list) and any custom stopwords provided. Maintain word boundaries and case-insensitive matching.
+    Process the input string by removing both standard English stopwords (using the bundled English list) and any custom stopwords provided. Maintain word boundaries and case-insensitive matching.
 
     Args:
         tokens (list[str]): List of tokens to process and remove stopwords from.
@@ -112,9 +111,9 @@ def strip_stopwords(tokens: list[str], stopwords: tuple[str, ...] = ()) -> list[
     Returns:
         list[str]: List of tokens with stopwords removed and excess whitespace/separators stripped.
     """
-    spacy_stopwords = nlp.Defaults.stop_words | {x.lower() for x in stopwords}
+    all_stopwords = ENGLISH_STOPWORDS | {x.lower() for x in stopwords}
 
-    return [token for token in tokens if token.lower() not in spacy_stopwords]
+    return [token for token in tokens if token.lower() not in all_stopwords]
 
 
 def transform_case(tokens: list[str], transform_case: TransformCase) -> list[str]:

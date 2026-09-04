@@ -1,5 +1,6 @@
 """Shared fixtures for tests."""
 
+import os
 import tomllib
 from collections.abc import Callable
 from pathlib import Path
@@ -10,6 +11,11 @@ from pytest_mock import MockerFixture
 
 from neatfile import settings
 from neatfile.constants import DEFAULT_CONFIG_PATH, DateFirst
+
+# Anchor the test model to the repo so pytest launched from any cwd reuses one download.
+os.environ.setdefault(
+    "NEATFILE_MODEL_DIR", str(Path(__file__).resolve().parent.parent / ".cache" / "models")
+)
 
 
 @pytest.fixture(autouse=True)
