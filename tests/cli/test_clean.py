@@ -107,6 +107,14 @@ TODAY = datetime.now().astimezone().date().strftime("%Y-%m-%d")
             id="non-ascii-letters",
         ),
         pytest.param(
+            "big_archive.TAR.GZ",
+            "big archive.tar.gz",
+            ["--date-format", ""],
+            {"separator": "space"},
+            "big_archive.TAR.GZ -> big archive.tar.gz",
+            id="compound-extension",
+        ),
+        pytest.param(
             "Foo&Bar.txt",
             "FOO_BAR.txt",
             ["--date-format", "", "--case", "upper"],

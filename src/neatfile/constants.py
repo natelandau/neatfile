@@ -22,6 +22,32 @@ VERSION = "5.0.1"
 ALWAYS_IGNORE_FILES_REGEXES = [r"\.DS_Store$", r"\.neatfile$", r"\.stignore$", r"__pycache__"]
 NEATFILE_NAME = ".neatfile"
 NEATFILE_IGNORE_NAME = ".neatfileignore"
+# Multi-part extensions kept whole so the stem excludes them. Matched case-insensitively.
+COMPOUND_EXTENSIONS = (
+    ".tar.gz",
+    ".tar.bz2",
+    ".tar.xz",
+    ".tar.zst",
+    ".tar.lz",
+    ".tar.lzma",
+    ".tar.z",
+    ".d.ts",
+    ".d.mts",
+    ".d.cts",
+    ".min.js",
+    ".min.css",
+    ".min.mjs",
+    ".spec.ts",
+    ".spec.js",
+    ".spec.tsx",
+    ".spec.jsx",
+    ".test.ts",
+    ".test.js",
+    ".test.tsx",
+    ".test.jsx",
+    ".user.js",
+    ".user.css",
+)
 # English stopword list from spaCy (MIT license), bundled so filename cleaning needs no model.
 _CURLY_QUOTE_CLITICS: frozenset[str] = frozenset(
     {

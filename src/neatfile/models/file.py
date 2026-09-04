@@ -3,8 +3,27 @@
 import difflib
 from pathlib import Path
 
-from neatfile.constants import Separator
+from neatfile.constants import COMPOUND_EXTENSIONS, Separator
 from neatfile.utils.strings import guess_separator
+
+
+def _split_extension(name: str) -> tuple[str, str]:
+    """Split a filename into stem and extension, keeping compound extensions whole.
+
+    Args:
+        name (str): The filename to split.
+
+    Returns:
+        tuple[str, str]: The stem and the extension, where the extension keeps its original case.
+    """
+    lowered = name.lower()
+    for ext in COMPOUND_EXTENSIONS:
+        # Require a non-empty stem so a name like ".tar.gz" is a dotfile, not a bare extension
+        if lowered.endswith(ext) and len(name) > len(ext):
+            return name[: -len(ext)], name[-len(ext) :]
+
+    path = Path(name)
+    return path.stem, path.suffix
 
 
 class File:
@@ -13,10 +32,7 @@ class File:
     def __init__(self, path: Path):
         self.path = path
         self.name = path.name
-        # Path.stem only removes the last extension, but we need to handle multiple extensions
-        # e.g. for "file.tar.gz", Path.stem returns "file.tar" but we want "file"
-        self.stem = self.path.stem
-        self.suffix = self.path.suffix
+        self.stem, self.suffix = _split_extension(self.name)
         self.suffixes = self.path.suffixes
         self.parent = self.path.parent
 
