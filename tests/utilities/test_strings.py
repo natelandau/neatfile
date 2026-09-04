@@ -1,9 +1,17 @@
 """Test the strings utility functions."""
 
+import subprocess
+import sys
+
 import pytest
 
 from neatfile import settings
-from neatfile.constants import Separator, TransformCase
+from neatfile.constants import (
+    _ENGLISH_STOPWORDS_ASCII,
+    ENGLISH_STOPWORDS,
+    Separator,
+    TransformCase,
+)
 from neatfile.utils.strings import (
     guess_separator,
     match_case,
@@ -150,3 +158,23 @@ def test_guess_separator(input_string: str, expected: Separator | None) -> None:
     # When: Guessing the separator for the input string
     # Then: The correct separator or None is returned
     assert guess_separator(input_string) == expected
+
+
+def test_english_stopwords_matches_spacy_list() -> None:
+    """Verify the bundled stopword list is the full spaCy English list."""
+    # Then: The list has spaCy's 326 entries with no duplicates, including clitics and curly quotes
+    words = _ENGLISH_STOPWORDS_ASCII.split()
+    assert len(words) == len(set(words))
+    assert len(ENGLISH_STOPWORDS) == 326
+    assert {"the", "a", "'s", "n't", "\u2018d", "\u2019ve", "hereupon"} <= ENGLISH_STOPWORDS
+    assert all(word == word.lower() for word in ENGLISH_STOPWORDS)
+
+
+def test_strings_module_does_not_load_nlp() -> None:
+    """Verify importing string utilities never imports the similarity backend."""
+    # When: Importing strings in a fresh interpreter
+    code = "import sys, neatfile.utils.strings; sys.exit('neatfile.utils.nlp' in sys.modules)"
+    result = subprocess.run([sys.executable, "-c", code], check=False)  # noqa: S603
+
+    # Then: The nlp module was not imported
+    assert result.returncode == 0
