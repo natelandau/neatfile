@@ -168,3 +168,24 @@ def test_sort_command_single_match_folder(tmp_path, create_file, capsys, mocker,
     assert "wheres_my_qux.txt -> foo/bar/qux/wheres_my_qux.txt" in output
     assert not file.exists()
     assert (tmp_path / "project" / "foo" / "bar" / "qux" / "wheres_my_qux.txt").exists()
+
+
+def test_sort_skips_unmatched_file_and_exits_non_zero(tmp_path, create_file, capsys, debug):
+    """Verify one unmatched file does not stop the rest of the batch from being sorted."""
+    # Given: One file with a single folder match and one with none
+    matched = create_file("lazy dog.txt")
+    unmatched = create_file("no matches.txt")
+
+    # When: Sorting both in one run
+    args = ["sort", str(matched), str(unmatched), "--project", "mock_jd_project"]
+    with pytest.raises(cappa.Exit) as e:
+        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+
+    # Then: The matched file moved, the unmatched file stayed, and the run reports failure
+    stdout, stderr = capsys.readouterr()
+    assert "No matching directories found for `no matches.txt`" in stderr
+    assert "lazy dog.txt -> 40-49 dog/lazy dog.txt" in stdout
+    assert not matched.exists()
+    assert (tmp_path / "project" / "40-49 dog" / "lazy dog.txt").exists()
+    assert unmatched.exists()
+    assert e.value.code == 1

@@ -5,7 +5,6 @@ from functools import cache
 from pathlib import Path
 from typing import NamedTuple
 
-import cappa
 from nclutils import pp
 
 from neatfile import settings
@@ -240,7 +239,7 @@ def _match_by_jd_number(terms: list[str]) -> Path | None:
     return None
 
 
-def sort_file(file: File) -> Path:
+def sort_file(file: File) -> Path | None:
     """Find the best matching folder for a file based on name similarity.
 
     Process the file name into searchable tokens and match against project folders. First attempt to match by Johnny Decimal number if using a JD project. Then find matching folders based on semantic similarity between tokens.
@@ -249,10 +248,7 @@ def sort_file(file: File) -> Path:
         file (File): The file object to find a matching folder for.
 
     Returns:
-        Path: The path of the best matching folder
-
-    Raises:
-        cappa.Exit: If no matching directories are found.
+        Path | None: The path of the best matching folder, or None when no folder matches.
     """
     if jd_match := _match_by_jd_number(settings.user_terms):
         pp.trace(f"SORT: '{file.stem}' matched by jd number: {jd_match}")
@@ -267,8 +263,8 @@ def sort_file(file: File) -> Path:
     matching_dirs = _find_matching_folders(tokens_to_match, settings.project.usable_folders)
 
     if not matching_dirs:
-        pp.error(f"No matching directories found for `{file.name}`")
-        raise cappa.Exit(code=1)
+        pp.warning(f"No matching directories found for `{file.name}`")
+        return None
 
     if len(matching_dirs) > 1:
         return select_folder(
