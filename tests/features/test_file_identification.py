@@ -4,6 +4,7 @@ from pathlib import Path
 
 import cappa
 import pytest
+from nclutils import pp
 
 from neatfile import settings
 from neatfile.cli import NeatFile, config_subcommand
@@ -23,6 +24,8 @@ def mock_files(tmp_path: Path) -> Path:
         tmp_path / "two" / "three",
         tmp_path / "two" / "four",
         tmp_path / "two" / "four" / "five",
+        tmp_path / ".hidden",
+        tmp_path / "two" / ".hidden",
     ]
 
     for d in dirs:
@@ -38,11 +41,14 @@ def mock_files(tmp_path: Path) -> Path:
         tmp_path / "two" / "three" / "file1.txt",
         tmp_path / "two" / "four" / "file1.txt",
         tmp_path / "two" / "four" / "five" / "file1.txt",
+        tmp_path / ".hidden" / "file1.txt",
+        tmp_path / "two" / ".hidden" / "file1.txt",
     ]
     for file in files:
         file.touch()
 
     tmp_path.joinpath("file3.txt").symlink_to(tmp_path.joinpath("file2.txt"))
+    tmp_path.joinpath("two", "linked_dir").symlink_to(tmp_path.joinpath("one"))
 
     return tmp_path
 
@@ -154,3 +160,37 @@ def test_find_files_in_directory_path_with_depth_3(mock_files, debug):
         mock_files / "two" / "four" / "five" / "file1.txt",
         mock_files / "two" / "three" / "file1.txt",
     ]
+
+
+def test_walk_explicit_dot_directory(mock_files, debug):
+    """Verify a dot-directory named on the command line is walked even when ignore_dotfiles is true."""
+    files = find_processable_files([mock_files / ".hidden"])
+    assert files == [mock_files / ".hidden" / "file1.txt"]
+
+
+def test_prune_dot_directories_during_walk(mock_files, debug):
+    """Verify dot-directories met below the start path are skipped when ignore_dotfiles is true."""
+    settings.update({"file_search_depth": 2})
+    files = find_processable_files([mock_files / "two"])
+    assert mock_files / "two" / ".hidden" / "file1.txt" not in files
+    assert len(files) == 3
+
+
+def test_walk_dot_directories_when_dotfiles_allowed(mock_files, debug):
+    """Verify dot-directories below the start path are walked when ignore_dotfiles is false."""
+    settings.update({"file_search_depth": 2, "ignore_dotfiles": False})
+    files = find_processable_files([mock_files / "two"])
+    assert mock_files / "two" / ".hidden" / "file1.txt" in files
+    assert len(files) == 4
+
+
+def test_dont_descend_symlinked_directory(mock_files, capsys, debug):
+    """Verify a symlinked directory met during the walk is reported and not entered."""
+    settings.update({"file_search_depth": 3})
+    pp.configure(verbosity=1)
+    files = find_processable_files([mock_files / "two"])
+    _, stderr = capsys.readouterr()
+    assert "Symlink: `" in stderr
+    assert "linked_dir" in stderr
+    assert not any("linked_dir" in str(f) for f in files)
+    assert len(files) == 4

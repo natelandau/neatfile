@@ -1,5 +1,6 @@
 """Identify files which can be processed from a list of paths."""
 
+import os
 import re
 from pathlib import Path
 
@@ -29,48 +30,92 @@ def _is_ignored_file(file: Path) -> bool:
     )
 
 
-def _process_path(path: Path, files: list[Path], start_path: Path) -> None:
-    """Process a path and add any valid files to the list of processable files.
+def _display_path(path: Path) -> Path:
+    """Shorten a path for messages by making it relative to the current directory when possible.
 
-    Recursively walk through directories up to the configured project depth, evaluating each path against ignore rules. Add valid files to the provided files list.
+    Args:
+        path (Path): The path to shorten
+
+    Returns:
+        Path: The path relative to the current directory, or the original path when it lies outside it
+    """
+    try:
+        return path.relative_to(Path.cwd())
+    except ValueError:
+        return path
+
+
+def _process_file(path: Path, files: list[Path]) -> None:
+    """Add a file to the list of processable files unless it is a symlink or matches an ignore rule.
+
+    Args:
+        path (Path): The file to evaluate
+        files (list[Path]): List to store found processable files
+    """
+    if path.is_symlink():
+        pp.warning(f"Symlink: `{_display_path(path)}`")
+        return
+
+    if _is_ignored_file(path):
+        pp.debug(f"Ignored: `{_display_path(path)}`")
+        return
+
+    files.append(path.absolute())
+
+
+def _walk_directory(directory: Path, files: list[Path]) -> None:
+    """Walk a directory down to the configured search depth and collect processable files.
+
+    The ignore rules judge file names, so a directory named on the command line is always entered even when its own name would be ignored. Subdirectories met during the walk are pruned when their name matches an ignore rule or when they are symlinks.
+
+    Args:
+        directory (Path): The directory to walk
+        files (list[Path]): List to store found processable files
+    """
+    max_depth = settings.get("file_search_depth", 1)
+
+    for root, dirnames, filenames in os.walk(directory):
+        root_path = Path(root)
+        depth = len(root_path.relative_to(directory).parts) + 1  # depth of files directly in root
+
+        if depth >= max_depth:
+            dirnames.clear()
+        if depth > max_depth:  # Only when the configured depth is below 1
+            continue
+
+        # Prune in place so os.walk never enters skipped subdirectories
+        for dirname in list(dirnames):
+            subdirectory = root_path / dirname
+            if subdirectory.is_symlink():
+                pp.warning(f"Symlink: `{_display_path(subdirectory)}`")
+                dirnames.remove(dirname)
+            elif _is_ignored_file(subdirectory):
+                pp.debug(f"Ignored: `{_display_path(subdirectory)}`")
+                dirnames.remove(dirname)
+
+        for filename in filenames:
+            _process_file(root_path / filename, files)
+
+
+def _process_path(path: Path, files: list[Path]) -> None:
+    """Process a path and add any valid files to the list of processable files.
 
     Args:
         path (Path): The path to process
         files (list[Path]): List to store found processable files
-        start_path (Path): Original starting path used to calculate relative depth
 
     Raises:
         cappa.Exit: If the path does not exist
     """
-    try:
-        display_path = path.relative_to(Path.cwd())
-    except ValueError:
-        display_path = path
-
     if not path.exists():
-        pp.error(f"Not found: `{display_path}`")
+        pp.error(f"Not found: `{_display_path(path)}`")
         raise cappa.Exit(code=1)
 
-    if path.is_symlink():
-        pp.warning(f"Symlink: `{display_path}`")
+    if path.is_dir() and not path.is_symlink():
+        _walk_directory(path, files)
         return
 
-    if _is_ignored_file(path):
-        pp.debug(f"Ignored: `{display_path}`")
-        return
-
-    if path.is_file():
-        files.append(path.absolute())
-        return
-
-    if path.is_dir():
-        # Recursively walk directory tree to find all files
-        for f in path.rglob("*"):
-            # Calculate depth relative to starting path to enforce file_search_depth limit
-            depth_of_file = len(f.relative_to(start_path).parts)
-
-            if depth_of_file <= settings.get("file_search_depth", 1):
-                _process_path(path=f, files=files, start_path=start_path)
+    _process_file(path, files)
 
 
 def find_processable_files(paths: list[Path]) -> list[Path]:
@@ -96,7 +141,7 @@ def find_processable_files(paths: list[Path]) -> list[Path]:
     ):
         for path in paths:
             file_path = path.expanduser().absolute()
-            _process_path(path=file_path, files=files, start_path=file_path)
+            _process_path(path=file_path, files=files)
 
     if not files:
         pp.error("No files found. Run with `-v` to see what files are being ignored.")
