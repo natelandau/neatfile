@@ -81,13 +81,13 @@ jobs:
             id-token: write
         steps:
             - name: Download the built package
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v8
               with:
                   name: dist
                   path: dist/
 
             - name: Setup uv
-              uses: astral-sh/setup-uv@v10.0.1
+              uses: astral-sh/setup-uv@v10.2.0
 
             - name: Upload to PyPI
               run: uv publish --trusted-publishing always dist/*

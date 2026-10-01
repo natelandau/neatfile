@@ -35,7 +35,7 @@ jobs:
                   python-version: ${{ matrix.python-version }}
 
             - name: Cache similarity model
-              uses: actions/cache@v4
+              uses: actions/cache@v6
               with:
                   path: ${{ github.workspace }}/.cache/models
                   key: similarity-model-${{ hashFiles('src/neatfile/utils/nlp.py') }}
