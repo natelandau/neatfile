@@ -87,7 +87,7 @@ jobs:
                   path: dist/
 
             - name: Setup uv
-              uses: astral-sh/setup-uv@v10.2.0
+              uses: astral-sh/setup-uv@v10.3.3
 
             - name: Upload to PyPI
               run: uv publish --trusted-publishing always dist/*
