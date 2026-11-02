@@ -10,7 +10,7 @@
         "cappa>=0.33.0",
         "datefind>=0.6.0,<1",
         "dynaconf>=3.3.5,<4",
-        "huggingface-hub>=1.33.0,<2",
+        "huggingface-hub>=1.33.0,<3",
         "model2vec>=0.10.0,<1",
         "nclutils>=4.0.0,<5",
         "numpy>=2.5.4,<3",
