@@ -153,6 +153,8 @@ def transform_case(tokens: list[str], transform_case: TransformCase) -> list[str
     Returns:
         list[str]: List of transformed tokens. For camelcase, returns a single-item list with the joined string.
     """
+    if not tokens:
+        return []
     match transform_case:
         case TransformCase.LOWER:
             return [token.lower() for token in tokens]

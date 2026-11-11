@@ -132,6 +132,7 @@ def test_strip_stopwords(
         (["Foo", "BAR", "baz"], TransformCase.LOWER, ["foo", "bar", "baz"]),
         (["Foo", "BAR", "baz"], TransformCase.UPPER, ["FOO", "BAR", "BAZ"]),
         (["Foo", "BAR", "baz"], TransformCase.SENTENCE, ["Foo", "bar", "baz"]),
+        ([], TransformCase.SENTENCE, []),
         (["Foo", "BAR", "baz"], TransformCase.TITLE, ["Foo", "Bar", "Baz"]),
         (["Foo", "BAR", "baz"], TransformCase.IGNORE, ["Foo", "BAR", "baz"]),
     ],
