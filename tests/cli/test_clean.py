@@ -7,8 +7,8 @@ import cappa
 import pytest
 from cappa.base import invoke
 
-from neatfile import settings
-from neatfile.cli import NeatFile, config_subcommand
+from neatfile.cli import NO_DATE_FORMAT_MESSAGE, NeatFile, configure_output
+from neatfile.commands import NO_CHANGES_MESSAGE
 
 # Use local time to match how the `clean` command stamps filenames.
 # UTC would disagree with the app during the evening US window, when
@@ -24,7 +24,7 @@ TODAY = datetime.now().astimezone().date().strftime("%Y-%m-%d")
             "",
             ["--date-format", ""],
             {},
-            "No changes made",
+            NO_CHANGES_MESSAGE,
             id="no-changes, ignore-case",
         ),
         pytest.param(
@@ -72,7 +72,7 @@ TODAY = datetime.now().astimezone().date().strftime("%Y-%m-%d")
             "",
             ["--date-format", ""],
             {"ignore_dotfiles": False},
-            "No changes made",
+            NO_CHANGES_MESSAGE,
             id="pass-dotfiles",
         ),
         pytest.param(
@@ -183,6 +183,7 @@ TODAY = datetime.now().astimezone().date().strftime("%Y-%m-%d")
 )
 def test_clean_single_file(
     create_file,
+    write_user_config,
     input_name,
     output_name,
     setting_update,
@@ -197,11 +198,11 @@ def test_clean_single_file(
 
     # Given: Command arguments and settings are configured
     args = ["clean", *extraargs, str(filename)]
-    settings.update(setting_update)
+    write_user_config(setting_update)
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit) as e:
-        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: Command output and file changes are verified
     output = capsys.readouterr().out
@@ -233,7 +234,7 @@ def test_clean_single_file(
             "file.txt",
             ["--date-only"],
             {"date_format": ""},
-            "`date_format` is not specified",
+            NO_DATE_FORMAT_MESSAGE,
             id="fail-no-date-format",
         ),
         pytest.param(
@@ -254,6 +255,7 @@ def test_clean_single_file(
 )
 def test_clean_failure_states(
     create_file,
+    write_user_config,
     input_name,
     setting_update,
     extraargs,
@@ -267,12 +269,11 @@ def test_clean_failure_states(
 
     # Given: Command arguments and settings are configured
     args = ["clean", *extraargs, str(filename)]
-    settings.update(setting_update)
-    # debug(settings.as_dict(), "settings")
+    write_user_config(setting_update)
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit) as e:
-        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: Command output and exit code are verified
     _, stderr = capsys.readouterr()
@@ -285,7 +286,7 @@ def test_clean_failure_states(
         assert msg in stderr
 
 
-def test_clean_multiple_files(create_file, capsys, debug):
+def test_clean_multiple_files(create_file, write_user_config, capsys, debug):
     """Verify clean command processes multiple files correctly."""
     # Given: Multiple test files exist
     filenames = [
@@ -297,11 +298,11 @@ def test_clean_multiple_files(create_file, capsys, debug):
 
     # Given: Command arguments and settings are configured
     args = ["clean", "-v", *files]
-    settings.update({"separator": "dash", "date_format": "%Y-%m-%d"})
+    write_user_config({"separator": "dash", "date_format": "%Y-%m-%d"})
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit):
-        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: Command output is verified
     output = capsys.readouterr().out
@@ -323,7 +324,7 @@ def test_overwrite_file(create_file, capsys, debug):
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit):
-        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: Command output and file changes are verified
     output = capsys.readouterr().out
@@ -347,7 +348,7 @@ def test_view_diff_table_confirm_changes(create_file, capsys, mocker, debug):
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit):
-        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: Confirmation table and changes are displayed and applied
     output = capsys.readouterr().out
@@ -374,7 +375,7 @@ def test_view_diff_table_not_confirm_changes(create_file, capsys, mocker, debug)
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit):
-        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: Confirmation table displayed but no changes applied
     output = capsys.readouterr().out
@@ -398,7 +399,7 @@ def test_unique_filename_first(create_file, capsys, tmp_path, debug):
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit):
-        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: Command output is verified
     output = capsys.readouterr().out
@@ -429,7 +430,7 @@ def test_unique_filename_directory(create_file, tmp_path, capsys, debug):
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit):
-        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     backup_dir = next((path for path in tmp_path.iterdir() if path.name.endswith(".bak")), None)
 
@@ -454,7 +455,7 @@ def test_view_diff_table_counts_each_file_once(create_file, capsys, mocker):
     # When: Invoking the clean command with confirmation
     args = ["clean", "--date-format", "", "--confirm", str(changed), str(unchanged)]
     with pytest.raises(cappa.Exit):
-        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: The unchanged file is counted once, not twice
     assert "Pending changes for 1 of 2 files" in capsys.readouterr().out
@@ -468,20 +469,53 @@ def test_view_diff_table_counts_each_file_once(create_file, capsys, mocker):
     ],
 )
 def test_overwrite_existing_setting_controls_backup(
-    create_file, capsys, overwrite_existing, expect_backup
+    create_file, write_user_config, capsys, overwrite_existing, expect_backup
 ):
     """Verify the overwrite_existing config value decides whether a clobbered file is backed up."""
     # Given: A file whose cleaned name already exists
     original = create_file("file#$%.txt")
     create_file("file.txt", content="keep me")
-    settings.update({"overwrite_existing": overwrite_existing})
+    write_user_config({"overwrite_existing": overwrite_existing})
 
     # When: Cleaning without the --overwrite flag
     args = ["clean", "--date-format", "", str(original)]
     with pytest.raises(cappa.Exit):
-        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: A backup exists only when overwriting is off
     backups = list(original.parent.glob("*.bak"))
     assert bool(backups) is expect_backup
     assert not original.exists()
+
+
+def test_cli_flag_overrides_project_value(create_file):
+    """Verify a CLI flag wins over the same setting in the selected project."""
+    # Given: A project that sets the dash separator
+    file = create_file("foo bar.txt")
+
+    # When: Cleaning with a different separator on the command line
+    args = ["clean", "-p", "mock_jd_project", "--sep", "underscore", str(file)]
+    with pytest.raises(cappa.Exit) as e:
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
+
+    # Then: The file uses the separator from the flag
+    assert e.value.code == 0
+    assert (file.parent / "foo_bar.txt").exists()
+
+
+def test_invalid_env_value_exits_with_error(create_file, capsys, monkeypatch):
+    """Verify an invalid environment value stops the run with a message naming the variable."""
+    # Given: An environment variable with a separator that does not exist
+    monkeypatch.setenv("NEATFILE_SEPARATOR", "bogus")
+    file = create_file("foo bar.txt")
+
+    # When: Cleaning a file
+    with pytest.raises(cappa.Exit) as e:
+        invoke(obj=NeatFile, argv=["clean", str(file)], deps=[configure_output])
+
+    # Then: The run fails with the variable name and the allowed values, and the file is untouched
+    stderr = capsys.readouterr().err.replace("\n", " ")
+    assert e.value.code == 1
+    assert "NEATFILE_SEPARATOR" in stderr
+    assert "dash" in stderr
+    assert file.exists()

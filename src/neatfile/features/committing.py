@@ -1,16 +1,24 @@
 """Commit changes to files."""
 
 import shutil
+from pathlib import Path
 
 from nclutils import pp
 from nclutils.fs import copy_file
 
-from neatfile import settings
 from neatfile.models import File
 
 
-def commit_changes(file: File) -> bool:
-    """Commit changes to files.
+def commit_changes(
+    file: File, *, dry_run: bool, keep_backup: bool, project_path: Path | None
+) -> bool:
+    """Rename or move a file to its new name and parent, or report the change on a dry run.
+
+    Args:
+        file (File): The file with its pending name and parent.
+        dry_run (bool): Report the change without touching the file.
+        keep_backup (bool): Back up a file that the new name would overwrite.
+        project_path (Path | None): Root of the project the file moves into, used to shorten the reported path.
 
     Returns:
         bool: True if the file was committed, False if it was not
@@ -19,12 +27,12 @@ def commit_changes(file: File) -> bool:
         pp.info(f"{file.name} -> No changes")
         return False
 
-    if not file.has_new_parent:
-        msg_file_name = file.new_name
+    if file.has_new_parent and project_path is not None:
+        msg_file_name = f"{file.new_parent.relative_to(project_path)}/{file.new_name}"
     else:
-        msg_file_name = f"{file.new_parent.relative_to(settings.project.path)}/{file.new_name}"
+        msg_file_name = file.new_name
 
-    if settings.dryrun:
+    if dry_run:
         pp.dryrun(f"{file.name} -> {msg_file_name}")
         return True
 
@@ -39,7 +47,7 @@ def commit_changes(file: File) -> bool:
         new_file = copy_file(
             file.path,
             file.new_path,
-            keep_backup=not (settings.overwrite or settings.overwrite_existing),
+            keep_backup=keep_backup,
             console=pp.console(),
             strict=True,
         )

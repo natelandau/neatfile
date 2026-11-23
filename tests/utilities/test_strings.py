@@ -5,7 +5,6 @@ import sys
 
 import pytest
 
-from neatfile import settings
 from neatfile.constants import (
     _ENGLISH_STOPWORDS_ASCII,
     ENGLISH_STOPWORDS,
@@ -117,9 +116,6 @@ def test_strip_stopwords(
     input_tokens: list[str], stopwords: tuple[str, ...], expected: list[str]
 ) -> None:
     """Verify removing stopwords from token lists."""
-    # Given: Settings enabled for stopword removal
-    settings.update({"strip_stopwords": True})
-
     # When: Calling strip_stopwords with various inputs
     # Then: Stopwords are correctly removed
     assert strip_stopwords(input_tokens, stopwords=stopwords) == expected

@@ -8,9 +8,8 @@ from typing import TYPE_CHECKING, NamedTuple
 
 from nclutils import pp
 
-from neatfile import settings
 from neatfile.constants import ProjectType
-from neatfile.models import File, Folder, MatchResult
+from neatfile.models import File, Folder, MatchResult, Project
 from neatfile.utils.strings import strip_special_chars, strip_stopwords, tokenize_string
 from neatfile.views import select_folder
 
@@ -228,51 +227,56 @@ def _find_matching_folders(
     return matches
 
 
-def _match_by_jd_number(terms: list[str]) -> Path | None:
+def _match_by_jd_number(terms: tuple[str, ...], project: Project) -> Path | None:
     """Find a matching folder by looking for Johnny Decimal numbers in the provided terms.
 
     Search through the terms for strings matching JD number patterns (e.g. '12-34', '12.34', or '12'). If a match is found, return the path of the first folder with a matching JD number.
 
     Args:
-        terms (list[str]): List of terms to search for JD numbers
+        terms (tuple[str, ...]): Terms to search for JD numbers
+        project (Project): The project whose folders are searched
 
     Returns:
         Path | None: Path of the matching folder if found, None otherwise
     """
-    if settings.project.project_type != ProjectType.JD:
+    if project.project_type != ProjectType.JD:
         return None
 
     for term in terms:
         if re.match(r"^(\d{2}-\d{2}|\d{2}\.\d{2}|\d{2})$", term):
-            for folder in settings.project.usable_folders:
+            for folder in project.usable_folders:
                 if folder.number == term:
                     return folder.path
 
     return None
 
 
-def sort_file(file: File) -> Path | None:
+def sort_file(file: File, *, project: Project, user_terms: tuple[str, ...]) -> Path | None:
     """Find the best matching folder for a file based on name similarity.
 
     Process the file name into searchable tokens and match against project folders. First attempt to match by Johnny Decimal number if using a JD project. Then find matching folders based on semantic similarity between tokens.
 
     Args:
         file (File): The file object to find a matching folder for.
+        project (Project): The project whose folders are candidates.
+        user_terms (tuple[str, ...]): Extra terms to match alongside the filename.
 
     Returns:
         Path | None: The path of the best matching folder, or None when no folder matches.
     """
-    if jd_match := _match_by_jd_number(settings.user_terms):
+    if jd_match := _match_by_jd_number(terms=user_terms, project=project):
         pp.trace(f"SORT: '{file.stem}' matched by jd number: {jd_match}")
         return jd_match
 
-    tokens_to_match = tokenize_string(file.new_stem) + settings.user_terms
+    tokens_to_match = [*tokenize_string(file.new_stem), *user_terms]
     tokens_to_match = strip_special_chars(tokens_to_match)
     tokens_to_match = strip_stopwords(tokens_to_match)
 
     pp.trace(f"SORT: '{file.new_name}' tokens to match: {tokens_to_match}")
 
-    matching_dirs = _find_matching_folders(tokens_to_match, settings.project.usable_folders)
+    matching_dirs = _find_matching_folders(
+        filename_tokens=tokens_to_match, folders=project.usable_folders
+    )
 
     if not matching_dirs:
         pp.warning(f"No matching directories found for `{file.name}`")
@@ -282,6 +286,7 @@ def sort_file(file: File) -> Path | None:
         return select_folder(
             matching_dirs=matching_dirs,
             file=file,
+            project_path=project.path,
         )
 
     return matching_dirs[0].folder.path

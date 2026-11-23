@@ -47,7 +47,7 @@ def mock_folder(tmp_path: Path):
     """
     test_dir = tmp_path / "test_folder"
     test_dir.mkdir()
-    return Folder(path=test_dir, folder_type=FolderType.OTHER)
+    return Folder(path=test_dir, folder_type=FolderType.OTHER, strip_stopwords=True)
 
 
 # Tests for _similarity_matrix
@@ -95,8 +95,8 @@ def test_folder_index_lays_out_terms_in_folder_blocks(tmp_path: Path) -> None:
     invoices.mkdir()
     photos.mkdir()
     folders = (
-        Folder(path=invoices, folder_type=FolderType.OTHER),
-        Folder(path=photos, folder_type=FolderType.OTHER),
+        Folder(path=invoices, folder_type=FolderType.OTHER, strip_stopwords=True),
+        Folder(path=photos, folder_type=FolderType.OTHER, strip_stopwords=True),
     )
 
     # When: Building the index
@@ -116,7 +116,7 @@ def test_folder_index_skips_folders_without_terms(tmp_path: Path, mocker) -> Non
     empty_dir = tmp_path / "empty_folder"
     empty_dir.mkdir()
     mocker.patch.object(Folder, "terms", new_callable=mocker.PropertyMock, return_value=set())
-    folders = (Folder(path=empty_dir, folder_type=FolderType.OTHER),)
+    folders = (Folder(path=empty_dir, folder_type=FolderType.OTHER, strip_stopwords=True),)
 
     # When: Building the index
     index = _folder_index(folders)
@@ -131,7 +131,7 @@ def test_folder_index_is_built_once_per_folder_set(tmp_path: Path) -> None:
     """Verify the same folder tuple reuses the index instead of re-embedding."""
     finance = tmp_path / "finance"
     finance.mkdir()
-    folders = (Folder(path=finance, folder_type=FolderType.OTHER),)
+    folders = (Folder(path=finance, folder_type=FolderType.OTHER, strip_stopwords=True),)
 
     assert _folder_index(folders) is _folder_index(folders)
 
@@ -198,7 +198,7 @@ def test_find_matching_folders_skips_folder_without_terms(tmp_path: Path, mocker
     empty_dir = tmp_path / "empty_folder"
     empty_dir.mkdir()
     mocker.patch.object(Folder, "terms", new_callable=mocker.PropertyMock, return_value=set())
-    folders = [Folder(path=empty_dir, folder_type=FolderType.OTHER)]
+    folders = [Folder(path=empty_dir, folder_type=FolderType.OTHER, strip_stopwords=True)]
 
     # When: Matching
     matches = _find_matching_folders(["test"], folders)
@@ -224,7 +224,7 @@ def test_find_matching_folders_reports_original_folder_term(tmp_path: Path) -> N
     # Given: A folder whose only term contains digits
     folder_dir = tmp_path / "invoices2024"
     folder_dir.mkdir()
-    folders = [Folder(path=folder_dir, folder_type=FolderType.OTHER)]
+    folders = [Folder(path=folder_dir, folder_type=FolderType.OTHER, strip_stopwords=True)]
 
     # When: Matching a token that only matches the stripped variant
     matches = _find_matching_folders(["invoice"], folders)
@@ -238,7 +238,7 @@ def test_find_matching_folders_empty_tokens_returns_nothing(tmp_path: Path) -> N
     """Verify a filename with no tokens left after filtering matches no folder."""
     finance = tmp_path / "finance"
     finance.mkdir()
-    folders = [Folder(path=finance, folder_type=FolderType.OTHER)]
+    folders = [Folder(path=finance, folder_type=FolderType.OTHER, strip_stopwords=True)]
 
     assert _find_matching_folders([], folders) == []
 
@@ -250,7 +250,9 @@ def test_find_matching_folders_scores_match_pairwise_reference(tmp_path: Path) -
     folders = []
     for name in names:
         (tmp_path / name).mkdir()
-        folders.append(Folder(path=tmp_path / name, folder_type=FolderType.OTHER))
+        folders.append(
+            Folder(path=tmp_path / name, folder_type=FolderType.OTHER, strip_stopwords=True)
+        )
     tokens = ["budget", "receipt2023", "dog", "passport"]
     token_threshold = MATCH_THRESHOLD * TOKEN_THRESHOLD_FACTOR
 
@@ -292,7 +294,7 @@ def test_find_matching_folders_ignores_blank_neatfile_lines(tmp_path: Path) -> N
     folder_dir = tmp_path / "finance"
     folder_dir.mkdir()
     (folder_dir / ".neatfile").write_text("budget\n   \n", encoding="utf-8")
-    folders = [Folder(path=folder_dir, folder_type=FolderType.OTHER)]
+    folders = [Folder(path=folder_dir, folder_type=FolderType.OTHER, strip_stopwords=True)]
 
     # When: Matching a token from the .neatfile
     matches = _find_matching_folders(["budget"], folders)
@@ -308,7 +310,7 @@ def test_find_matching_folders_no_matches(tmp_path: Path) -> None:
     test_dir = tmp_path / "finance"
     test_dir.mkdir()
     filename_tokens = ["dog"]
-    folders = [Folder(path=test_dir, folder_type=FolderType.OTHER)]
+    folders = [Folder(path=test_dir, folder_type=FolderType.OTHER, strip_stopwords=True)]
 
     # When: Finding matching folders
     matches = _find_matching_folders(filename_tokens, folders)
@@ -327,8 +329,8 @@ def test_find_matching_folders_with_matches(tmp_path: Path) -> None:
 
     filename_tokens = ["test"]
     folders = [
-        Folder(path=path1, folder_type=FolderType.OTHER),
-        Folder(path=path2, folder_type=FolderType.OTHER),
+        Folder(path=path1, folder_type=FolderType.OTHER, strip_stopwords=True),
+        Folder(path=path2, folder_type=FolderType.OTHER, strip_stopwords=True),
     ]
 
     # When: Finding matching folders
@@ -355,8 +357,8 @@ def test_find_matching_folders_with_ignored_folders(tmp_path: Path) -> None:
 
     filename_tokens = ["test"]
     folders = [
-        Folder(path=path1, folder_type=FolderType.OTHER),
-        Folder(path=path2, folder_type=FolderType.OTHER),
+        Folder(path=path1, folder_type=FolderType.OTHER, strip_stopwords=True),
+        Folder(path=path2, folder_type=FolderType.OTHER, strip_stopwords=True),
     ]
 
     # When: Finding matching folders
@@ -435,7 +437,7 @@ def test_single_similar_token_carries_a_folder(tmp_path: Path) -> None:
     # Given: A folder named for a topic and a filename token related to it
     finance_dir = tmp_path / "finance"
     finance_dir.mkdir()
-    folders = [Folder(path=finance_dir, folder_type=FolderType.OTHER)]
+    folders = [Folder(path=finance_dir, folder_type=FolderType.OTHER, strip_stopwords=True)]
 
     # When: Matching a single related token
     matches = _find_matching_folders(["budget"], folders)

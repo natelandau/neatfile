@@ -4,7 +4,8 @@ import cappa
 import pytest
 from cappa.base import invoke
 
-from neatfile.cli import NeatFile, config_subcommand
+from neatfile.cli import TREE_NO_PROJECT_MESSAGE, NeatFile, configure_output
+from neatfile.config import PROJECT_NOT_FOUND_MESSAGE
 
 
 def test_jd_tree(debug, capsys):
@@ -13,7 +14,7 @@ def test_jd_tree(debug, capsys):
     args = ["tree", "--project", "mock_jd_project"]
 
     # When: Invoking tree command
-    invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+    invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: Output matches expected JD structure
     output = capsys.readouterr().out
@@ -63,7 +64,7 @@ def test_folder_tree(debug, capsys):
     args = ["tree", "-vv", "--project", "mock_folder_project"]
 
     # When: Invoking tree command
-    invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+    invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: Output matches expected folder structure
     output = capsys.readouterr().out
@@ -109,13 +110,13 @@ def test_tree_no_project(debug, capsys):
 
     # When: Invoking tree command
     with pytest.raises(cappa.Exit) as e:
-        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: Command fails with appropriate error message
     _, stderr = capsys.readouterr()
 
     assert e.value.code == 1
-    assert "You must specify a project name with the `--project` flag." in stderr
+    assert TREE_NO_PROJECT_MESSAGE in stderr
 
 
 def test_tree_name_not_found(debug, capsys):
@@ -125,11 +126,11 @@ def test_tree_name_not_found(debug, capsys):
 
     # When: Invoking tree command
     with pytest.raises(cappa.Exit) as e:
-        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: Command fails with appropriate error message
     _, stderr = capsys.readouterr()
     # debug(output)
 
     assert e.value.code == 1
-    assert "Project `non_existent_project` not found in the configuration file." in stderr
+    assert PROJECT_NOT_FOUND_MESSAGE.format(project_name="non_existent_project") in stderr

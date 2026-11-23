@@ -6,8 +6,7 @@ import cappa
 import pytest
 from cappa.base import invoke
 
-from neatfile import settings
-from neatfile.cli import NeatFile, config_subcommand
+from neatfile.cli import NO_DATE_FORMAT_MESSAGE, NO_PROJECT_MESSAGE, NeatFile, configure_output
 
 TODAY = datetime.now(tz=UTC).date().strftime("%Y-%m-%d")
 
@@ -26,20 +25,21 @@ TODAY = datetime.now(tz=UTC).date().strftime("%Y-%m-%d")
             "file.txt",
             ["--date-only"],
             {"date_format": ""},
-            "`date_format` is not specified",
+            NO_DATE_FORMAT_MESSAGE,
             id="fail-no-date-format",
         ),
         pytest.param(
             "file.txt",
             [],
-            {"project": None},
-            "`project` is not specified",
+            {},
+            NO_PROJECT_MESSAGE,
             id="fail-no-project",
         ),
     ],
 )
 def test_process_failure_states(
     create_file,
+    write_user_config,
     input_name,
     setting_update,
     extraargs,
@@ -53,11 +53,11 @@ def test_process_failure_states(
 
     # Given: Command arguments and settings are configured
     args = ["process", *extraargs, str(filename), "-vv"]
-    settings.update(setting_update)
+    write_user_config(setting_update)
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit) as e:
-        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: Command output and exit code are verified
     _, stderr = capsys.readouterr()
@@ -81,7 +81,7 @@ def test_process_command_match(tmp_path, create_file, capsys, mocker, debug):
     args = ["process", str(file), "--project", "mock_jd_project", "-v", "--date-format", ""]
     # args = ["tree", "--project", "mock_jd_project", "-v"]
     with pytest.raises(cappa.Exit):
-        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: File is moved to matching folder
     output = capsys.readouterr().out

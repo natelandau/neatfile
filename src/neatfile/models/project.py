@@ -1,8 +1,10 @@
 """Project models."""
 
+from __future__ import annotations
+
 import re
-from collections.abc import Generator
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import cappa
 from nclutils import pp
@@ -11,6 +13,11 @@ from rich.tree import Tree
 from neatfile.constants import NEATFILE_NAME, FolderType, ProjectType
 
 from .folder import Folder
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from neatfile.config import ProjectConfig
 
 
 class Project:
@@ -21,35 +28,61 @@ class Project:
     Args:
         name (str): The name of the project
         path (str | Path): Path to the project directory
-        depth (int, optional): Maximum folder depth to traverse. Defaults to 0.
-        project_type (ProjectType, optional): Type of project structure to use. Defaults to ProjectType.JD.
+        depth (int): Maximum folder depth to traverse.
+        project_type (ProjectType): Type of project structure to use.
+        strip_stopwords (bool): Remove stopwords from the terms taken from folder names.
     """
 
     def __init__(
         self,
         name: str,
         path: str | Path,
-        depth: int = 0,
-        project_type: ProjectType = ProjectType.JD,
+        *,
+        depth: int,
+        project_type: ProjectType,
+        strip_stopwords: bool,
     ) -> None:
         """Initialize a new project instance.
 
         Args:
             name (str): The name of the project
             path (str | Path): Path to the project directory
-            depth (int, optional): Maximum folder depth to traverse. Defaults to 0.
-            project_type (ProjectType, optional): Type of project structure to use. Defaults to ProjectType.JD.
+            depth (int): Maximum folder depth to traverse.
+            project_type (ProjectType): Type of project structure to use.
+            strip_stopwords (bool): Remove stopwords from the terms taken from folder names.
         """
         self.name = name
         self.path = self._validate_project_path(Path(path).expanduser().resolve())
         self.depth = depth
         self.project_type = project_type
+        self.strip_stopwords = strip_stopwords
 
         # Identify usable folders within the project
         self.usable_folders = (
             self._find_jd_folders()
             if self.project_type == ProjectType.JD
             else self._find_non_jd_folders()
+        )
+
+    @classmethod
+    def from_config(cls, project: ProjectConfig, *, strip_stopwords: bool) -> Project:
+        """Scan the folder tree of the project selected in the configuration.
+
+        Call this only from commands that need the folders, because scanning reads the whole tree.
+
+        Args:
+            project (ProjectConfig): The validated project settings.
+            strip_stopwords (bool): Remove stopwords from the terms taken from folder names.
+
+        Returns:
+            Project: The project with its usable folders indexed.
+        """
+        return cls(
+            name=project.name,
+            path=project.path,
+            depth=project.depth,
+            project_type=project.project_type,
+            strip_stopwords=strip_stopwords,
         )
 
     def __repr__(self) -> str:
@@ -72,7 +105,11 @@ class Project:
         def traverse_directory(directory: Path, depth: int) -> Generator[Folder, None, None]:
             for item in directory.iterdir():
                 if item.is_dir() and item.name[0] != ".":  # Exclude hidden folders
-                    yield Folder(path=item, folder_type=FolderType.OTHER)
+                    yield Folder(
+                        path=item,
+                        folder_type=FolderType.OTHER,
+                        strip_stopwords=self.strip_stopwords,
+                    )
                     if depth < self.depth:
                         yield from traverse_directory(item, depth + 1)
 
@@ -102,6 +139,7 @@ class Project:
                     folder_type=folder_type,
                     area=parent_area or item,
                     category=parent_category or item,
+                    strip_stopwords=self.strip_stopwords,
                 )
                 for item in directory.iterdir()
                 if item.is_dir() and re.match(folder_type.pattern, item.name)

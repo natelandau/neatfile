@@ -13,7 +13,7 @@ def test_read_neatfile(tmp_path) -> None:
     directory.mkdir()
     (directory / NEATFILE_NAME).write_text("koala\nfoo\n# bar")
 
-    folder = Folder(directory, FolderType.OTHER)
+    folder = Folder(directory, FolderType.OTHER, strip_stopwords=True)
     assert folder.terms == {"folder", "foo", "koala", "test"}
     assert folder.number is None
 
@@ -24,7 +24,7 @@ def test_keep_stopwords_if_empty_terms(tmp_path) -> None:
     directory = tmp_path / "the_two"
     directory.mkdir()
 
-    folder = Folder(directory, FolderType.OTHER)
+    folder = Folder(directory, FolderType.OTHER, strip_stopwords=True)
     assert folder.terms == {"the", "two"}
     assert folder.number is None
 
@@ -49,7 +49,7 @@ def test_name_and_number_strip_jd_prefix(
     directory = tmp_path / dirname
     directory.mkdir()
 
-    folder = Folder(directory, folder_type)
+    folder = Folder(directory, folder_type, strip_stopwords=True)
 
     assert folder.name == expected_name
     assert folder.number == expected_number
@@ -60,7 +60,7 @@ def test_number_is_none_when_jd_prefix_missing(tmp_path) -> None:
     directory = tmp_path / "Finance"
     directory.mkdir()
 
-    folder = Folder(directory, FolderType.AREA)
+    folder = Folder(directory, FolderType.AREA, strip_stopwords=True)
 
     assert folder.number is None
     assert folder.name == "Finance"

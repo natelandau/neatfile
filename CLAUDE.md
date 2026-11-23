@@ -19,13 +19,12 @@ Run every check through duty, not the tool directly (`pytest`, `typos`, `prek`, 
 ## Tests
 
 - Tests run in random order. To reproduce an order-dependent failure, rerun with the printed seed: `uv run duty test --randomly-seed=N`.
-- An autouse fixture in `tests/conftest.py` resets settings to `src/neatfile/default_config.toml` before each test. Replace `SettingsManager._instance` only through `monkeypatch`, so the shared instance comes back.
+- Build settings for a test with `dataclasses.replace` on the `default_config` fixture.
 - The first test run downloads the similarity model to `.cache/models` and needs network access.
 
 ## Code
 
-- `neatfile.settings` is a global Dynaconf instance with untyped attributes. Before narrowing a setting (`match`, `assert_never`), assign it to a typed local.
-- To add a setting, add it to `src/neatfile/default_config.toml`, add its `Validator` in `SettingsManager.initialize` (`src/neatfile/config.py`), and document it in the README sample configuration.
+- To add a setting: add it to `src/neatfile/default_config.toml`. In `src/neatfile/config.py`, add the field to `Config`, its converter to `_SCALAR_CONVERTERS` (or its key to `_MERGED_LIST_SETTINGS` for a list that combines global and project values), and its conversion to `_SettingResolver.build`. Document it in the README sample configuration.
 - Import cappa's functions as `from cappa.base import command, invoke`, not as `cappa.command` or `cappa.invoke`. ty resolves those names to cappa's submodules.
 
 ## Manual runs
