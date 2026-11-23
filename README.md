@@ -54,7 +54,7 @@ What's the problem here?
 
 ## Installation
 
-neatfile requires Python 3.12 to 3.15.
+neatfile requires Python 3.12 or later.
 
 ```bash
 # With uv
