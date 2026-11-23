@@ -4,9 +4,12 @@ from pathlib import Path
 
 import cappa
 from nclutils import pp
+from rich.markup import escape
 
 from neatfile import settings
 from neatfile.models import File, MatchResult
+
+FOLDER_SELECTION_NO_INPUT_MESSAGE = "Cannot choose a folder for '{file_name}' because stdin has no input. Run neatfile in an interactive terminal to choose one."
 
 STYLE = [
     ("qmark", ""),
@@ -32,7 +35,7 @@ def select_folder(matching_dirs: list[MatchResult], file: File) -> Path:
         Path: Path to the selected folder
 
     Raises:
-        cappa.Exit: If the user chooses to abort.
+        cappa.Exit: If the user chooses to abort, or if stdin has no input for the prompt.
     """
     import questionary  # noqa: PLC0415
 
@@ -70,10 +73,17 @@ def select_folder(matching_dirs: list[MatchResult], file: File) -> Path:
     )
 
     noun = "folder" if len(matching_dirs) == 1 else "folders"
-    pp.info(f"Found {len(matching_dirs)} possible {noun} for '[cyan bold]{file.name}[/]'")
-    result = questionary.select(
-        "Select a folder", choices=choices, style=questionary.Style(STYLE)
-    ).ask()
+    pp.info(
+        f"Found {len(matching_dirs)} possible {noun} for '[cyan bold]{escape(file.name)}[/]'",
+        markup=True,
+    )
+    try:
+        result = questionary.select(
+            "Select a folder", choices=choices, style=questionary.Style(STYLE)
+        ).ask()
+    except EOFError:
+        pp.error(FOLDER_SELECTION_NO_INPUT_MESSAGE.format(file_name=file.name))
+        raise cappa.Exit(code=1) from None
 
     if result is None or result == "abort":
         pp.info("Aborting...")

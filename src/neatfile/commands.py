@@ -9,6 +9,8 @@ from neatfile.features import clean_filename, commit_changes, find_processable_f
 from neatfile.models import File
 from neatfile.views import confirmation_table
 
+CONFIRMATION_NO_INPUT_MESSAGE = "Cannot confirm changes because stdin has no input. Run neatfile in an interactive terminal, pipe the answer (y or n), or add --force to skip confirmation."
+
 
 def _user_approves(files_with_changes: list[File], total_files: int) -> bool:
     """Show the pending changes and ask the user to apply them.
@@ -19,12 +21,19 @@ def _user_approves(files_with_changes: list[File], total_files: int) -> bool:
 
     Returns:
         bool: True when confirmation is not required or the user accepts.
+
+    Raises:
+        cappa.Exit: If stdin has no input for the confirmation prompt.
     """
     if not settings.confirm_changes or settings.force:
         return True
 
     pp.console().print(confirmation_table(files_with_changes, total_files=total_files))
-    return bool(Confirm.ask("Apply changes"))
+    try:
+        return bool(Confirm.ask("Apply changes"))
+    except EOFError:
+        pp.error(CONFIRMATION_NO_INPUT_MESSAGE)
+        raise cappa.Exit(code=1) from None
 
 
 def execute_command() -> None:
