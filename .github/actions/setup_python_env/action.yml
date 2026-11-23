@@ -19,7 +19,7 @@ runs:
   using: composite
   steps:
     - name: Setup uv with cache
-      uses: astral-sh/setup-uv@v10.0.1
+      uses: astral-sh/setup-uv@v10.4.0
       with:
         version: "latest"
         enable-cache: true
