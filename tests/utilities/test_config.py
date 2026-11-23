@@ -12,13 +12,10 @@ from neatfile.models import Project
 
 
 @pytest.fixture
-def reset_settings_manager():
-    """Reset SettingsManager singleton between tests."""
-    # Given: Reset the singleton instance
-    SettingsManager._instance = None
-    yield
-    # Cleanup after test
-    SettingsManager._instance = None
+def reset_settings_manager(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Start the test with no SettingsManager singleton, restoring the shared one afterward."""
+    # Other tests read the module-level singleton, so it must survive this test
+    monkeypatch.setattr(SettingsManager, "_instance", None)
 
 
 def test_initialize_creates_singleton(reset_settings_manager, debug) -> None:
