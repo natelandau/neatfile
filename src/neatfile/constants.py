@@ -4,7 +4,9 @@ import os
 from enum import Enum, StrEnum
 from pathlib import Path
 
-PACKAGE_NAME = __package__.replace("_", "-").replace(".", "-").replace(" ", "-")
+PACKAGE_NAME = (
+    __package__.replace("_", "-").replace(".", "-").replace(" ", "-") if __package__ else "neatfile"
+)
 CONFIG_DIR = Path(os.getenv("XDG_CONFIG_HOME", "~/.config")).expanduser().absolute() / PACKAGE_NAME
 DATA_DIR = Path(os.getenv("XDG_DATA_HOME", "~/.local/share")).expanduser().absolute() / PACKAGE_NAME
 STATE_DIR = (
