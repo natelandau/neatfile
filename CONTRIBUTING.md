@@ -29,8 +29,10 @@ Confirm your setup by running `which neatfile`. The output should reference your
 We use [Duty](https://pawamoy.github.io/duty/) as our task runner. Common tasks:
 
 -   `duty --list` - List all available tasks
--   `duty lint` - Run all linters
+-   `duty lint` - Run all linters, including the format check
 -   `duty test` - Run all tests
+
+Run checks with `duty`, not with `pytest`, `ruff`, `ty`, `typos`, or `prek` directly. The `duty` tasks skip a check that already passed on the same files and print `already passed on`. That message means that the check passed. If you add pytest arguments, for example `duty test -k NAME`, the tests always run.
 
 ## Manual Testing Environment
 

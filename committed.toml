@@ -1,7 +1,6 @@
 allowed_types = [
     "build",
     "bump",
-    "chore",
     "ci",
     "docs",
     "feat",

@@ -2,8 +2,7 @@
 # Find full documentation at: https://yamllint.readthedocs.io/en/stable/index.html
 extends: default
 
-ignore: |
-  .venv
+ignore-from-file: .gitignore
 
 rules:
   braces:

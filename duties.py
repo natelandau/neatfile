@@ -16,7 +16,11 @@ if TYPE_CHECKING:
 
 PY_SRC_PATHS = (Path(_) for _ in ("src/", "tests/", "duties.py", "scripts/") if Path(_).exists())
 PY_SRC_LIST = tuple(str(_) for _ in PY_SRC_PATHS)
-CI = os.environ.get("CI", "0") in {"1", "true", "yes", ""}
+CI = os.environ.get("CI", "").lower() in {"1", "true", "yes"}
+
+# Every tracked file the test suite reads; a change anywhere else leaves a passing test gate cached
+TEST_GATE_PATHS = ("src/", "tests/", "duties.py", "pyproject.toml", "uv.lock")
+TEST_REPORT_PATH = ".cache/pytest.xml"
 
 
 NOUNS = [
@@ -141,6 +145,25 @@ def pyprefix(title: str) -> str:
     return title
 
 
+def gated(
+    name: str, command: list[str], paths: tuple[str, ...] = (), junit_path: str | None = None
+) -> list[str]:
+    """Wrap a check in gate-cache so it skips when it already passed on the same file content.
+
+    Args:
+        name (str): Stable gate name. Put any input git does not track after an `@`.
+        command (list[str]): The check command to run.
+        paths (tuple[str, ...]): Git pathspecs the check reads. Empty means the whole repository.
+        junit_path (str | None): JUnit report the command writes, recorded per test in gate-cache stats.
+
+    Returns:
+        list[str]: The gate-cache command line.
+    """
+    path_args: list[str] = [arg for path in paths for arg in ("--path", path)]
+    junit_args: list[str] = ["--junit", junit_path] if junit_path else []
+    return ["gate-cache", "--name", name, *path_args, *junit_args, "--", *command]
+
+
 @duty(silent=True, post=["dev_clean"])
 def clean(ctx: Context) -> None:
     """Clean the project."""
@@ -173,36 +196,35 @@ def format(ctx: Context) -> None:  # noqa: A001
 
 
 @duty
-def mypy(ctx: Context) -> None:
-    """Check the code with mypy."""
-    os.environ["FORCE_COLOR"] = "1"
-    ctx.run(
-        tools.mypy("src/", config_file="pyproject.toml"),
-        title=pyprefix("mypy check"),
-        command="mypy --config-file pyproject.toml src/",
-    )
+def ty(ctx: Context) -> None:
+    """Type check the code with ty."""
+    # Uncaptured so CI's TY_OUTPUT_FORMAT=github annotations start their lines, which GitHub requires
+    ctx.run(["ty", "check"], title=pyprefix("ty check"), command="ty check", capture=False)
 
 
 @duty
 def typos(ctx: Context) -> None:
     """Check the code with typos."""
     ctx.run(
-        ["typos", "--config", ".typos.toml"],
+        gated(name="typos", command=["typos", "--config", ".typos.toml"]),
         title=pyprefix("typos check"),
         command="typos --config .typos.toml",
     )
 
 
-@duty(skip_if=CI, skip_reason="skip prek in CI environments")
+@duty
 def prek(ctx: Context) -> None:
     """Run prek hooks."""
+    # Other duties already run these hooks
+    skipped_hooks = "pytest,ruff-check,ruff-format,ty,typos"
+    prek_command: list[str] = ["prek", "run", "--all-files", "--show-diff-on-failure"]
     ctx.run(
-        "SKIP=mypy,pytest,ruff prek run --all-files",
+        gated(name="prek", command=["env", f"SKIP={skipped_hooks}", *prek_command]),
         title=pyprefix("prek hooks"),
     )
 
 
-@duty(pre=[ruff, mypy, typos, prek], capture=CI)
+@duty(pre=[ruff, format, ty, typos, prek], capture=CI)
 def lint(ctx: Context) -> None:
     """Run all linting duties."""
 
@@ -218,22 +240,33 @@ def update(ctx: Context) -> None:
 @duty
 def test(ctx: Context, *cli_args: str) -> None:
     """Test package and generate coverage reports."""
-    ctx.run(
-        tools.pytest(
-            "tests",
-            "src",
-            config_file="pyproject.toml",
-            color="yes",
-        ).add_args(
-            "--cov",
-            "--cov-config=pyproject.toml",
-            "--cov-report=xml",
-            "--cov-report=term",
-            *cli_args,
-        ),
-        title=pyprefix("Running tests"),
-        capture=CI,
+    pytest_command: list[str] = [
+        "pytest",
+        "tests",
+        "src",
+        "--color=yes",
+        "--config-file=pyproject.toml",
+        "--cov",
+        "--cov-config=pyproject.toml",
+        "--cov-report=xml",
+        "--cov-report=term",
+        f"--junitxml={TEST_REPORT_PATH}",
+        # Overrides the configured --exitfirst so CI reports every failure, not just the first
+        *(["--maxfail=0"] if CI else []),
+        *cli_args,
+    ]
+    # A filtered run such as `duty test -k foo` must not mark the full suite as passed
+    command: list[str] = (
+        pytest_command
+        if cli_args
+        else gated(
+            name=f"test@py{sys.version_info.major}.{sys.version_info.minor}",
+            command=pytest_command,
+            paths=TEST_GATE_PATHS,
+            junit_path=TEST_REPORT_PATH,
+        )
     )
+    ctx.run(command, title=pyprefix("Running tests"), capture=CI)
 
 
 @duty()

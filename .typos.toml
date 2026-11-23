@@ -1,17 +1,6 @@
 [default]
     locale = "en-us"
 
+    # Test fixture filenames such as "wheres_my_fox.txt"
     [default.extend-words]
-        amoungst = "amoungst"
-        ba       = "ba"
-        fo       = "fo"
-        nd       = "nd"
-        theyre   = "theyre"
-        throug   = "throug"
-        wheres   = "wheres"
-        whos     = "whos"
-        youre    = "youre"
-
-# Add words to the dictionary from the common misspellings list
-[files]
-    extend-exclude = ["*_cache", ".venv", "pyproject.toml", "src/neatfile/utils/strings.py"]
+        wheres = "wheres"
