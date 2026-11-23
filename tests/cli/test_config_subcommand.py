@@ -2,6 +2,7 @@
 
 import cappa
 import pytest
+from cappa.base import invoke
 
 from neatfile import settings
 from neatfile.cli import NeatFile, config_subcommand
@@ -12,7 +13,7 @@ def test_cli_settings_only_carry_defined_options(create_file) -> None:
     file = create_file("file.txt")
 
     with pytest.raises(cappa.Exit):
-        cappa.invoke(
+        invoke(
             obj=NeatFile,
             argv=["clean", "--date-format", "", str(file)],
             deps=[config_subcommand],

@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 import cappa
 import pytest
+from cappa.base import invoke
 
 from neatfile import settings
 from neatfile.cli import NeatFile, config_subcommand
@@ -56,7 +57,7 @@ def test_process_failure_states(
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit) as e:
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command output and exit code are verified
     _, stderr = capsys.readouterr()
@@ -80,7 +81,7 @@ def test_process_command_match(tmp_path, create_file, capsys, mocker, debug):
     args = ["process", str(file), "--project", "mock_jd_project", "-v", "--date-format", ""]
     # args = ["tree", "--project", "mock_jd_project", "-v"]
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: File is moved to matching folder
     output = capsys.readouterr().out

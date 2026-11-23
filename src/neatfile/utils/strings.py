@@ -174,26 +174,17 @@ def transform_case(tokens: list[str], transform_case: TransformCase) -> list[str
 def guess_separator(stem: str) -> Separator:
     """Analyze a string to determine the most commonly used word separator.
 
-    Count occurrences of common separator characters (space, hyphen, underscore, period) and return the most frequently used one. If no separators are found, return None.
+    Count occurrences of common separator characters (space, hyphen, underscore, period) and return the most frequently used one. Ties go to the earlier character in that list. If no separators are found, return underscore.
 
     Args:
         stem (str): The string to analyze for separators.
 
     Returns:
-        Separator | None: The most common separator found as a Separator enum value, or None if no separators are present.
+        Separator: The most common separator, or underscore if the string contains none.
     """
     separators = [" ", "-", "_", "."]
-
-    # Count occurrences of each separator
-    separator_counts = {}
-    for sep in separators:
-        count = stem.count(sep)
-        if count > 0:
-            separator_counts[sep] = count
-
-    # Return the most common separator
-    try:
-        best_guess = max(separator_counts, key=separator_counts.get)
-        return Separator(best_guess)
-    except ValueError:
+    separator_counts: dict[str, int] = {sep: stem.count(sep) for sep in separators if sep in stem}
+    if not separator_counts:
         return Separator.UNDERSCORE
+
+    return Separator(max(separator_counts, key=separator_counts.__getitem__))

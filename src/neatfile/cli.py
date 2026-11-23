@@ -7,6 +7,7 @@ from pathlib import Path  # noqa: TC003
 from typing import Annotated
 
 import cappa
+from cappa.base import command, invoke
 from nclutils import pp
 from rich.traceback import install
 
@@ -69,7 +70,7 @@ def config_subcommand(neatfile: NeatFile) -> None:
             raise cappa.Exit(code=1) from e
 
 
-@cappa.command(
+@command(
     name="neatfile",
     description="""
 
@@ -142,7 +143,7 @@ class NeatFile:
     ] = False
 
 
-@cappa.command(
+@command(
     name="clean",
     description="""\
 Perform the following transformations on a filename:
@@ -257,7 +258,7 @@ class CleanCommand:
         execute_command()
 
 
-@cappa.command(name="config")
+@command(name="config")
 class ConfigCommand:
     """View and create a user configuration file."""
 
@@ -301,7 +302,7 @@ class ConfigCommand:
             pp.info(f"User configuration file found: {USER_CONFIG_PATH}")
 
 
-@cappa.command(
+@command(
     name="process",
     description="""\
 Perform the following transformations on a filename:
@@ -437,7 +438,7 @@ class ProcessCommand:
         execute_command()
 
 
-@cappa.command(
+@command(
     name="sort",
     description="""\
 Projects must be defined in the configuration file.
@@ -511,7 +512,7 @@ class SortCommand:
         execute_command()
 
 
-@cappa.command(name="tree")
+@command(name="tree")
 class TreeCommand:
     """Print a tree representation of the project folder."""
 
@@ -535,7 +536,7 @@ def main() -> None:  # pragma: no cover
     install(show_locals=False)
 
     try:
-        cappa.invoke(obj=NeatFile, deps=[config_subcommand], completion=False)
+        invoke(obj=NeatFile, deps=[config_subcommand], completion=False)
     except KeyboardInterrupt as e:
         pp.info("Exiting...")
         raise cappa.Exit(code=1) from e

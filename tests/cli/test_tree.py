@@ -2,6 +2,7 @@
 
 import cappa
 import pytest
+from cappa.base import invoke
 
 from neatfile.cli import NeatFile, config_subcommand
 
@@ -12,7 +13,7 @@ def test_jd_tree(debug, capsys):
     args = ["tree", "--project", "mock_jd_project"]
 
     # When: Invoking tree command
-    cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+    invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Output matches expected JD structure
     output = capsys.readouterr().out
@@ -62,7 +63,7 @@ def test_folder_tree(debug, capsys):
     args = ["tree", "-vv", "--project", "mock_folder_project"]
 
     # When: Invoking tree command
-    cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+    invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Output matches expected folder structure
     output = capsys.readouterr().out
@@ -108,7 +109,7 @@ def test_tree_no_project(debug, capsys):
 
     # When: Invoking tree command
     with pytest.raises(cappa.Exit) as e:
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command fails with appropriate error message
     _, stderr = capsys.readouterr()
@@ -124,7 +125,7 @@ def test_tree_name_not_found(debug, capsys):
 
     # When: Invoking tree command
     with pytest.raises(cappa.Exit) as e:
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command fails with appropriate error message
     _, stderr = capsys.readouterr()

@@ -2,6 +2,7 @@
 
 import cappa
 import pytest
+from cappa.base import invoke
 
 from neatfile.cli import NeatFile, config_subcommand
 
@@ -14,7 +15,7 @@ def test_sort_fail_no_project(tmp_path, create_file, capsys, mocker, debug):
     # When: Running sort command without specifying a project
     args = ["sort", str(file), "-v"]
     with pytest.raises(cappa.Exit) as e:
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command fails with error and file remains in original location
     _, stderr = capsys.readouterr()
@@ -35,7 +36,7 @@ def test_sort_command_match(tmp_path, create_file, capsys, mocker, debug):
     # When: Running sort command
     args = ["sort", str(file), "--project", "mock_jd_project", "-v"]
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: File is moved to matching folder
     output = capsys.readouterr().out
@@ -52,7 +53,7 @@ def test_sort_command_jd_number(tmp_path, create_file, capsys, mocker, debug):
     # When: Running sort command with JD number term
     args = ["sort", str(file), "--project", "mock_jd_project", "--term", "11.03", "-v"]
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: File is moved to folder matching JD number
     output = capsys.readouterr().out
@@ -77,7 +78,7 @@ def test_sort_dont_match_jd_number_in_filename(tmp_path, create_file, capsys, mo
     # When: Running sort command without explicit term
     args = ["sort", str(file), "--project", "mock_jd_project", "-vv"]
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: File is moved to matching folder
     output = capsys.readouterr().out
@@ -96,7 +97,7 @@ def test_sort_no_match(tmp_path, create_file, capsys, mocker, debug):
     # When: Running sort command
     args = ["sort", str(file), "--project", "mock_jd_project", "-vv"]
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Error is shown and file remains in place
     _, stderr = capsys.readouterr()
@@ -116,7 +117,7 @@ def test_sort_command_match_term(tmp_path, create_file, capsys, mocker, debug):
     # When: Running sort command with custom term
     args = ["sort", str(file), "--project", "mock_jd_project", "-v", "--term", "koala"]
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: File is moved to folder matching term
     stdout, _ = capsys.readouterr()
@@ -138,7 +139,7 @@ def test_sort_command_single_match(tmp_path, create_file, capsys, mocker, debug)
     # When: Running sort command
     args = ["sort", str(file), "--project", "mock_jd_project", "-v"]
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: File is moved to single matching folder
     output = capsys.readouterr().out
@@ -159,7 +160,7 @@ def test_sort_command_single_match_folder(tmp_path, create_file, capsys, mocker,
     # When: Running sort command
     args = ["sort", str(file), "--project", "mock_folder_project", "-v"]
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: File is moved to single matching folder
     output = capsys.readouterr().out
@@ -179,7 +180,7 @@ def test_sort_skips_unmatched_file_and_exits_non_zero(tmp_path, create_file, cap
     # When: Sorting both in one run
     args = ["sort", str(matched), str(unmatched), "--project", "mock_jd_project"]
     with pytest.raises(cappa.Exit) as e:
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: The matched file moved, the unmatched file stayed, and the run reports failure
     stdout, stderr = capsys.readouterr()

@@ -34,13 +34,15 @@ def _add_date_to_filename(file: File, new_date: str) -> None:
         else settings.separator.value
     )
 
-    match settings.insert_location:
+    # Typed local so the type checker can prove the match is exhaustive
+    insert_location: InsertLocation = settings.insert_location
+    match insert_location:
         case InsertLocation.BEFORE:
             file.new_stem = f"{new_date}{sep}{file.new_stem}"
         case InsertLocation.AFTER:
             file.new_stem = f"{file.new_stem}{sep}{new_date}"
         case _:  # pragma: no cover
-            assert_never(settings.insert_location)
+            assert_never(insert_location)
 
 
 def _creation_timestamp(path: Path) -> float:

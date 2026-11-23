@@ -4,6 +4,7 @@ from pathlib import Path
 
 import cappa
 import pytest
+from cappa.base import invoke
 from nclutils import pp
 
 from neatfile import settings
@@ -88,7 +89,7 @@ def test_dont_find_symlink(mock_files, capsys, debug):
 
     # When: Attempting to process the symlink
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Warning is shown and no files are found
     _, stderr = capsys.readouterr()
@@ -103,7 +104,7 @@ def test_dont_find_dotfiles(mock_files, capsys, debug):
 
     # When: Attempting to process the dotfile
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: File is ignored and no files are found
     stdout, stderr = capsys.readouterr()

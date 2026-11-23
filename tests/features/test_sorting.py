@@ -270,7 +270,7 @@ def test_find_matching_folders_scores_match_pairwise_reference(tmp_path: Path) -
                 )
                 if score > best_score:
                     best_score, best_term = score, folder_term
-            if best_score > token_threshold:
+            if best_term is not None and best_score > token_threshold:
                 total += best_score
                 count += 1
                 matched.add(best_term.original)

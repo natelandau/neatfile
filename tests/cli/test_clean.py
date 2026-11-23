@@ -5,6 +5,7 @@ from pathlib import Path
 
 import cappa
 import pytest
+from cappa.base import invoke
 
 from neatfile import settings
 from neatfile.cli import NeatFile, config_subcommand
@@ -200,7 +201,7 @@ def test_clean_single_file(
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit) as e:
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command output and file changes are verified
     output = capsys.readouterr().out
@@ -271,13 +272,14 @@ def test_clean_failure_states(
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit) as e:
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command output and exit code are verified
     _, stderr = capsys.readouterr()
     # debug(stdout, "stdout")
     # debug(stderr, "stderr")
 
+    assert isinstance(e.value.code, int)
     assert e.value.code > 0
     if msg:
         assert msg in stderr
@@ -299,7 +301,7 @@ def test_clean_multiple_files(create_file, capsys, debug):
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command output is verified
     output = capsys.readouterr().out
@@ -321,7 +323,7 @@ def test_overwrite_file(create_file, capsys, debug):
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command output and file changes are verified
     output = capsys.readouterr().out
@@ -345,7 +347,7 @@ def test_view_diff_table_confirm_changes(create_file, capsys, mocker, debug):
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Confirmation table and changes are displayed and applied
     output = capsys.readouterr().out
@@ -372,7 +374,7 @@ def test_view_diff_table_not_confirm_changes(create_file, capsys, mocker, debug)
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Confirmation table displayed but no changes applied
     output = capsys.readouterr().out
@@ -396,7 +398,7 @@ def test_unique_filename_first(create_file, capsys, tmp_path, debug):
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: Command output is verified
     output = capsys.readouterr().out
@@ -427,18 +429,14 @@ def test_unique_filename_directory(create_file, tmp_path, capsys, debug):
 
     # When: Invoking the clean command
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
-    # find the backup directory
-    backup_dir = None
-    for path in tmp_path.iterdir():
-        if path.name.endswith(".bak"):
-            backup_dir = path
-            break
+    backup_dir = next((path for path in tmp_path.iterdir() if path.name.endswith(".bak")), None)
 
     # Then: Command output is verified
     output = capsys.readouterr().out
     assert "directory -> directory" in output
+    assert backup_dir is not None
     assert backup_dir.exists()
     assert backup_dir.is_dir()
     assert directory.exists()
@@ -456,7 +454,7 @@ def test_view_diff_table_counts_each_file_once(create_file, capsys, mocker):
     # When: Invoking the clean command with confirmation
     args = ["clean", "--date-format", "", "--confirm", str(changed), str(unchanged)]
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: The unchanged file is counted once, not twice
     assert "Pending changes for 1 of 2 files" in capsys.readouterr().out
@@ -481,7 +479,7 @@ def test_overwrite_existing_setting_controls_backup(
     # When: Cleaning without the --overwrite flag
     args = ["clean", "--date-format", "", str(original)]
     with pytest.raises(cappa.Exit):
-        cappa.invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
 
     # Then: A backup exists only when overwriting is off
     backups = list(original.parent.glob("*.bak"))
