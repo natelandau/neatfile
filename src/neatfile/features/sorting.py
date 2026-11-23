@@ -1,11 +1,11 @@
 """Matches filenames with project folders."""
 
+from __future__ import annotations
+
 import re
 from functools import cache
-from pathlib import Path
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
-import numpy as np
 from nclutils import pp
 
 from neatfile import settings
@@ -13,6 +13,11 @@ from neatfile.constants import ProjectType
 from neatfile.models import File, Folder, MatchResult
 from neatfile.utils.strings import strip_special_chars, strip_stopwords, tokenize_string
 from neatfile.views import select_folder
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import numpy as np
 
 # Minimum weighted folder score for a folder to be offered as a destination. Static embeddings
 # score true synonyms around 0.35 to 0.8 and unrelated words at or below 0.2.
@@ -56,6 +61,8 @@ def _folder_index(folders: tuple[Folder, ...]) -> FolderIndex:
         FolderIndex: The concatenated terms, their embeddings, and each folder's block offset.
     """
     # Imported lazily so commands that never sort do not load the embedding stack.
+    import numpy as np  # noqa: PLC0415
+
     from neatfile.utils import nlp  # noqa: PLC0415
 
     kept: list[Folder] = []
@@ -97,6 +104,8 @@ def _similarity_matrix(
     Returns:
         np.ndarray: Scores in the range 0.0 to 1.0, shaped (len(file_terms), len(folder_terms)).
     """
+    import numpy as np  # noqa: PLC0415
+
     from neatfile.utils import nlp  # noqa: PLC0415
 
     if folder_matrix is None:
@@ -127,6 +136,8 @@ def _calculate_folder_score(
     Returns:
         np.ndarray: Combined weighted score between 0.0 and 1.0, 0.0 where nothing matched
     """
+    import numpy as np  # noqa: PLC0415
+
     total_score = np.asarray(total_score, dtype=float)
     match_count = np.asarray(match_count, dtype=float)
     matched = match_count > 0
@@ -167,7 +178,7 @@ def _process_tokens_with_digits(tokens: tuple[str, ...]) -> tuple[Term, ...]:
 
 
 def _find_matching_folders(
-    filename_tokens: list[str], folders: list["Folder"], threshold: float = MATCH_THRESHOLD
+    filename_tokens: list[str], folders: list[Folder], threshold: float = MATCH_THRESHOLD
 ) -> list[MatchResult]:
     """Compare filename tokens against folder names using semantic similarity to find matching folders.
 
@@ -181,6 +192,8 @@ def _find_matching_folders(
     Returns:
         list[MatchResult]: Matching folders sorted by similarity score
     """
+    import numpy as np  # noqa: PLC0415
+
     token_match_threshold = threshold * TOKEN_THRESHOLD_FACTOR
 
     index = _folder_index(tuple(folder for folder in folders if not folder.is_ignored))
