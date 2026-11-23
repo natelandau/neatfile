@@ -18,16 +18,23 @@ permissions:
 
 jobs:
     test-python-code:
-        runs-on: ubuntu-latest
+        runs-on: ${{ matrix.os }}
+        timeout-minutes: 20
         strategy:
-            fail-fast: true
+            # Finish every version so one failure does not hide the others
+            fail-fast: false
             matrix:
+                os: [ubuntu-latest]
                 python-version: ["3.12", "3.13", "3.14", "3.15"]
+                # File creation times and case-only renames behave differently on macOS
+                include:
+                    - os: macos-latest
+                      python-version: "3.12"
         env:
             NEATFILE_MODEL_DIR: ${{ github.workspace }}/.cache/models
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v7
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
             - name: Setup Python, uv, and the package
               uses: ./.github/actions/setup_python_env
@@ -35,7 +42,7 @@ jobs:
                   python-version: ${{ matrix.python-version }}
 
             - name: Cache similarity model
-              uses: actions/cache@v6
+              uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
               with:
                   path: ${{ github.workspace }}/.cache/models
                   key: similarity-model-${{ hashFiles('src/neatfile/utils/nlp.py') }}
@@ -45,8 +52,8 @@ jobs:
               run: uv run duty test
 
             - name: Upload coverage to Codecov
-              if: ${{ inputs.upload-coverage }}
-              uses: codecov/codecov-action@v7
+              if: ${{ inputs.upload-coverage && matrix.os == 'ubuntu-latest' }}
+              uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
               with:
                   token: ${{ secrets.CODECOV_TOKEN }}
                   files: .cache/coverage.xml
@@ -54,12 +61,22 @@ jobs:
 
     lint-project:
         runs-on: ubuntu-latest
+        timeout-minutes: 10
+        env:
+            # Mark type errors on the changed lines of the pull request
+            TY_OUTPUT_FORMAT: github
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v7
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
             - name: Setup Python, uv, and the package
               uses: ./.github/actions/setup_python_env
+
+            - name: Cache prek hook environments
+              uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+              with:
+                  path: ~/.cache/prek
+                  key: prek-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
 
             - name: Run all linters
               shell: bash

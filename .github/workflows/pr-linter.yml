@@ -23,10 +23,11 @@ jobs:
             pull-requests: read # for amannn/action-semantic-pull-request to analyze PRs
             statuses: write # for amannn/action-semantic-pull-request to mark status of analyzed PR
         runs-on: ubuntu-latest
+        timeout-minutes: 5
 
         steps:
             - name: Lint Pull Request
-              uses: amannn/action-semantic-pull-request@v6
+              uses: amannn/action-semantic-pull-request@c5e23b7e584519ee15caa684cf60d056aa9f035f # v6.1.3
               with:
                   validateSingleCommit: true
                   wip: true
