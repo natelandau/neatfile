@@ -20,9 +20,9 @@ This project uses [uv](https://docs.astral.sh/uv/) for dependency management. To
 3. Navigate to the repository: `cd neatfile`
 4. Install dependencies with uv: `uv sync`
 5. Activate your virtual environment: `source .venv/bin/activate`
-6. Install pre-commit hooks: `pre-commit install --install-hooks`
+6. Install the git hooks with [prek](https://prek.j178.dev/): `prek install --prepare-hooks`
 
-Confirm your setup by running `which neatfile`. The output should reference your virtual environment (e.g., `/Users/your-username/neatfile/.venv/bin/neatfile`).
+To make sure that the setup works, run `which neatfile`. The output must show a path in your virtual environment, for example `/Users/USERNAME/neatfile/.venv/bin/neatfile`.
 
 ### Running Tasks
 
@@ -36,26 +36,29 @@ Run checks with `duty`, not with `pytest`, `ruff`, `ty`, `typos`, or `prek` dire
 
 ## Manual Testing Environment
 
-To create a ready-made testing environment:
+Use a sandbox to try the CLI without changes to your real files. Run `duty dev-setup` to create a `.development/` directory in the repository root. Git ignores this directory. It contains:
 
-1. Run `duty dev-setup`
-2. This creates a `.development/` directory in your home folder with:
-    - `dev-config.toml` - Test configuration file
-    - `projects/` - Example project directories
-    - `files/` - Example files for testing
+-   `dev-config.toml` - Test configuration file. The CLI loads it automatically when you run neatfile from this repository.
+-   `projects/` - Example project directories, `project1` and `project2`
+-   `files/` - Example files for testing
 
-Test the CLI with commands like:
+Try the CLI against the sandbox files. The `--dry-run` flag shows the changes without moving or renaming files:
 
 ```bash
-neatfile --project project1 --subdir .development/files/*.txt
+neatfile clean --dry-run .development/files/*.txt
+neatfile process --project project1 .development/files/*.txt
 ```
+
+The `process` command asks you to select a folder, so you must run it in an interactive terminal.
+
+To delete the sandbox, run `duty dev-clean`.
 
 ## Development Guidelines
 
-When developing for neatfile, please follow these guidelines:
+Obey these guidelines when you write code for neatfile:
 
 -   Write full docstrings
--   All code should use type hints
+-   Add type hints to all code
 -   Write unit tests for all new functions
 -   Write integration tests for all new features
 -   Follow the existing code style
@@ -64,8 +67,8 @@ When developing for neatfile, please follow these guidelines:
 
 1. Create a branch for your feature or fix
 2. Make your changes
-3. Ensure code passes linting with `duty lint`
-4. Ensure tests pass with `duty test`
+3. Make sure that `duty lint` passes
+4. Make sure that `duty test` passes
 5. Commit using [Commitizen](https://github.com/commitizen-tools/commitizen): `cz c`
 6. Push your branch and create a pull request
 
