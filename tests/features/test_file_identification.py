@@ -1,5 +1,7 @@
 """Tests for the identify_files controller."""
 
+import re
+from dataclasses import replace
 from pathlib import Path
 
 import cappa
@@ -7,8 +9,7 @@ import pytest
 from cappa.base import invoke
 from nclutils import pp
 
-from neatfile import settings
-from neatfile.cli import NeatFile, config_subcommand
+from neatfile.cli import NeatFile, configure_output
 from neatfile.features import find_processable_files
 
 
@@ -54,13 +55,13 @@ def mock_files(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def test_respect_ignore_file_regex(mock_files, debug):
+def test_respect_ignore_file_regex(mock_files, default_config, debug):
     """Verify ignore_file_regex is respected."""
     # Given: ignore_file_regex is configured to ignore file2.txt
-    settings.update({"ignore_file_regex": "^file2.txt$"})
+    config = replace(default_config, ignore_file_regex=re.compile("^file2.txt$"))
 
     # When: Finding processable files
-    files = find_processable_files([mock_files])
+    files = find_processable_files([mock_files], config=config, max_depth=1)
 
     # Then: Only file1.txt is found, file2.txt is ignored
     assert len(files) == 1
@@ -68,13 +69,13 @@ def test_respect_ignore_file_regex(mock_files, debug):
     assert mock_files / "file2.txt" not in files
 
 
-def test_respect_ignore_files(mock_files, debug):
+def test_respect_ignore_files(mock_files, default_config, debug):
     """Verify ignore_files is respected."""
     # Given: ignored_files is configured to ignore file2.txt
-    settings.update({"ignored_files": ["file2.txt"]})
+    config = replace(default_config, ignored_files=("file2.txt",))
 
     # When: Finding processable files
-    files = find_processable_files([mock_files])
+    files = find_processable_files([mock_files], config=config, max_depth=1)
 
     # Then: Only file1.txt is found, file2.txt is ignored
     assert len(files) == 1
@@ -89,7 +90,7 @@ def test_dont_find_symlink(mock_files, capsys, debug):
 
     # When: Attempting to process the symlink
     with pytest.raises(cappa.Exit):
-        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: Warning is shown and no files are found
     _, stderr = capsys.readouterr()
@@ -104,7 +105,7 @@ def test_dont_find_dotfiles(mock_files, capsys, debug):
 
     # When: Attempting to process the dotfile
     with pytest.raises(cappa.Exit):
-        invoke(obj=NeatFile, argv=args, deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
 
     # Then: File is ignored and no files are found
     stdout, stderr = capsys.readouterr()
@@ -112,34 +113,34 @@ def test_dont_find_dotfiles(mock_files, capsys, debug):
     assert "No files found" in stderr
 
 
-def test_find_multiple_files_in_directory_path(mock_files, debug):
+def test_find_multiple_files_in_directory_path(mock_files, default_config, debug):
     """Verify multiple files in a directory are found and processed."""
-    files = find_processable_files([mock_files / "one"])
-    # debug(settings.to_dict())
+    files = find_processable_files([mock_files / "one"], config=default_config, max_depth=1)
     # debug(mock_files / "one")
     # debug(files)
     assert len(files) == 2
     assert files == [mock_files / "one" / "file1.txt", mock_files / "one" / "file2.txt"]
 
 
-def test_find_files_in_directory_path(mock_files, debug):
+def test_find_files_in_directory_path(mock_files, default_config, debug):
     """Verify files in a directory are found and processed."""
-    files = find_processable_files([mock_files / "two"])
+    files = find_processable_files([mock_files / "two"], config=default_config, max_depth=1)
     # debug(files)
     assert len(files) == 1
     assert files == [mock_files / "two" / "file1.txt"]
 
 
-def test_exit_if_path_does_not_exist(mock_files, debug):
+def test_exit_if_path_does_not_exist(mock_files, default_config, debug):
     """Verify files in a directory are found and processed."""
     with pytest.raises(cappa.Exit):
-        find_processable_files([mock_files / "two" / "does_not_exist"])
+        find_processable_files(
+            [mock_files / "two" / "does_not_exist"], config=default_config, max_depth=1
+        )
 
 
-def test_find_files_in_directory_path_with_depth_2(mock_files, debug):
+def test_find_files_in_directory_path_with_depth_2(mock_files, default_config, debug):
     """Verify files in a directory are found and processed."""
-    settings.update({"file_search_depth": 2})
-    files = find_processable_files([mock_files / "two"])
+    files = find_processable_files([mock_files / "two"], config=default_config, max_depth=2)
     # debug(files)
     assert len(files) == 3
     assert files == [
@@ -149,10 +150,9 @@ def test_find_files_in_directory_path_with_depth_2(mock_files, debug):
     ]
 
 
-def test_find_files_in_directory_path_with_depth_3(mock_files, debug):
+def test_find_files_in_directory_path_with_depth_3(mock_files, default_config, debug):
     """Verify files in a directory are found and processed."""
-    settings.update({"file_search_depth": 3})
-    files = find_processable_files([mock_files / "two"])
+    files = find_processable_files([mock_files / "two"], config=default_config, max_depth=3)
     # debug(files)
     assert len(files) == 4
     assert files == [
@@ -163,33 +163,31 @@ def test_find_files_in_directory_path_with_depth_3(mock_files, debug):
     ]
 
 
-def test_walk_explicit_dot_directory(mock_files, debug):
+def test_walk_explicit_dot_directory(mock_files, default_config, debug):
     """Verify a dot-directory named on the command line is walked even when ignore_dotfiles is true."""
-    files = find_processable_files([mock_files / ".hidden"])
+    files = find_processable_files([mock_files / ".hidden"], config=default_config, max_depth=1)
     assert files == [mock_files / ".hidden" / "file1.txt"]
 
 
-def test_prune_dot_directories_during_walk(mock_files, debug):
+def test_prune_dot_directories_during_walk(mock_files, default_config, debug):
     """Verify dot-directories met below the start path are skipped when ignore_dotfiles is true."""
-    settings.update({"file_search_depth": 2})
-    files = find_processable_files([mock_files / "two"])
+    files = find_processable_files([mock_files / "two"], config=default_config, max_depth=2)
     assert mock_files / "two" / ".hidden" / "file1.txt" not in files
     assert len(files) == 3
 
 
-def test_walk_dot_directories_when_dotfiles_allowed(mock_files, debug):
+def test_walk_dot_directories_when_dotfiles_allowed(mock_files, default_config, debug):
     """Verify dot-directories below the start path are walked when ignore_dotfiles is false."""
-    settings.update({"file_search_depth": 2, "ignore_dotfiles": False})
-    files = find_processable_files([mock_files / "two"])
+    config = replace(default_config, ignore_dotfiles=False)
+    files = find_processable_files([mock_files / "two"], config=config, max_depth=2)
     assert mock_files / "two" / ".hidden" / "file1.txt" in files
     assert len(files) == 4
 
 
-def test_dont_descend_symlinked_directory(mock_files, capsys, debug):
+def test_dont_descend_symlinked_directory(mock_files, default_config, capsys, debug):
     """Verify a symlinked directory met during the walk is reported and not entered."""
-    settings.update({"file_search_depth": 3})
     pp.configure(verbosity=1)
-    files = find_processable_files([mock_files / "two"])
+    files = find_processable_files([mock_files / "two"], config=default_config, max_depth=3)
     _, stderr = capsys.readouterr()
     assert "Symlink: `" in stderr
     assert "linked_dir" in stderr

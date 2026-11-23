@@ -57,3 +57,11 @@ strip_stopwords = true
 # Transform the case of the filename.
 # Options: "ignore", "lower", "upper", "title", "sentence"
 transform_case = "ignore"
+
+# Time zone for the date that neatfile reads from the file creation time.
+# Use an IANA time zone name. If you do not set it, neatfile uses the local time zone.
+# tz = "America/New_York"
+
+# Extra terms that `sort` and `process` use to match files to folders.
+# A later layer replaces this list; `--term` flags replace the configured terms.
+user_terms = []

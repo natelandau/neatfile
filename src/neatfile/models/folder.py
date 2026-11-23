@@ -4,7 +4,6 @@ import functools
 import re
 from pathlib import Path
 
-from neatfile import settings
 from neatfile.constants import NEATFILE_IGNORE_NAME, NEATFILE_NAME, FolderType
 from neatfile.utils.strings import strip_special_chars, strip_stopwords, tokenize_string
 
@@ -17,6 +16,7 @@ class Folder:
         folder_type (FolderType): Type of the folder.
         area (Path | None, optional): Path to the area folder, if the folder is a category or subcategory. Defaults to None.
         category (Path | None, optional): Path to the category folder, if the folder is a subcategory. Defaults to None.
+        strip_stopwords (bool): Remove stopwords from the terms taken from the folder name.
 
     Attributes:
         path (Path): Path to the folder.
@@ -34,11 +34,14 @@ class Folder:
         folder_type: FolderType,
         area: Path | None = None,
         category: Path | None = None,
+        *,
+        strip_stopwords: bool,
     ) -> None:
         self.path = Path(path).expanduser().resolve()
         self.type = folder_type
         self.area = area
         self.category = category
+        self.strip_stopwords = strip_stopwords
         self.is_ignored = Path(self.path, NEATFILE_IGNORE_NAME).exists()
 
     def __str__(self) -> str:  # pragma: no cover
@@ -86,7 +89,7 @@ class Folder:
         terms = tokenize_string(self.name)
         terms = strip_special_chars(terms)
 
-        if settings.strip_stopwords:
+        if self.strip_stopwords:
             filtered_tokens = strip_stopwords(terms)
             # Keep original tokens if stripping stopwords would remove everything
             terms = filtered_tokens or terms

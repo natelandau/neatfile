@@ -6,7 +6,6 @@ import cappa
 from nclutils import pp
 from rich.markup import escape
 
-from neatfile import settings
 from neatfile.models import File, MatchResult
 
 FOLDER_SELECTION_NO_INPUT_MESSAGE = "Cannot choose a folder for '{file_name}' because stdin has no input. Run neatfile in an interactive terminal to choose one."
@@ -23,13 +22,13 @@ STYLE = [
 ]
 
 
-def select_folder(matching_dirs: list[MatchResult], file: File) -> Path:
-    """Select a folder from a list of choices.
+def select_folder(matching_dirs: list[MatchResult], file: File, *, project_path: Path) -> Path:
+    """Ask the user which of several matching folders should receive a file.
 
     Args:
+        matching_dirs (list[MatchResult]): Possible folders.
         file (File): File object.
-        matching_dirs (dict[Folder, list[str]]): List of possible folders.
-        project_path (Path): Path to the root of the project.
+        project_path (Path): Path to the root of the project, used to shorten folder paths.
 
     Returns:
         Path: Path to the selected folder
@@ -42,13 +41,11 @@ def select_folder(matching_dirs: list[MatchResult], file: File) -> Path:
     choices: list[dict[str, str] | questionary.Separator] = [questionary.Separator()]
 
     # Calculate the maximum length of the folder path to visually align the output
-    max_length = max(
-        len(str(obj.folder.path.relative_to(settings.project.path))) for obj in matching_dirs
-    )
+    max_length = max(len(str(obj.folder.path.relative_to(project_path))) for obj in matching_dirs)
 
     for i, obj in enumerate(matching_dirs):
         matching_terms = ", ".join(set(obj.matched_terms))
-        folder_path = str(obj.folder.path.relative_to(settings.project.path))
+        folder_path = str(obj.folder.path.relative_to(project_path))
 
         if pp.get_default().verbosity >= 1:
             display_name = (

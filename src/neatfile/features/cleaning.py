@@ -8,7 +8,7 @@ from typing import assert_never
 from datefind import find_dates
 from nclutils import pp
 
-from neatfile import settings
+from neatfile.config import Config
 from neatfile.constants import InsertLocation, Separator
 from neatfile.models import File
 from neatfile.utils.strings import (
@@ -21,21 +21,19 @@ from neatfile.utils.strings import (
 )
 
 
-def _add_date_to_filename(file: File, new_date: str) -> None:
+def _add_date_to_filename(
+    file: File, new_date: str, *, separator: Separator, insert_location: InsertLocation
+) -> None:
     """Add a formatted date to the filename stem using the configured separator and location.
 
     Args:
         file (File): The file object containing the filename and date to add.
         new_date (str): The formatted date to add to the filename.
+        separator (Separator): Separator between the date and the rest of the name.
+        insert_location (InsertLocation): Whether the date goes before or after the name.
     """
-    sep = (
-        file.guess_separator().value
-        if settings.separator == Separator.IGNORE
-        else settings.separator.value
-    )
+    sep = file.guess_separator().value if separator == Separator.IGNORE else separator.value
 
-    # Typed local so the type checker can prove the match is exhaustive
-    insert_location: InsertLocation = settings.insert_location
     match insert_location:
         case InsertLocation.BEFORE:
             file.new_stem = f"{new_date}{sep}{file.new_stem}"
@@ -61,53 +59,62 @@ def _creation_timestamp(path: Path) -> float:
     return getattr(stat, "st_birthtime", stat.st_mtime)
 
 
-def clean_filename(file: File) -> None:
+def clean_filename(file: File, *, config: Config, date: str | None, date_only: bool) -> None:
     """Process and clean filenames according to configured settings.
 
     Apply a series of transformations to filenames including date formatting, word splitting, stopword removal, case transformation, and separator normalization.
 
     Args:
         file (File): The file object to process.
+        config (Config): The settings that control each transformation.
+        date (str | None): Text to read the date from in place of the filename, or None to use the filename.
+        date_only (bool): Add the date and make no other changes to the name.
     """
-    new_date = datetime.fromtimestamp(_creation_timestamp(file.path), tz=settings.tz).strftime(
-        settings.date_format
+    new_date = datetime.fromtimestamp(_creation_timestamp(file.path), tz=config.tz).strftime(
+        config.date_format
     )
-    for date in find_dates(
-        text=settings.get("date", None) or file.stem,
-        first=settings.date_first.value,
+    for found_date in find_dates(
+        text=date or file.stem,
+        first=config.date_first.value,
     ):
-        new_date = date.datetime.strftime(settings.date_format)
-        file.new_stem = re.sub(re.escape(date.match), "", file.new_stem)
+        new_date = found_date.datetime.strftime(config.date_format)
+        file.new_stem = re.sub(re.escape(found_date.match), "", file.new_stem)
         break
 
-    if not settings.date_only:
+    if not date_only:
         stem_tokens = tokenize_string(file.new_stem)
         pp.trace(f"CLEAN (tokenize): {stem_tokens}")
 
         stem_tokens = strip_special_chars(stem_tokens)
         pp.trace(f"CLEAN (strip special chars): {stem_tokens}")
 
-        if settings.split_words:
-            stem_tokens = split_camel_case(stem_tokens, settings.match_case_list)
+        if config.split_words:
+            stem_tokens = split_camel_case(stem_tokens, config.match_case_list)
             pp.trace(f"CLEAN (split words): {stem_tokens}")
-        if settings.strip_stopwords:
-            filtered_tokens = strip_stopwords(stem_tokens, settings.stopwords)
+        if config.strip_stopwords:
+            filtered_tokens = strip_stopwords(stem_tokens, config.stopwords)
             # Keep original tokens if stripping stopwords would remove everything
             stem_tokens = filtered_tokens or stem_tokens
             pp.trace(f"CLEAN (strip stopwords): {stem_tokens}")
 
-        stem_tokens = transform_case(stem_tokens, settings.transform_case)
+        stem_tokens = transform_case(stem_tokens, config.transform_case)
         pp.trace(f"CLEAN (transform case): {stem_tokens}")
 
-        stem_tokens = match_case(stem_tokens, settings.match_case_list)
+        stem_tokens = match_case(stem_tokens, config.match_case_list)
         pp.trace(f"CLEAN (match case): {stem_tokens}")
 
-        file.new_stem = f"{settings.separator.value if settings.separator != Separator.IGNORE else file.guess_separator().value}".join(
-            stem_tokens
+        separator = (
+            file.guess_separator() if config.separator == Separator.IGNORE else config.separator
         )
+        file.new_stem = separator.value.join(stem_tokens)
 
     if new_date:
-        _add_date_to_filename(file, new_date)
+        _add_date_to_filename(
+            file=file,
+            new_date=new_date,
+            separator=config.separator,
+            insert_location=config.insert_location,
+        )
         pp.trace(f"CLEAN (add date): {file.new_stem}")
 
     if file.is_dotfile and not file.new_stem.startswith("."):

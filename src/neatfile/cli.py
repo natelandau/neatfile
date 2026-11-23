@@ -3,36 +3,32 @@
 from __future__ import annotations
 
 import shutil
+from dataclasses import dataclass, replace
 from pathlib import Path  # noqa: TC003
 from typing import Annotated
 
 import cappa
+from cappa import Dep
 from cappa.base import command, invoke
 from nclutils import pp
 from rich.traceback import install
 
-from neatfile import settings
-from neatfile.commands import execute_command
-from neatfile.config import SettingsManager
-from neatfile.constants import (
-    DEFAULT_CONFIG_PATH,
-    USER_CONFIG_PATH,
-    PrintLevel,
-    Separator,
-    TransformCase,
-)
+from neatfile import constants
+from neatfile.commands import Mode, execute_command
+from neatfile.config import Config, ConfigError, RunOptions, load_config
+from neatfile.constants import PrintLevel, Separator, TransformCase
+from neatfile.models import Project
+
+NO_PROJECT_MESSAGE = "`project` is not specified"
+TREE_NO_PROJECT_MESSAGE = "You must specify a project name with the `--project` flag."
+NO_DATE_FORMAT_MESSAGE = "`date_format` is not specified"
 
 
-def config_subcommand(neatfile: NeatFile) -> None:
-    """Configure settings based on the provided command and arguments.
-
-    Update the global settings object with values from the command line arguments and configuration file. Handle project-specific settings if a project is specified.
+def configure_output(neatfile: NeatFile) -> None:
+    """Set the output verbosity from the `-v` flags before any command prints.
 
     Args:
-        neatfile (NeatFile): The main CLI application object containing command and configuration options.
-
-    Raises:
-        cappa.Exit: If the command is not found.
+        neatfile (NeatFile): The parsed CLI arguments.
     """
     pp.configure(
         verbosity=1
@@ -42,32 +38,99 @@ def config_subcommand(neatfile: NeatFile) -> None:
         else 0
     )
 
-    # Apply command-specific settings
-    cli_settings = {
-        "subcommand": neatfile.command.__class__.__name__.lower(),
-        "confirm_changes": getattr(neatfile.command, "confirm_changes", False),
-        "date": getattr(neatfile.command, "date", None),
-        "date_format": getattr(neatfile.command, "date_format", None),
-        "date_only": getattr(neatfile.command, "date_only", False),
-        "dryrun": getattr(neatfile, "dryrun", False),
-        "files": getattr(neatfile.command, "files", []),
-        "force": getattr(neatfile.command, "force", False),
-        "overwrite": getattr(neatfile.command, "overwrite", False),
-        "separator": getattr(neatfile.command, "separator", None),
-        "transform_case": getattr(neatfile.command, "transform_case", None),
-        "user_terms": getattr(neatfile.command, "user_terms", ()),
-        "file_search_depth": getattr(neatfile.command, "file_search_depth", None),
-    }
 
-    SettingsManager.apply_cli_settings(cli_settings)
+def build_config(neatfile: NeatFile) -> Config:
+    """Load the settings for this run, with the CLI flags that map to settings applied last.
 
-    # Configure project if specified
-    if project_name := getattr(neatfile, "project_name", ""):
-        try:
-            SettingsManager.apply_project_settings(project_name)
-        except ValueError as e:
-            pp.error(str(e))
-            raise cappa.Exit(code=1) from e
+    Args:
+        neatfile (NeatFile): The parsed CLI arguments.
+
+    Returns:
+        Config: The validated settings.
+
+    Raises:
+        cappa.Exit: If any setting is invalid or the selected project is not found.
+    """
+    command = neatfile.command
+    flag_values: dict[str, object] = {}
+    if isinstance(command, _FileArguments):
+        flag_values["overwrite_existing"] = command.overwrite or None
+    if isinstance(command, _CleanArguments):
+        flag_values |= {
+            "date_format": command.date_format,
+            "separator": command.separator,
+            "transform_case": command.transform_case,
+        }
+    if isinstance(command, ProcessCommand | SortCommand):
+        flag_values["user_terms"] = command.user_terms or None
+    cli_overrides = {key: value for key, value in flag_values.items() if value is not None}
+
+    try:
+        return load_config(project_name=neatfile.project_name or None, cli_overrides=cli_overrides)
+    except ConfigError as e:
+        for error in e.errors:
+            pp.error(error)
+        raise cappa.Exit(code=1) from e
+
+
+def build_run_options(neatfile: NeatFile) -> RunOptions:
+    """Collect the CLI-only values for this run that are not settings.
+
+    Args:
+        neatfile (NeatFile): The parsed CLI arguments.
+
+    Returns:
+        RunOptions: The values from the command line, with defaults for flags the command lacks.
+    """
+    command = neatfile.command
+    options = RunOptions(dry_run=neatfile.dryrun)
+    if isinstance(command, _FileArguments):
+        options = replace(
+            options,
+            files=tuple(command.files),
+            force=command.force,
+            confirm_changes=command.confirm_changes,
+            file_search_depth=options.file_search_depth
+            if command.file_search_depth is None
+            else command.file_search_depth,
+        )
+    if isinstance(command, _CleanArguments):
+        options = replace(options, date=command.date, date_only=command.date_only)
+    return options
+
+
+def _require_project(config: Config, message: str) -> Project:
+    """Scan the selected project's folders, or stop the run when no project is selected.
+
+    Args:
+        config (Config): The settings for this run.
+        message (str): The error to show when no project is selected.
+
+    Returns:
+        Project: The selected project with its folders indexed.
+
+    Raises:
+        cappa.Exit: If no project is selected.
+    """
+    if config.project is None:
+        pp.error(message)
+        raise cappa.Exit(code=1)
+    return Project.from_config(config.project, strip_stopwords=config.strip_stopwords)
+
+
+def _require_date_format(config: Config, options: RunOptions) -> None:
+    """Stop the run when `--date-only` is given but no date format is set.
+
+    Args:
+        config (Config): The settings for this run.
+        options (RunOptions): The CLI-only values for this run.
+
+    Raises:
+        cappa.Exit: If `--date-only` is given and `date_format` is empty.
+    """
+    if options.date_only and not config.date_format:
+        pp.error(NO_DATE_FORMAT_MESSAGE)
+        raise cappa.Exit(code=1)
 
 
 @command(
@@ -143,25 +206,17 @@ class NeatFile:
     ] = False
 
 
-@command(
-    name="clean",
-    description="""\
-Perform the following transformations on a filename:
-
--   Remove special characters
--   Trim multiple separators (`word----word` becomes `word-word`)
--   Normalize to `lowercase`, `uppercase`, `Sentence case`, or `Title Case`
--   Normalize all word separators to a common one (`_`, `-`, ` `, `.`)
--   Enforce lowercase file extensions
--   Remove common English stopwords
--   Split `camelCase` words into separate words (`camel Case`)
--   Add a date to the filename in your preferred format (removing dates already present in the filename)
-
-Learn more [in the README](https://github.com/natelandau/neatfile).
-""",
+_USER_TERMS_ARG = cappa.Arg(
+    long="term",
+    short="t",
+    help="Term used to match files to folders. Add multiple terms with additional `--term` flags",
+    show_default=False,
 )
-class CleanCommand:
-    """Clean and normalize filenames."""
+
+
+@dataclass
+class _FileArguments:
+    """Hold the arguments shared by every command that changes files."""
 
     files: Annotated[
         list[Path],
@@ -177,32 +232,6 @@ class CleanCommand:
             long="confirm",
             short="c",
             help="Confirm changes before applying them",
-            show_default=False,
-        ),
-    ] = False
-    date: Annotated[
-        str | None,
-        cappa.Arg(
-            long="date",
-            short="d",
-            help="Specify a date to use for the filename (ignores dates found in filename)",
-            show_default=False,
-        ),
-    ] = None
-
-    date_format: Annotated[
-        str | None,
-        cappa.Arg(
-            long="date-format",
-            short="f",
-            help="Specify a date format to use for the filename (e.g. `%Y-%m-%d`)",
-            show_default=False,
-        ),
-    ] = None
-    date_only: Annotated[
-        bool,
-        cappa.Arg(
-            help="Add a date to the filename but make no other changes",
             show_default=False,
         ),
     ] = False
@@ -228,6 +257,37 @@ class CleanCommand:
             show_default=False,
         ),
     ] = False
+
+
+@dataclass
+class _CleanArguments(_FileArguments):
+    """Hold the arguments shared by the commands that rename files."""
+
+    date: Annotated[
+        str | None,
+        cappa.Arg(
+            long="date",
+            short="d",
+            help="Specify a date to use for the filename (ignores dates found in filename)",
+            show_default=False,
+        ),
+    ] = None
+    date_format: Annotated[
+        str | None,
+        cappa.Arg(
+            long="date-format",
+            short="f",
+            help="Specify a date format to use for the filename (e.g. `%Y-%m-%d`)",
+            show_default=False,
+        ),
+    ] = None
+    date_only: Annotated[
+        bool,
+        cappa.Arg(
+            help="Add a date to the filename but make no other changes",
+            show_default=False,
+        ),
+    ] = False
     transform_case: Annotated[
         str | None,
         cappa.Arg(
@@ -249,13 +309,37 @@ class CleanCommand:
         ),
     ] = None
 
-    def __call__(self) -> None:
-        """Call the command."""
-        if settings.date_only and not settings.date_format:
-            pp.error("`date_format` is not specified")
-            raise cappa.Exit(code=1)
 
-        execute_command()
+@command(
+    name="clean",
+    description="""\
+Perform the following transformations on a filename:
+
+-   Remove special characters
+-   Trim multiple separators (`word----word` becomes `word-word`)
+-   Normalize to `lowercase`, `uppercase`, `Sentence case`, or `Title Case`
+-   Normalize all word separators to a common one (`_`, `-`, ` `, `.`)
+-   Enforce lowercase file extensions
+-   Remove common English stopwords
+-   Split `camelCase` words into separate words (`camel Case`)
+-   Add a date to the filename in your preferred format (removing dates already present in the filename)
+
+Learn more [in the README](https://github.com/natelandau/neatfile).
+""",
+)
+# A subclass of a dataclass needs its own decorator, or cappa skips the fields it adds
+@dataclass
+class CleanCommand(_CleanArguments):
+    """Clean and normalize filenames."""
+
+    def __call__(
+        self,
+        config: Annotated[Config, Dep(build_config)],
+        options: Annotated[RunOptions, Dep(build_run_options)],
+    ) -> None:
+        """Call the command."""
+        _require_date_format(config=config, options=options)
+        execute_command(mode=Mode.CLEAN, config=config, options=options, project=None)
 
 
 @command(name="config")
@@ -267,39 +351,40 @@ class ConfigCommand:
         cappa.Arg(help="Create a user configuration file", show_default=False),
     ] = False
 
-    def __call__(self) -> None:
+    def __call__(self, options: Annotated[RunOptions, Dep(build_run_options)]) -> None:
         """Call the command."""
+        user_config = constants.USER_CONFIG_PATH
         if self.create:
-            if USER_CONFIG_PATH.exists():
-                pp.info(f"User configuration file already exists: {USER_CONFIG_PATH}")
+            if user_config.exists():
+                pp.info(f"User configuration file already exists: {user_config}")
                 raise cappa.Exit(code=1)
 
-            if settings.dryrun:
-                pp.dryrun(f"Would create configuration file: {USER_CONFIG_PATH}")
+            if options.dry_run:
+                pp.dryrun(f"Would create configuration file: {user_config}")
                 raise cappa.Exit(code=0)
 
-            USER_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy(DEFAULT_CONFIG_PATH, USER_CONFIG_PATH)
-            pp.success(f"User config file created: {USER_CONFIG_PATH}")
+            user_config.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(constants.DEFAULT_CONFIG_PATH, user_config)
+            pp.success(f"User config file created: {user_config}")
             raise cappa.Exit(code=0)
 
-        current_config = USER_CONFIG_PATH if USER_CONFIG_PATH.exists() else DEFAULT_CONFIG_PATH
+        current_config = user_config if user_config.exists() else constants.DEFAULT_CONFIG_PATH
 
         from rich.markdown import Markdown  # noqa: PLC0415
 
         pp.header("Current Configuration")
         pp.console().print(Markdown("```toml\n" + current_config.read_text() + "\n```"))
 
-        if not USER_CONFIG_PATH.exists():
+        if not user_config.exists():
             pp.info(
                 "Using default configuration.",
                 details=[
-                    f"No user configuration file found: {USER_CONFIG_PATH}",
+                    f"No user configuration file found: {user_config}",
                     "To create a user configuration file, run `neatfile config --create`",
                 ],
             )
         else:
-            pp.info(f"User configuration file found: {USER_CONFIG_PATH}")
+            pp.info(f"User configuration file found: {user_config}")
 
 
 @command(
@@ -327,115 +412,22 @@ Sort files into a project directory:
 Learn more [in the README](https://github.com/natelandau/neatfile).
 """,
 )
-class ProcessCommand:
+# A subclass of a dataclass needs its own decorator, or cappa skips the fields it adds
+@dataclass
+class ProcessCommand(_CleanArguments):
     """Clean and sort files."""
 
-    files: Annotated[
-        list[Path],
-        cappa.Arg(
-            help="The files to clean. If a directory is provided, all files in the directory will be cleaned, not the directory itself.",
-            required=True,
-        ),
-    ]
+    user_terms: Annotated[tuple[str, ...], _USER_TERMS_ARG] = ()
 
-    confirm_changes: Annotated[
-        bool,
-        cappa.Arg(
-            long="confirm",
-            short="c",
-            help="Confirm changes before applying them",
-            show_default=False,
-        ),
-    ] = False
-    date: Annotated[
-        str | None,
-        cappa.Arg(
-            long="date",
-            short="d",
-            help="Specify a date to use for the filename (ignores dates found in filename)",
-            show_default=False,
-        ),
-    ] = None
-    file_search_depth: Annotated[
-        int | None,
-        cappa.Arg(
-            long="depth",
-            help="Depth to search for files if using a wildcard",
-            show_default=False,
-        ),
-    ] = None
-    user_terms: Annotated[
-        tuple[str, ...],
-        cappa.Arg(
-            long="term",
-            short="t",
-            help="Term used to match files to folders. Add multiple terms with additional `--term` flags",
-            show_default=False,
-        ),
-    ] = ()
-
-    date_format: Annotated[
-        str | None,
-        cappa.Arg(
-            long="date-format",
-            short="f",
-            help="Specify a date format to use for the filename (e.g. `%Y-%m-%d`)",
-            show_default=False,
-        ),
-    ] = None
-    date_only: Annotated[
-        bool,
-        cappa.Arg(
-            help="Add a date to the filename but make no other changes",
-            show_default=False,
-        ),
-    ] = False
-    force: Annotated[
-        bool,
-        cappa.Arg(
-            help="Do not prompt for confirmation before making changes",
-            show_default=False,
-        ),
-    ] = False
-    overwrite: Annotated[
-        bool,
-        cappa.Arg(
-            help="Overwrite existing files rather than creating a backup",
-            show_default=False,
-        ),
-    ] = False
-    transform_case: Annotated[
-        str | None,
-        cappa.Arg(
-            choices=[c.name for c in TransformCase],
-            long="case",
-            help="Transform the case of the filename",
-            show_default=True,
-            parse=lambda x: x.upper(),
-        ),
-    ] = None
-    separator: Annotated[
-        str | None,
-        cappa.Arg(
-            choices=[c.name for c in Separator],
-            long=["separator", "sep"],
-            help="Separator to use for the filename.",
-            show_default=False,
-            parse=lambda x: x.upper(),
-        ),
-    ] = None
-
-    def __call__(self) -> None:
+    def __call__(
+        self,
+        config: Annotated[Config, Dep(build_config)],
+        options: Annotated[RunOptions, Dep(build_run_options)],
+    ) -> None:
         """Call the command."""
-        if settings.date_only and not settings.date_format:
-            pp.error("`date_format` is not specified")
-            raise cappa.Exit(code=1)
-
-        if not settings.get("project", {}):
-            pp.error("`project` is not specified")
-            raise cappa.Exit(code=1)
-
-        execute_command()
+        _require_date_format(config=config, options=options)
+        project = _require_project(config=config, message=NO_PROJECT_MESSAGE)
+        execute_command(mode=Mode.PROCESS, config=config, options=options, project=project)
 
 
 @command(
@@ -450,79 +442,31 @@ Projects must be defined in the configuration file.
 Learn more [in the README](https://github.com/natelandau/neatfile/).
 """,
 )
-class SortCommand:
+# A subclass of a dataclass needs its own decorator, or cappa skips the fields it adds
+@dataclass
+class SortCommand(_FileArguments):
     """Sort files into a project folder."""
 
-    files: Annotated[
-        list[Path],
-        cappa.Arg(
-            help="The files to clean. If a directory is provided, all files in the directory will be cleaned, not the directory itself.",
-            required=True,
-        ),
-    ]
+    user_terms: Annotated[tuple[str, ...], _USER_TERMS_ARG] = ()
 
-    confirm_changes: Annotated[
-        bool,
-        cappa.Arg(
-            long="confirm",
-            short="c",
-            help="Confirm changes before applying them",
-            show_default=False,
-        ),
-    ] = False
-    file_search_depth: Annotated[
-        int | None,
-        cappa.Arg(
-            long="depth",
-            help="Depth to search for files if using a wildcard",
-            show_default=False,
-        ),
-    ] = None
-    force: Annotated[
-        bool,
-        cappa.Arg(
-            help="Do not prompt for confirmation before making changes",
-            show_default=False,
-        ),
-    ] = False
-    overwrite: Annotated[
-        bool,
-        cappa.Arg(
-            help="Overwrite existing files rather than creating a backup",
-            show_default=False,
-        ),
-    ] = False
-
-    user_terms: Annotated[
-        tuple[str, ...],
-        cappa.Arg(
-            long="term",
-            short="t",
-            help="Term used to match files to folders. Add multiple terms with additional `--term` flags",
-            show_default=False,
-        ),
-    ] = ()
-
-    def __call__(self) -> None:
+    def __call__(
+        self,
+        config: Annotated[Config, Dep(build_config)],
+        options: Annotated[RunOptions, Dep(build_run_options)],
+    ) -> None:
         """Call the command."""
-        if not settings.get("project", {}):
-            pp.error("`project` is not specified")
-            raise cappa.Exit(code=1)
-
-        execute_command()
+        project = _require_project(config=config, message=NO_PROJECT_MESSAGE)
+        execute_command(mode=Mode.SORT, config=config, options=options, project=project)
 
 
 @command(name="tree")
 class TreeCommand:
     """Print a tree representation of the project folder."""
 
-    def __call__(self) -> None:
+    def __call__(self, config: Annotated[Config, Dep(build_config)]) -> None:
         """Call the command."""
-        if settings.get("project"):
-            pp.console().print(settings.project.tree())
-        else:
-            pp.error("You must specify a project name with the `--project` flag.")
-            raise cappa.Exit(code=1)
+        project = _require_project(config=config, message=TREE_NO_PROJECT_MESSAGE)
+        pp.console().print(project.tree())
 
 
 def main() -> None:  # pragma: no cover
@@ -536,7 +480,7 @@ def main() -> None:  # pragma: no cover
     install(show_locals=False)
 
     try:
-        invoke(obj=NeatFile, deps=[config_subcommand], completion=False)
+        invoke(obj=NeatFile, deps=[configure_output], completion=False)
     except KeyboardInterrupt as e:
         pp.info("Exiting...")
         raise cappa.Exit(code=1) from e

@@ -119,12 +119,23 @@ To create a configuration file. Run `neatfile config --create` to create a confi
 
 Preferences can also be set on a per project basis within the configuration file.
 
-Values are set in the following order of precedence:
+Values are set in the following order of precedence, highest first:
 
-1. CLI arguments
-2. Project specific settings within the configuration file
-3. Default values in the user configuration file
-4. Default values as specified below in the sample configuration file.
+1. CLI flags
+2. Environment variables
+3. Configuration files, in this order: the project section, the development file, the user file, then the default values in the sample configuration file below.
+
+### Environment variables
+
+Set any top-level key from the sample configuration file with the variable `NEATFILE_KEY`, where `KEY` is the key name in uppercase. For example, `NEATFILE_SEPARATOR` sets `separator`.
+
+neatfile reads each value as plain text, without quotes. A boolean key accepts `true` or `false` in any case. A key with named values, such as `separator`, accepts the name in any case. Write a list as a TOML array, for example `NEATFILE_STOPWORDS='["draft", "final"]'`. A list from an environment variable replaces the global list from the configuration files, and an empty array (`[]`) clears it. Keys inside a `[projects.NAME]` section have no environment variable. neatfile ignores variables that do not name a key.
+
+```bash
+NEATFILE_SEPARATOR=underscore neatfile clean report.pdf
+```
+
+If a value has the wrong type, neatfile prints the key, the source, the value, and the allowed values, then exits with code 1. A boolean in a file must be a TOML boolean, and a list must be a list of strings.
 
 ### Sample configuration file
 
@@ -186,6 +197,15 @@ strip_stopwords    = true
 # Options: "ignore", "lower", "upper", "title", "sentence"
 transform_case     = "ignore"
 
+# Time zone for the date that neatfile reads from the file creation time.
+# Use an IANA time zone name. If you do not set it, neatfile uses the local time zone.
+# tz                 = "America/New_York"
+
+# Extra terms that `sort` and `process` use to match files to folders.
+# A project section can set its own user_terms.
+# A later layer replaces this list. `--term` flags replace the configured terms.
+user_terms         = []
+
 # Override the global settings for specific projects and tell neatfile
 # how to organize files into a directory tree.
 [projects]
@@ -204,6 +224,9 @@ transform_case     = "ignore"
         depth = 2
 
         # Default configuration values specified above can be overridden here on a per project basis
+        # `stopwords`, `ignored_files`, and `match_case_list` in a project combine with the global lists.
+        # Every other key replaces the global value.
+        # For example: user_terms = ["legal", "invoice"]
 ```
 
 ## Directory Matching

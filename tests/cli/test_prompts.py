@@ -4,7 +4,7 @@ import cappa
 import pytest
 from cappa.base import invoke
 
-from neatfile.cli import NeatFile, config_subcommand
+from neatfile.cli import NeatFile, configure_output
 from neatfile.commands import CONFIRMATION_NO_INPUT_MESSAGE
 from neatfile.views.prompts import FOLDER_SELECTION_NO_INPUT_MESSAGE
 
@@ -42,7 +42,7 @@ def test_prompt_without_input_exits_with_error(
 
     # When: Running the command
     with pytest.raises(cappa.Exit) as e:
-        invoke(obj=NeatFile, argv=[*args, str(file)], deps=[config_subcommand])
+        invoke(obj=NeatFile, argv=[*args, str(file)], deps=[configure_output])
 
     # Then: The command exits with an error message and does not touch the file
     _, stderr = capsys.readouterr()

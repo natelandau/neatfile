@@ -1,25 +1,27 @@
 """Rich tables for the neatfile package."""
 
+from pathlib import Path
+
 from nclutils import pp
 from rich import box
 from rich.table import Table
 
-from neatfile import settings
 from neatfile.models import File
 
 
-def confirmation_table(files: list[File], total_files: int | None = None) -> Table:
-    """Display a confirmation table to the user.
+def confirmation_table(
+    files: list[File], total_files: int | None = None, *, project_path: Path | None = None
+) -> Table:
+    """Build a table of pending changes for the user to confirm.
 
     Args:
         files (list[File]): List of files to process.
-        total_files (int): Total number of files to process.
+        total_files (int | None, optional): Total number of files to process. Defaults to None.
+        project_path (Path | None, optional): Root of the project files move into. Shows a new path column when set. Defaults to None.
 
     Returns:
         Table: Confirmation table.
     """
-    project_path = None if not settings.get("project", None) else settings.project.path
-
     organized_files = bool(project_path and [x for x in files if x.has_new_parent])
 
     table = Table(
