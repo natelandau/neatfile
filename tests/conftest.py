@@ -59,10 +59,10 @@ def isolate_config(
         _render_project_section(
             "mock_jd_project",
             path=project_path,
-            settings={"depth": 0, "type": "jd", "separator": "dash"},
+            settings={"type": "jd", "separator": "dash"},
         )
         + _render_project_section(
-            "mock_folder_project", path=project_path, settings={"depth": 3, "type": "folder"}
+            "mock_folder_project", path=project_path, settings={"depth": 4, "type": "folder"}
         )
     )
 

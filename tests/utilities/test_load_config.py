@@ -249,6 +249,11 @@ def test_invalid_values_are_all_reported(tmp_path: Path) -> None:
             ["missing", "bogus", "jd", "folder"],
             id="bad type",
         ),
+        pytest.param(
+            '[projects.missing]\npath = "/tmp"\ndepth = 0\n',
+            ["missing", "depth", "1 or more"],
+            id="depth below one",
+        ),
     ],
 )
 def test_project_errors(tmp_path: Path, toml: str, expected_substrings: list[str]) -> None:

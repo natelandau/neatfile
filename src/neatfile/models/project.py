@@ -70,7 +70,7 @@ class Project:
     Args:
         name (str): The name of the project
         path (Path): Path to the project directory
-        depth (int): Maximum folder depth to traverse.
+        depth (int): Number of folder levels below the root to index, where 1 means only the root's subfolders. Johnny Decimal projects ignore it.
         project_type (ProjectType): Type of project structure to use.
         strip_stopwords (bool): Remove stopwords from the terms taken from folder names.
     """
@@ -162,7 +162,9 @@ class Project:
         folder_type: FolderType = (
             JD_LEVELS[level] if self.project_type == ProjectType.JD else FolderType.OTHER
         )
-        max_level: int = len(JD_LEVELS) - 1 if self.project_type == ProjectType.JD else self.depth
+        max_level: int = (
+            len(JD_LEVELS) - 1 if self.project_type == ProjectType.JD else self.depth - 1
+        )
 
         children: list[Path] | None = _list_children(directory)
         if children is None:

@@ -231,8 +231,11 @@ user_terms         = []
         # Options: "jd" for Johnny Decimal, "folder" for a folder structure
         type = "folder"
 
-        # The depth of folders to index beneath the project's root path
-        depth = 2
+        # The number of folder levels below the project's root path to index.
+        # 1 indexes only the root's subfolders. Must be 1 or more.
+        # Johnny Decimal projects ignore this value and always index
+        # areas, categories, and subcategories.
+        depth = 3
 
         # Default configuration values specified above can be overridden here on a per project basis
         # `stopwords`, `ignored_files`, and `match_case_list` in a project combine with the global lists.

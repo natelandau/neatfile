@@ -213,7 +213,7 @@ def test_project_user_terms_used_for_sorting(
             render_project_section(
                 "terms_project",
                 path=project_path,
-                settings={"depth": 0, "type": "jd", "user_terms": ["fox"]},
+                settings={"type": "jd", "user_terms": ["fox"]},
             )
         )
     file = create_file("no matches.txt")

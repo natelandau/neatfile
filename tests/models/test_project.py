@@ -118,3 +118,23 @@ def test_usable_folders_skip_unreadable_folders(project_root: Path) -> None:
         (project_root / "locked").chmod(0o755)
 
     assert [folder.path.name for folder in folders] == ["locked", "open"]
+
+
+@pytest.mark.parametrize(
+    ("depth", "expected"),
+    [
+        pytest.param(1, ["finance"], id="depth-1-keeps-root-subfolders"),
+        pytest.param(2, ["finance", "finance/taxes"], id="depth-2-adds-their-subfolders"),
+    ],
+)
+def test_usable_folders_stop_at_configured_depth(
+    project_root: Path, depth: int, expected: list[str]
+) -> None:
+    """Verify `depth` counts folder levels below the project root."""
+    (project_root / "finance" / "taxes" / "2024").mkdir(parents=True)
+
+    project = _make_project(project_root, depth=depth)
+
+    assert [
+        folder.path.relative_to(project_root).as_posix() for folder in project.usable_folders
+    ] == expected
