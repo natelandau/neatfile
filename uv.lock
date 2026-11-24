@@ -372,15 +372,15 @@ wheels = [
 
 [[package]]
 name = "datefind"
-version = "0.6.0"
+version = "1.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "regex" },
     { name = "tzlocal" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/28/de/fe1494984aca700b05cea50b8dcb62cc9b3c1dc24e39c2bd05b962f263f0/datefind-0.6.0.tar.gz", hash = "sha256:4357c52491405d1fed3b6df07edb47f6471d1349d39e66e40fe9dd1d8aded754", size = 12883, upload-time = "2026-10-12T21:18:35.558Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/61/f4/934f203fa92cf0fa7519cbebe4eb4fdc2365eb7a6a3661832f08804eae84/datefind-1.0.1.tar.gz", hash = "sha256:a10c9b4d4b605f7329a1c888f96eaf5a02d142afa12b41472f4c86b04242bd91", size = 27301, upload-time = "2026-11-24T15:24:34.169Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5c/e2/05061452d9ce5ef7250a127cf62cb971876ee5afed4158776d3e75a402df/datefind-0.6.0-py3-none-any.whl", hash = "sha256:42f8c017cd99964034333c4535875a42ad65cbc2bbaa1cceb8d0b05a2344b0bf", size = 12005, upload-time = "2026-10-12T21:18:34.661Z" },
+    { url = "https://files.pythonhosted.org/packages/c2/a6/5c7bf1a111a9a31a86216fd4d883c6065fca3e800a3ac35f2e9a2873c31b/datefind-1.0.1-py3-none-any.whl", hash = "sha256:39e7bbbd64d6f8d8b6735914a394e6f4be256f3f9c35d796d0ade23c52baf540", size = 27944, upload-time = "2026-11-24T15:24:33.381Z" },
 ]
 
 [[package]]
@@ -807,7 +807,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "cappa", specifier = ">=0.33.0" },
-    { name = "datefind", specifier = ">=0.6.0,<1" },
+    { name = "datefind", specifier = ">=1.0.1,<2" },
     { name = "huggingface-hub", specifier = ">=1.33.0,<3" },
     { name = "model2vec", specifier = ">=0.10.0,<1" },
     { name = "nclutils", specifier = ">=4.0.0,<5" },

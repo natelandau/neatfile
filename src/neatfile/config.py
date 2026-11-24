@@ -63,6 +63,7 @@ class Config:
     match_case_list: tuple[str, ...]
     overwrite_existing: bool
     separator: Separator
+    short_digit_dates: bool
     split_words: bool
     stopwords: tuple[str, ...]
     strip_stopwords: bool
@@ -204,6 +205,7 @@ _SCALAR_CONVERTERS: dict[str, Callable[[_SourcedValue], object]] = {
     "insert_location": _to_insert_location,
     "overwrite_existing": _to_bool,
     "separator": _to_separator,
+    "short_digit_dates": _to_bool,
     "split_words": _to_bool,
     "strip_stopwords": _to_bool,
     "transform_case": _to_transform_case,
@@ -465,6 +467,7 @@ class _SettingResolver:
             match_case_list=self.merged_list("match_case_list"),
             overwrite_existing=self.setting(key="overwrite_existing", converter=_to_bool),
             separator=self.setting(key="separator", converter=_to_separator),
+            short_digit_dates=self.setting(key="short_digit_dates", converter=_to_bool),
             split_words=self.setting(key="split_words", converter=_to_bool),
             stopwords=self.merged_list("stopwords"),
             strip_stopwords=self.setting(key="strip_stopwords", converter=_to_bool),

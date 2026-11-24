@@ -164,6 +164,38 @@ def test_creation_timestamp_falls_back_to_mtime(tmp_path: Path, mocker: MockerFi
             ".2024-01-01_notes",
             id="date-only-mode-dotfile",
         ),
+        pytest.param(
+            "040325 foo bar.txt",
+            None,
+            False,
+            {"separator": Separator.SPACE},
+            "040325 Foo Bar.txt",
+            id="short-digit-run-not-a-date-by-default",
+        ),
+        pytest.param(
+            "march 2025 statement.txt",
+            None,
+            False,
+            {"separator": Separator.SPACE},
+            "2025-03 Statement.txt",
+            id="month-precision-short-form",
+        ),
+        pytest.param(
+            "Q3 2024 report.txt",
+            None,
+            False,
+            {"separator": Separator.SPACE},
+            "2024-Q3 Report.txt",
+            id="quarter-precision-short-form",
+        ),
+        pytest.param(
+            "report.txt",
+            "march 2025",
+            False,
+            {"separator": Separator.SPACE},
+            "2025-03 Report.txt",
+            id="date-option-month-precision-short-form",
+        ),
     ],
 )
 def test_clean_name(
@@ -266,4 +298,10 @@ def test_clean_name_uses_fallback_date_only_when_name_has_none(dated_config: Con
     assert (
         _planned_name("notes 2024-05-06.txt", config=dated_config, fallback_date=lambda: created)
         == "2024-05-06 Notes.txt"
+    )
+    # A short digit date that `date_format` itself writes still reads as the name's date
+    short_format_config = replace(dated_config, date_format="%m%d%y")
+    assert (
+        _planned_name("050624 notes.txt", config=short_format_config, fallback_date=lambda: created)
+        == "050624 Notes.txt"
     )
