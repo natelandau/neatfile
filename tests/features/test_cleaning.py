@@ -1,10 +1,13 @@
 """Tests for filename cleaning helpers."""
 
+from collections.abc import Callable
 from dataclasses import replace
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from datefind import FoundDate
 from pytest_mock import MockerFixture
 
 from neatfile.config import Config
@@ -12,10 +15,31 @@ from neatfile.constants import InsertLocation, Separator, TransformCase
 from neatfile.features.cleaning import (
     DATE_NOT_FOUND_MESSAGE,
     _creation_timestamp,
-    clean_filename,
+    clean_name,
     parse_date_option,
 )
 from neatfile.models import File
+
+
+def _planned_name(
+    name: str,
+    *,
+    config: Config,
+    override_date: FoundDate | None = None,
+    date_only: bool = False,
+    fallback_date: Callable[[], datetime] | None = None,
+) -> str:
+    """Return the cleaned filename for `name`, split into stem and suffix the way neatfile does."""
+    file = File(Path(name))
+    cleaned = clean_name(
+        stem=file.stem,
+        suffix=file.suffix,
+        config=config,
+        override_date=override_date,
+        date_only=date_only,
+        fallback_date=fallback_date,
+    )
+    return f"{cleaned.stem}{cleaned.suffix}"
 
 
 @pytest.fixture
@@ -134,8 +158,7 @@ def test_creation_timestamp_falls_back_to_mtime(tmp_path: Path, mocker: MockerFi
         ),
     ],
 )
-def test_clean_filename(
-    tmp_path: Path,
+def test_clean_name(
     dated_config: Config,
     name: str,
     date: str | None,
@@ -144,19 +167,17 @@ def test_clean_filename(
     expected: str,
 ) -> None:
     """Verify the planned name for edge-case filenames and date sources."""
-    path = tmp_path / name
-    path.touch()
-    file = File(path)
     config = replace(dated_config, **settings)
 
-    clean_filename(
-        file=file,
-        config=config,
-        override_date=parse_date_option(date, config=config),
-        date_only=date_only,
+    assert (
+        _planned_name(
+            name,
+            config=config,
+            override_date=parse_date_option(date, config=config),
+            date_only=date_only,
+        )
+        == expected
     )
-
-    assert file.new_name == expected
 
 
 def test_parse_date_option_warns_when_value_has_no_date(
@@ -196,17 +217,13 @@ def test_parse_date_option_warns_when_value_has_no_date(
         pytest.param("the of.txt", {}, "the of.txt", id="all-stopwords-keeps-original"),
     ],
 )
-def test_clean_filename_stopwords(
-    tmp_path: Path,
+def test_clean_name_stopwords(
     default_config: Config,
     name: str,
     settings: dict[str, object],
     expected: str,
 ) -> None:
     """Verify filename cleaning removes only filler words and keeps protected words."""
-    path = tmp_path / name
-    path.touch()
-    file = File(path)
     config = replace(
         default_config,
         date_format="",
@@ -215,6 +232,18 @@ def test_clean_filename_stopwords(
         **settings,
     )
 
-    clean_filename(file=file, config=config, override_date=None, date_only=False)
+    assert _planned_name(name, config=config) == expected
 
-    assert file.new_name == expected
+
+def test_clean_name_uses_fallback_date_only_when_name_has_none(dated_config: Config) -> None:
+    """Verify the fallback date names an undated file and never replaces a date in the name."""
+    created = datetime(2020, 1, 2, tzinfo=UTC)
+
+    assert _planned_name("notes.txt", config=dated_config, fallback_date=lambda: created) == (
+        "2020-01-02_Notes.txt"
+    )
+    assert _planned_name("notes.txt", config=dated_config) == "Notes.txt"
+    assert (
+        _planned_name("notes 2024-05-06.txt", config=dated_config, fallback_date=lambda: created)
+        == "2024-05-06 Notes.txt"
+    )

@@ -1,6 +1,7 @@
 """Execute CLI commands."""
 
 from enum import StrEnum
+from functools import partial
 from pathlib import Path
 
 import cappa
@@ -10,8 +11,10 @@ from rich.prompt import Confirm
 
 from neatfile.config import Config, RunOptions
 from neatfile.features import (
-    clean_filename,
+    CleanedName,
+    clean_name,
     commit_changes,
+    file_creation_date,
     find_processable_files,
     parse_date_option,
     sort_file,
@@ -103,9 +106,16 @@ def _plan_changes(
     pp.debug(f"Working on: `{file.display_path}`")
 
     if clean:
-        clean_filename(
-            file=file, config=config, override_date=override_date, date_only=options.date_only
+        cleaned: CleanedName = clean_name(
+            stem=file.stem,
+            suffix=file.suffix,
+            config=config,
+            override_date=override_date,
+            date_only=options.date_only,
+            fallback_date=partial(file_creation_date, file.path, tz=config.tz),
         )
+        file.new_stem = cleaned.stem
+        file.new_suffix = cleaned.suffix
 
     if sort_project is not None:
         new_parent = sort_file(file=file, project=sort_project, user_terms=config.user_terms)

@@ -1,7 +1,9 @@
 """Filename cleaning feature module."""
 
 import re
-from datetime import datetime
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import datetime, tzinfo
 from pathlib import Path
 from typing import assert_never
 
@@ -16,7 +18,6 @@ from neatfile.constants import (
     InsertLocation,
     Separator,
 )
-from neatfile.models import File
 from neatfile.utils.strings import (
     guess_separator,
     join_tokens,
@@ -84,6 +85,19 @@ def _creation_timestamp(path: Path) -> float:
     return getattr(stat, "st_birthtime", stat.st_mtime)
 
 
+def file_creation_date(path: Path, *, tz: tzinfo) -> datetime:
+    """Return when a file was created, for naming files whose names hold no date.
+
+    Args:
+        path (Path): The file to inspect.
+        tz (tzinfo): The time zone to express the date in.
+
+    Returns:
+        datetime: The birth time where the platform reports one, else the modification time.
+    """
+    return datetime.fromtimestamp(_creation_timestamp(path), tz=tz)
+
+
 def _remove_date_text(stem: str, date_text: str) -> str:
     """Remove every copy of `date_text` from `stem` along with the separators around it.
 
@@ -108,20 +122,25 @@ def _remove_date_text(stem: str, date_text: str) -> str:
 
 
 def _format_date(
-    file: File, *, config: Config, filename_date: FoundDate | None, override_date: FoundDate | None
+    *,
+    config: Config,
+    filename_date: FoundDate | None,
+    override_date: FoundDate | None,
+    fallback_date: Callable[[], datetime] | None,
 ) -> str:
     """Return the date to add to the name, in the configured format.
 
-    Prefer `override_date`, then the date in the filename, then the file's creation time.
+    Prefer `override_date`, then the date in the filename, then `fallback_date`.
 
     Args:
-        file (File): The file whose creation time is the last resort.
         config (Config): The settings that hold the date format.
         filename_date (FoundDate | None): The first date in the filename, or None.
         override_date (FoundDate | None): The date from `--date`, or None.
+        fallback_date (Callable[[], datetime] | None): Returns the date to use when no other date
+            is known, called only then. None adds no date in that case.
 
     Returns:
-        str: The formatted date, or an empty string when `date_format` is empty.
+        str: The formatted date, or an empty string when `date_format` is empty or no date is known.
     """
     if not config.date_format:
         return ""
@@ -130,8 +149,10 @@ def _format_date(
     if chosen_date is not None:
         return chosen_date.datetime.strftime(config.date_format)
 
-    created: datetime = datetime.fromtimestamp(_creation_timestamp(file.path), tz=config.tz)
-    return created.strftime(config.date_format)
+    if fallback_date is None:
+        return ""
+
+    return fallback_date().strftime(config.date_format)
 
 
 def _filename_stopwords(config: Config) -> frozenset[str]:
@@ -214,30 +235,53 @@ def _add_date(stem: str, *, new_date: str, separator: str, insert_location: Inse
             assert_never(insert_location)
 
 
-def clean_filename(
-    file: File, *, config: Config, override_date: FoundDate | None, date_only: bool
-) -> None:
-    """Plan a cleaned name on `file` so the caller can preview and apply the rename.
+@dataclass(frozen=True)
+class CleanedName:
+    """Hold the stem and suffix that cleaning planned for a filename."""
 
-    Set `file.new_stem` and `file.new_suffix` in place. Remove any date from the stem and add the
-    chosen date back in the configured format. Unless `date_only` is set, normalize the words in
-    between: strip special characters, split camelCase, drop stopwords, and transform and match
-    case. Keep the original stem when cleaning would leave the name empty.
+    stem: str
+    suffix: str
+
+
+def clean_name(
+    stem: str,
+    suffix: str,
+    *,
+    config: Config,
+    override_date: FoundDate | None,
+    date_only: bool,
+    fallback_date: Callable[[], datetime] | None = None,
+) -> CleanedName:
+    """Plan a cleaned filename without touching the disk, so callers can preview or apply it.
+
+    Remove any date from the stem and add the chosen date back in the configured format. Unless
+    `date_only` is set, normalize the words in between: strip special characters, split camelCase,
+    drop stopwords, and transform and match case. Keep the original stem when cleaning would leave
+    the name empty.
 
     Args:
-        file (File): The file to plan a new name for. Mutated in place.
+        stem (str): The current stem, with any leading dot of a dotfile.
+        suffix (str): The current suffix.
         config (Config): The settings that control each transformation.
-        override_date (FoundDate | None): The date from `--date`, parsed with `parse_date_option`, or None to use the file's own date.
+        override_date (FoundDate | None): The date from `--date`, parsed with `parse_date_option`, or None to use the name's own date.
         date_only (bool): Add the date and make no other changes to the name.
+        fallback_date (Callable[[], datetime] | None, optional): Returns the date to use when neither `override_date` nor the name holds one, such as the file's creation date. Defaults to None, which adds no date in that case.
+
+    Returns:
+        CleanedName: The planned stem and suffix.
     """
+    is_dotfile: bool = stem.startswith(".")
     # A dotfile's leading dot is neither a word separator nor part of the words, so set it aside
     # and restore it once the rest of the name is built
-    name_body: str = file.stem.removeprefix(".") if file.is_dotfile else file.stem
+    name_body: str = stem.removeprefix(".") if is_dotfile else stem
 
     filename_date: FoundDate | None = _first_date(text=name_body, config=config)
     date_text: str = filename_date.match if filename_date else ""
     new_date: str = _format_date(
-        file=file, config=config, filename_date=filename_date, override_date=override_date
+        config=config,
+        filename_date=filename_date,
+        override_date=override_date,
+        fallback_date=fallback_date,
     )
 
     # Guess before trimming the separators around the date, which are part of the name's style
@@ -246,33 +290,38 @@ def clean_filename(
         if config.separator == Separator.IGNORE
         else config.separator.value
     )
-    stem: str = _remove_date_text(stem=name_body, date_text=date_text) if date_text else name_body
+    new_stem: str = (
+        _remove_date_text(stem=name_body, date_text=date_text) if date_text else name_body
+    )
 
     if not date_only:
-        tokens: list[str] = _clean_tokens(stem=stem, config=config)
-        stem = join_tokens(tokens=tokens, case_style=config.transform_case, separator=separator)
+        tokens: list[str] = _clean_tokens(stem=new_stem, config=config)
+        new_stem = join_tokens(tokens=tokens, case_style=config.transform_case, separator=separator)
 
     if new_date:
-        stem = _add_date(
-            stem=stem,
+        new_stem = _add_date(
+            stem=new_stem,
             new_date=new_date,
             separator=separator,
             insert_location=config.insert_location,
         )
-        pp.trace(f"CLEAN (add date): {stem}")
+        pp.trace(f"CLEAN (add date): {new_stem}")
 
-    if not stem:
-        stem = file.stem
-        pp.trace(f"CLEAN (empty name): keeping {file.stem}")
-    elif file.is_dotfile:
-        stem = f".{stem}"
-        pp.trace(f"CLEAN (add dotfile): {stem}")
+    if not new_stem:
+        new_stem = stem
+        pp.trace(f"CLEAN (empty name): keeping {stem}")
+    elif is_dotfile:
+        new_stem = f".{new_stem}"
+        pp.trace(f"CLEAN (add dotfile): {new_stem}")
 
-    file.new_stem = stem
-    suffix: str = file.suffix.lower()
-    file.new_suffix = ".jpg" if suffix == ".jpeg" else suffix
+    lowered_suffix: str = suffix.lower()
+    new_suffix: str = ".jpg" if lowered_suffix == ".jpeg" else lowered_suffix
 
-    if file.name != file.new_name:
-        pp.trace(f"CLEAN (final): {file.name} -> {file.new_name}")
+    name: str = f"{stem}{suffix}"
+    new_name: str = f"{new_stem}{new_suffix}"
+    if name != new_name:
+        pp.trace(f"CLEAN (final): {name} -> {new_name}")
     else:
-        pp.trace(f"CLEAN (final): No changes to {file.name}")
+        pp.trace(f"CLEAN (final): No changes to {name}")
+
+    return CleanedName(stem=new_stem, suffix=new_suffix)
