@@ -7,7 +7,6 @@ import re
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
-import cappa
 from nclutils import pp
 from rich.style import Style
 from rich.text import Text
@@ -86,7 +85,7 @@ class Project:
         strip_stopwords: bool,
     ) -> None:
         self.name = name
-        self.path = self._validate_project_path(path.expanduser().resolve())
+        self.path = path.expanduser().resolve()
         self.depth = depth
         self.project_type = project_type
         self.strip_stopwords = strip_stopwords
@@ -175,29 +174,6 @@ class Project:
                 yield item, folder_type
                 if level < max_level:
                     yield from self._scan_folders(directory=item, level=level + 1)
-
-    @staticmethod
-    def _validate_project_path(path: Path) -> Path:
-        """Stop the run unless the project path is an existing directory.
-
-        Args:
-            path (Path): Resolved project path.
-
-        Returns:
-            Path: The same path, once validated.
-
-        Raises:
-            cappa.Exit: When path does not exist or is not a directory
-        """
-        if not path.exists():
-            pp.error(f"Specified project path does not exist: {path}")
-            raise cappa.Exit(code=1)
-
-        if not path.is_dir():
-            pp.error(f"Specified project path is not a directory: {path}")
-            raise cappa.Exit(code=1)
-
-        return path
 
     def tree(self) -> Tree:
         """Draw the folders that files can be sorted into, so users can preview where `sort` may file things.

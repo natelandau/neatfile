@@ -22,6 +22,7 @@ from neatfile.models import Project
 NO_PROJECT_MESSAGE = (
     "No project selected. Pass `--project` with a project name from the configuration file."
 )
+PROJECT_PATH_NOT_FOLDER_MESSAGE = "Project path `{path}` is not an existing folder. Set `path` in the project's configuration to a folder."
 TREE_NO_PROJECT_MESSAGE = "You must specify a project name with the `--project` flag."
 NO_DATE_FORMAT_MESSAGE = "`--date-only` needs a date format. Set `date_format` in the configuration file or pass `--date-format`."
 
@@ -111,7 +112,7 @@ def build_run_options(neatfile: NeatFile) -> RunOptions:
 
 
 def _require_project(config: Config, message: str) -> Project:
-    """Build the selected project, or stop the run when no project is selected.
+    """Build the selected project, or stop the run when no project is selected or its folder is missing.
 
     Args:
         config (Config): The settings for this run.
@@ -121,12 +122,16 @@ def _require_project(config: Config, message: str) -> Project:
         Project: The selected project. Its folders are scanned on first use.
 
     Raises:
-        cappa.Exit: If no project is selected.
+        cappa.Exit: If no project is selected, or its path is not an existing folder.
     """
     if config.project is None:
         pp.error(message)
         raise cappa.Exit(code=1)
-    return Project.from_config(project=config.project, strip_stopwords=config.strip_stopwords)
+    project = Project.from_config(project=config.project, strip_stopwords=config.strip_stopwords)
+    if not project.path.is_dir():
+        pp.error(PROJECT_PATH_NOT_FOLDER_MESSAGE.format(path=project.path))
+        raise cappa.Exit(code=1)
+    return project
 
 
 def _require_date_format(config: Config, options: RunOptions) -> None:
