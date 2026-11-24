@@ -1,5 +1,6 @@
 """Test that commands record each committed file in the undo journal."""
 
+import errno
 from collections.abc import Callable
 from pathlib import Path
 
@@ -99,12 +100,10 @@ def test_runs_that_change_nothing_record_nothing(
     create_file, mocker, isolate_state_dir, file_name, extra_args, commits_fail
 ) -> None:
     """Verify a run that moves no file leaves no journal behind."""
-    # Given: A file, and copies that fail when requested
+    # Given: A file, and moves that fail when requested
     file = create_file(file_name)
     if commits_fail:
-        mocker.patch(
-            "neatfile.features.committing.copy_file", side_effect=ValueError("copy failed")
-        )
+        mocker.patch("neatfile.features.committing.move_file", side_effect=OSError("move failed"))
 
     # When: Cleaning the file
     _run(["clean", str(file), *CLEAN_ARGS, *extra_args])
@@ -199,11 +198,18 @@ def test_original_left_behind_is_reported_and_not_recorded(
     tmp_path, create_file, mocker, capsys
 ) -> None:
     """Verify a move whose original cannot be deleted is reported and kept out of the journal."""
-    # Given: A file whose original cannot be deleted after it is copied
+    # Given: A file on what reports as another filesystem, whose original cannot be deleted
+    # after it is copied
     source = create_file("foo bar.txt", content="content")
     destination = source.with_name("foo-bar.txt")
     real_unlink = Path.unlink
+    real_replace = Path.replace
     delete_error = PermissionError("permission denied")
+
+    def _cross_device_for_source(path: Path, target: Path) -> Path:
+        if path == source:
+            raise OSError(errno.EXDEV, "Invalid cross-device link", str(path))
+        return real_replace(path, target=target)
 
     def _fail_for_source(path: Path, *, missing_ok: bool = False) -> None:
         if path == source:
@@ -211,6 +217,7 @@ def test_original_left_behind_is_reported_and_not_recorded(
         real_unlink(path, missing_ok=missing_ok)
 
     mocker.patch.object(Path, "unlink", autospec=True, side_effect=_fail_for_source)
+    mocker.patch.object(Path, "replace", autospec=True, side_effect=_cross_device_for_source)
 
     # When: Cleaning the file
     _run(["clean", str(source), *CLEAN_ARGS])
