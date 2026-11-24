@@ -68,6 +68,7 @@ class Config:
     strip_stopwords: bool
     transform_case: TransformCase
     tz: tzinfo
+    undo_history_runs: int
     user_terms: tuple[str, ...]
     project: ProjectConfig | None
 
@@ -91,6 +92,8 @@ _SETTING_NAMES: tuple[str, ...] = tuple(
 _ENV_PREFIX = "NEATFILE_"
 # Lists that combine the global and project values instead of replacing one with the other
 _MERGED_LIST_SETTINGS = frozenset({"ignored_files", "match_case_list", "stopwords"})
+# Settings that cannot differ per project because the undo journal is one file shared by all projects
+_GLOBAL_ONLY_SETTINGS = frozenset({"undo_history_runs"})
 _DEFAULT_PROJECT_DEPTH = 2
 _DEFAULT_PROJECT_TYPE = ProjectType.FOLDER
 PROJECT_NOT_FOUND_MESSAGE = "Project `{project_name}` not found in the configuration file."
@@ -128,6 +131,18 @@ def _to_bool(sourced: _SourcedValue) -> bool:
     if isinstance(sourced.value, bool):
         return sourced.value
     msg = "a boolean (true or false)"
+    raise _InvalidValueError(msg)
+
+
+def _to_non_negative_int(sourced: _SourcedValue) -> int:
+    # bool is an int subclass, so reject it explicitly
+    if (
+        isinstance(sourced.value, int)
+        and not isinstance(sourced.value, bool)
+        and sourced.value >= 0
+    ):
+        return sourced.value
+    msg = "a whole number of 0 or more"
     raise _InvalidValueError(msg)
 
 
@@ -192,10 +207,14 @@ _SCALAR_CONVERTERS: dict[str, Callable[[_SourcedValue], object]] = {
     "split_words": _to_bool,
     "strip_stopwords": _to_bool,
     "transform_case": _to_transform_case,
+    "undo_history_runs": _to_non_negative_int,
     "user_terms": _to_str_tuple,
 }
 _BOOL_SETTINGS = frozenset(
     key for key, convert in _SCALAR_CONVERTERS.items() if convert is _to_bool
+)
+_INTEGER_SETTINGS = frozenset(
+    key for key, convert in _SCALAR_CONVERTERS.items() if convert is _to_non_negative_int
 )
 _LIST_SETTINGS = _MERGED_LIST_SETTINGS | {
     key for key, convert in _SCALAR_CONVERTERS.items() if convert is _to_str_tuple
@@ -208,6 +227,8 @@ def _parse_environment_value(key: str, text: str) -> object:
     Only list settings parse as TOML, so text such as `2023-01-01` stays a string. Text that
     does not fit the setting is returned unchanged for the converter to reject.
     """
+    if key in _INTEGER_SETTINGS and text.isascii() and text.isdigit():
+        return int(text)
     if key in _BOOL_SETTINGS and text.lower() in {"true", "false"}:
         return text.lower() == "true"
     if key in _LIST_SETTINGS:
@@ -301,7 +322,12 @@ def _build_project(
             project_type = None
             project_errors.append(f"{prefix}: `type` is {table['type']!r}; expected {e.expected}")
 
-    if path is None or depth is None or project_type is None:
+    project_errors.extend(
+        f"{prefix}: `{key}` can only be set at the top level of the config file"
+        for key in sorted(_GLOBAL_ONLY_SETTINGS & table.keys())
+    )
+
+    if path is None or depth is None or project_type is None or project_errors:
         errors.extend(project_errors)
         return None, {}
 
@@ -309,7 +335,7 @@ def _build_project(
     overrides = {
         key: _SourcedValue(value=table[key], source=source)
         for key in _SETTING_NAMES
-        if key in table
+        if key in table and key not in _GLOBAL_ONLY_SETTINGS
     }
     project = ProjectConfig(name=name, path=path, depth=depth, project_type=project_type)
     return project, overrides
@@ -438,6 +464,7 @@ class _SettingResolver:
             strip_stopwords=self.setting(key="strip_stopwords", converter=_to_bool),
             transform_case=self.setting(key="transform_case", converter=_to_transform_case),
             tz=self.timezone(),
+            undo_history_runs=self.setting(key="undo_history_runs", converter=_to_non_negative_int),
             user_terms=self.setting(key="user_terms", converter=_to_str_tuple),
             project=project,
         )

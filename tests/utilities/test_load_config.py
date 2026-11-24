@@ -17,6 +17,7 @@ def test_defaults_match_default_config_file() -> None:
     assert config.date_format == ""
     assert config.ignore_file_regex.pattern == "^$"
     assert config.user_terms == ()
+    assert config.undo_history_runs == 50
     assert config.project is None
 
 
@@ -263,3 +264,48 @@ def test_project_errors(tmp_path: Path, toml: str, expected_substrings: list[str
     message = str(exc_info.value)
     for substring in expected_substrings:
         assert substring in message
+
+
+@pytest.mark.parametrize(
+    ("toml_value", "shown_value"),
+    [
+        pytest.param("-1", "-1", id="negative"),
+        pytest.param("true", "True", id="boolean"),
+        pytest.param('"5"', "'5'", id="string"),
+    ],
+)
+def test_undo_history_runs_rejects_invalid_values(
+    tmp_path: Path, toml_value: str, shown_value: str
+) -> None:
+    """Verify a negative, boolean, or string run count is a config error naming the value."""
+    user_file = tmp_path / "user.toml"
+    user_file.write_text(f"undo_history_runs = {toml_value}\n")
+
+    with pytest.raises(ConfigError) as exc_info:
+        load_config(config_paths=(DEFAULT_CONFIG_PATH, user_file), environ={})
+
+    assert "undo_history_runs" in str(exc_info.value)
+    assert shown_value in str(exc_info.value)
+
+
+def test_undo_history_runs_reads_environment_digits() -> None:
+    """Verify NEATFILE_UNDO_HISTORY_RUNS accepts a whole number."""
+    config = load_config(
+        config_paths=(DEFAULT_CONFIG_PATH,), environ={"NEATFILE_UNDO_HISTORY_RUNS": "10"}
+    )
+
+    assert config.undo_history_runs == 10
+
+
+def test_undo_history_runs_is_global_only(tmp_path: Path) -> None:
+    """Verify the journal size is rejected in a project table but loads at the top level."""
+    user_file = tmp_path / "user.toml"
+    user_file.write_text('[projects.mine]\npath = "/tmp"\nundo_history_runs = 5\n')
+
+    with pytest.raises(ConfigError) as exc_info:
+        load_config(config_paths=(DEFAULT_CONFIG_PATH, user_file), environ={}, project_name="mine")
+
+    assert "mine" in str(exc_info.value)
+    assert "undo_history_runs" in str(exc_info.value)
+    config = load_config(config_paths=(DEFAULT_CONFIG_PATH, user_file), environ={})
+    assert config.undo_history_runs == 50

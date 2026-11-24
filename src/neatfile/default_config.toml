@@ -64,6 +64,10 @@ transform_case = "ignore"
 # Use an IANA time zone name. If you do not set it, neatfile uses the local time zone.
 # tz = "America/New_York"
 
+# Number of recent runs that `undo` can reverse. Each run that renames or
+# moves files counts as one. Set to 0 to turn the undo journal off.
+undo_history_runs = 50
+
 # Extra terms that `sort` and `process` use to match files to folders.
 # A later layer replaces this list; `--term` flags replace the configured terms.
 user_terms = []
