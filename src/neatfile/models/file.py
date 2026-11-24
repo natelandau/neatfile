@@ -3,9 +3,8 @@
 import difflib
 from pathlib import Path
 
-from neatfile.constants import COMPOUND_EXTENSIONS, Separator
+from neatfile.constants import COMPOUND_EXTENSIONS
 from neatfile.utils.paths import display_path
-from neatfile.utils.strings import guess_separator
 
 
 def _split_extension(name: str) -> tuple[str, str]:
@@ -103,13 +102,3 @@ class File:
                 )
 
         return "".join(diff_output)
-
-    def guess_separator(self) -> Separator:
-        """Guess the word separator from the pending new stem.
-
-        Read `new_stem`, not the original stem, so the guess reflects edits already made, such as a removed date.
-
-        Returns:
-            Separator: The most common separator in `new_stem`, or underscore when it has none.
-        """
-        return guess_separator(self.new_stem)

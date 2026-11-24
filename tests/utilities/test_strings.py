@@ -124,12 +124,14 @@ def test_strip_stopwords(
 @pytest.mark.parametrize(
     ("input_tokens", "case_format", "expected"),
     [
-        (["Foo", "BAR", "baz"], TransformCase.CAMELCASE, ["fooBarBaz"]),
+        (["Foo", "BAR", "baz"], TransformCase.CAMELCASE, ["foo", "Bar", "Baz"]),
         (["Foo", "BAR", "baz"], TransformCase.LOWER, ["foo", "bar", "baz"]),
         (["Foo", "BAR", "baz"], TransformCase.UPPER, ["FOO", "BAR", "BAZ"]),
         (["Foo", "BAR", "baz"], TransformCase.SENTENCE, ["Foo", "bar", "baz"]),
         (["Foo", "BAR", "baz"], TransformCase.TITLE, ["Foo", "Bar", "Baz"]),
         (["Foo", "BAR", "baz"], TransformCase.IGNORE, ["Foo", "BAR", "baz"]),
+        (["1st", "3D", "MP3player"], TransformCase.TITLE, ["1st", "3D", "Mp3player"]),
+        ([], TransformCase.SENTENCE, []),
     ],
 )
 def test_transform_case(input_tokens: list[str], case_format, expected: list[str]) -> None:

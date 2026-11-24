@@ -120,17 +120,37 @@ def strip_stopwords(tokens: list[str], stopwords: tuple[str, ...] = ()) -> list[
     return [token for token in tokens if token.lower() not in all_stopwords]
 
 
-def transform_case(tokens: list[str], case_style: TransformCase) -> list[str]:
-    """Transform the case of each token in a list according to the specified case style.
+def _title_word(word: str) -> str:
+    """Capitalize a word for title case without changing letters that follow a digit.
 
-    Apply case transformations like lowercase, uppercase, title case, camelcase, or sentence case to a list of tokens. For camelcase, joins all tokens into a single string with the first token lowercase and subsequent tokens capitalized.
+    str.title() turns "1st" into "1St" and str.capitalize() turns "3D" into "3d", so letters after
+    a digit keep the case the user typed.
 
     Args:
-        tokens (list[str]): List of string tokens to transform.
+        word (str): The word to capitalize.
+
+    Returns:
+        str: The word with its first character uppercased and later letters lowercased, except
+            letters directly after a digit.
+    """
+    return "".join(
+        char.upper() if i == 0 else char if word[i - 1].isdigit() else char.lower()
+        for i, char in enumerate(word)
+    )
+
+
+def transform_case(tokens: list[str], case_style: TransformCase) -> list[str]:
+    """Change the case of each token according to the configured case style.
+
+    For camelcase, lowercase the first token and capitalize the rest. Join the result with
+    `join_tokens`, which drops the separator for camelcase.
+
+    Args:
+        tokens (list[str]): Tokens to transform.
         case_style (TransformCase): The case transformation to apply.
 
     Returns:
-        list[str]: List of transformed tokens. For camelcase, returns a single-item list with the joined string.
+        list[str]: The transformed tokens. Empty when `tokens` is empty.
     """
     match case_style:
         case TransformCase.LOWER:
@@ -138,16 +158,31 @@ def transform_case(tokens: list[str], case_style: TransformCase) -> list[str]:
         case TransformCase.UPPER:
             return [token.upper() for token in tokens]
         case TransformCase.TITLE:
-            return [token.title() for token in tokens]
+            return [_title_word(token) for token in tokens]
         case TransformCase.CAMELCASE:
-            tokens = [
+            return [
                 token.lower() if i == 0 else token.capitalize() for i, token in enumerate(tokens)
             ]
-            return ["".join(tokens)]
         case TransformCase.SENTENCE:
-            return [tokens[0].capitalize()] + [token.lower() for token in tokens[1:]]
+            return [
+                token.capitalize() if i == 0 else token.lower() for i, token in enumerate(tokens)
+            ]
         case _:
             return tokens
+
+
+def join_tokens(tokens: list[str], *, case_style: TransformCase, separator: str) -> str:
+    """Join cleaned tokens into a stem, so every case style is joined the way it expects.
+
+    Args:
+        tokens (list[str]): Tokens returned by `transform_case`.
+        case_style (TransformCase): The case transformation applied to the tokens.
+        separator (str): Text placed between words.
+
+    Returns:
+        str: The joined stem. Camelcase words are joined without a separator.
+    """
+    return ("" if case_style == TransformCase.CAMELCASE else separator).join(tokens)
 
 
 def guess_separator(stem: str) -> Separator:

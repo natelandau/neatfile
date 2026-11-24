@@ -19,9 +19,11 @@ from neatfile.config import Config, ConfigError, RunOptions, load_config
 from neatfile.constants import PrintLevel, Separator, TransformCase
 from neatfile.models import Project
 
-NO_PROJECT_MESSAGE = "`project` is not specified"
+NO_PROJECT_MESSAGE = (
+    "No project selected. Pass `--project` with a project name from the configuration file."
+)
 TREE_NO_PROJECT_MESSAGE = "You must specify a project name with the `--project` flag."
-NO_DATE_FORMAT_MESSAGE = "`date_format` is not specified"
+NO_DATE_FORMAT_MESSAGE = "`--date-only` needs a date format. Set `date_format` in the configuration file or pass `--date-format`."
 
 _CLEAN_DESCRIPTION = """\
 Perform the following transformations on a filename:

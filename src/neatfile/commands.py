@@ -4,6 +4,7 @@ from enum import StrEnum
 from pathlib import Path
 
 import cappa
+from datefind import FoundDate
 from nclutils import pp
 from rich.prompt import Confirm
 
@@ -12,6 +13,7 @@ from neatfile.features import (
     clean_filename,
     commit_changes,
     find_processable_files,
+    parse_date_option,
     sort_file,
 )
 from neatfile.models import File, Project
@@ -82,6 +84,7 @@ def _plan_changes(
     config: Config,
     options: RunOptions,
     clean: bool,
+    override_date: FoundDate | None,
     sort_project: Project | None,
 ) -> bool:
     """Set the file's new name and parent for the steps this run takes.
@@ -91,6 +94,7 @@ def _plan_changes(
         config (Config): The settings for this run.
         options (RunOptions): The CLI-only values for this run.
         clean (bool): Whether to clean the filename.
+        override_date (FoundDate | None): The date from `--date` to give every cleaned file, or None.
         sort_project (Project | None): The project to sort the file into, or None to skip sorting.
 
     Returns:
@@ -99,7 +103,9 @@ def _plan_changes(
     pp.debug(f"Working on: `{file.display_path}`")
 
     if clean:
-        clean_filename(file=file, config=config, date=options.date, date_only=options.date_only)
+        clean_filename(
+            file=file, config=config, override_date=override_date, date_only=options.date_only
+        )
 
     if sort_project is not None:
         new_parent = sort_file(file=file, project=sort_project, user_terms=config.user_terms)
@@ -140,6 +146,10 @@ def execute_command(
     ]
     project_path: Path | None = project.path if project else None
 
+    override_date: FoundDate | None = (
+        parse_date_option(options.date, config=config) if mode.cleans else None
+    )
+
     # Skip an unsorted file rather than abort so the rest of the batch still gets sorted
     planned_files: list[File] = [
         file
@@ -149,6 +159,7 @@ def execute_command(
             config=config,
             options=options,
             clean=mode.cleans,
+            override_date=override_date,
             sort_project=sort_project,
         )
     ]
