@@ -14,7 +14,10 @@ from neatfile.config import Config
 from neatfile.constants import InsertLocation, Separator, TransformCase
 from neatfile.features.cleaning import (
     DATE_NOT_FOUND_MESSAGE,
+    MAX_FILENAME_BYTES,
+    NAME_TOO_LONG_MESSAGE,
     _creation_timestamp,
+    _truncate_to_bytes,
     clean_name,
     parse_date_option,
 )
@@ -218,6 +221,79 @@ def test_clean_name(
         )
         == expected
     )
+
+
+@pytest.mark.parametrize(
+    ("name", "date_only", "expected"),
+    [
+        pytest.param("con.txt", False, "Con_.txt", id="reserved-device-name"),
+        pytest.param("Com1.backup.txt", True, "Com1_.backup.txt", id="reserved-before-first-dot"),
+        pytest.param("nul", False, "Nul_", id="reserved-without-suffix"),
+        pytest.param("com¹.txt", True, "com¹_.txt", id="reserved-superscript-port"),
+        pytest.param("CONOUT$.log", True, "CONOUT$_.log", id="reserved-console-buffer"),
+        pytest.param("console.txt", False, "Console.txt", id="longer-word-not-reserved"),
+        pytest.param("2024-01-01 con.txt", False, "2024-01-01 Con.txt", id="dated-not-reserved"),
+        pytest.param("notes. ", True, "notes", id="trailing-dot-and-space-without-suffix"),
+        pytest.param("Meeting: Q4?.txt", True, "Meeting Q4.txt", id="invalid-characters-removed"),
+    ],
+)
+def test_clean_name_is_valid_on_windows(
+    dated_config: Config, name: str, date_only: bool, expected: str
+) -> None:
+    """Verify a planned name avoids the characters, names, and endings Windows refuses."""
+    config: Config = replace(dated_config, separator=Separator.SPACE)
+
+    assert _planned_name(name, config=config, date_only=date_only) == expected
+
+
+@pytest.mark.parametrize(
+    ("word", "date_only", "last_word"),
+    [
+        pytest.param("word", False, "Word", id="ascii-words"),
+        pytest.param("wörd", False, "Wörd", id="multibyte-words"),
+        pytest.param("word", True, "word", id="date-only-mode"),
+    ],
+)
+def test_clean_name_fits_filename_byte_limit(
+    dated_config: Config, word: str, date_only: bool, last_word: str
+) -> None:
+    """Verify a long name is cut to the byte limit at a word, keeping its date and extension."""
+    config: Config = replace(dated_config, separator=Separator.UNDERSCORE)
+    name: str = "_".join([word] * 100) + "_2024-01-01.pdf"
+
+    planned: str = _planned_name(name, config=config, date_only=date_only)
+
+    assert len(planned.encode()) <= MAX_FILENAME_BYTES
+    assert planned.startswith("2024-01-01_")
+    assert planned.endswith(f"_{last_word}.pdf")
+
+
+def test_clean_name_keeps_name_when_date_and_extension_do_not_fit(
+    dated_config: Config, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Verify a name whose date and extension exceed the byte limit is left as it is."""
+    name: str = "2024-01-01 abc." + "x" * 230
+
+    assert _planned_name(name, config=dated_config) == name
+    output = capsys.readouterr()
+    assert NAME_TOO_LONG_MESSAGE.format(name=name, max_bytes=MAX_FILENAME_BYTES) in (
+        output.out + output.err
+    )
+
+
+@pytest.mark.parametrize(
+    ("text", "max_bytes", "expected"),
+    [
+        pytest.param("aaa_bbb_ccc", 7, "aaa_bbb", id="cut-lands-at-word-end"),
+        pytest.param("aaa_bbb_ccc", 9, "aaa_bbb", id="cut-inside-word"),
+        pytest.param("FirstSecondThird", 13, "FirstSecond", id="camel-case-words"),
+        pytest.param("aaa-bbb ccc_ddd", 13, "aaa-bbb ccc", id="mixed-separators"),
+        pytest.param("abcdefghij", 4, "abcd", id="single-long-word"),
+    ],
+)
+def test_truncate_to_bytes_keeps_whole_words(text: str, max_bytes: int, expected: str) -> None:
+    """Verify a shortened name ends on the last whole word that fits."""
+    assert _truncate_to_bytes(text=text, max_bytes=max_bytes) == expected
 
 
 def test_parse_date_option_warns_when_value_has_no_date(

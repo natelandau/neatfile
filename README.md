@@ -36,6 +36,7 @@ What's the problem here?
 -   Enforce lowercase file extensions
 -   Remove filler words such as "the", "of", and "and"
 -   Split `camelCase` words into separate words (`camel Case`)
+-   Keep new filenames valid on Windows, macOS, and Linux: shorten long names but keep the date and extension, remove characters that Windows refuses (such as `:` and `?`) and a trailing dot or space, and add `_` to Windows device names such as `CON`
 
 ### Date parsing
 

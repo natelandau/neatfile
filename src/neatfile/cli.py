@@ -301,7 +301,7 @@ class _CleanArguments(_FileArguments):
     date_only: Annotated[
         bool,
         cappa.Arg(
-            help="Add a date to the filename but make no other changes",
+            help="Add a date to the filename but make no other changes beyond keeping it valid on every system",
             show_default=False,
         ),
     ] = False
