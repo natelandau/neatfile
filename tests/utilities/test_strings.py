@@ -12,6 +12,7 @@ from neatfile.constants import (
 from neatfile.utils.strings import (
     guess_separator,
     match_case,
+    remove_inner_apostrophes,
     split_camel_case,
     strip_special_chars,
     strip_stopwords,
@@ -59,6 +60,25 @@ def test_split_camel_case(
     # When: Calling split_camel_case
     # Then: Words are correctly split on camelCase boundaries
     assert split_camel_case(input_strings, match_case_list=match_list) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("John's report", "Johns report"),
+        ("don\u2019t panic", "dont panic"),
+        ("O'Brien notes", "OBrien notes"),
+        ("'quoted' title", "'quoted' title"),
+        ("rock 'n' roll", "rock 'n' roll"),
+        ("80's mix", "80s mix"),
+        ("5'10 photo", "5'10 photo"),
+        ("Q3'23 report", "Q3'23 report"),
+        ("snake_'quoted'", "snake_'quoted'"),
+    ],
+)
+def test_remove_inner_apostrophes(text: str, expected: str) -> None:
+    """Verify apostrophes inside words are dropped so possessives stay one word."""
+    assert remove_inner_apostrophes(text) == expected
 
 
 @pytest.mark.parametrize(

@@ -74,6 +74,22 @@ def split_camel_case(string_list: list[str], match_case_list: tuple[str, ...] = 
     return result
 
 
+def remove_inner_apostrophes(text: str) -> str:
+    """Drop apostrophes inside words so possessives and contractions stay one word.
+
+    Without this, tokenizing splits "John's" into "John" and "s". Straight and curly apostrophes
+    are removed only after a letter or digit and before a letter, so quotes around a word and
+    numbers such as "5'10" or "Q3'23" are left alone.
+
+    Args:
+        text (str): The text to edit.
+
+    Returns:
+        str: The text with inner apostrophes removed, as in "Johns", "dont", and "80s".
+    """
+    return re.sub(pattern=r"(?<=[^\W_])['\u2019](?=[^\W\d_])", repl="", string=text)
+
+
 def tokenize_string(string: str) -> list[str]:
     """Split a string into word tokens and single separator tokens.
 
