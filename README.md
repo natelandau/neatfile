@@ -52,6 +52,10 @@ What's the problem here?
 -   Optionally, add `.neatfile` files to directories containing a list of words that will match files
 -   Add a `.neatfileignore` file to directories to exclude that directory from being matched to a project. This will not exclude children of the directory.
 
+### Undo
+
+-   Revert the last run of `clean`, `sort`, or `process` with `neatfile undo`
+
 ## Installation
 
 neatfile requires Python 3.12 or later.
@@ -202,6 +206,11 @@ transform_case     = "ignore"
 # Use an IANA time zone name. If you do not set it, neatfile uses the local time zone.
 # tz                 = "America/New_York"
 
+# Number of recent runs that `undo` can reverse. Each run that renames or
+# moves files counts as one. Set to 0 to turn the undo journal off.
+# Only the top level of the configuration file can set this.
+undo_history_runs  = 50
+
 # Extra terms that `sort` and `process` use to match files to folders.
 # A project section can set its own user_terms.
 # A later layer replaces this list. `--term` flags replace the configured terms.
@@ -300,6 +309,35 @@ neatfile would automatically:
 ### Vector matching
 
 Behind the scenes, neatfile uses a language model to find similar terms in a filename and a directory name by comparing their vector embeddings. This is useful for matching terms that are similar but not exactly the same. For example, this will match the term `mockups` with the directory name `mockup` or the term `budget` with the term `finance`.
+
+## Undo
+
+neatfile records each file that `clean`, `sort`, and `process` rename or move. The `neatfile undo` command moves the files of the most recent run back to their original paths. Each later `neatfile undo` reverts the run before it.
+
+```bash
+# Show the files of the last run and ask before restoring them
+neatfile undo
+
+# Restore without asking
+neatfile undo --force
+
+# Show what undo will do and change nothing
+neatfile undo -n
+```
+
+`neatfile undo` always asks for confirmation, even when you did not use `--confirm` for the run. If a run replaced an existing file and kept a backup, undo also moves the backup back to its original name.
+
+Undo never overwrites or deletes a file. It skips a file and reports the reason in these cases:
+
+-   Another file has the original name. The file stays in the journal. Move the other file away, then run `neatfile undo` again.
+-   The folder of the renamed file does not exist, for example because it is on a drive that is not connected. The file stays in the journal. Connect the drive, then run `neatfile undo` again.
+-   The renamed file is not at its new path, but its folder exists. The file moved after the run, so undo cannot find it. Undo removes the file from the journal.
+
+If the run kept a backup of a file that it replaced, undo moves the backup back to that path, also when it cannot find the renamed file. If another file already has that path, the backup stays where it is and undo shows the backup path.
+
+If undo skips a file or removes it from the journal, the command exits with code 1. The next `neatfile undo` finishes the skipped files of that run before it reverts an older run.
+
+The journal is at `$XDG_STATE_HOME/neatfile/undo-journal.jsonl`. If `XDG_STATE_HOME` is not set, the journal is at `~/.local/state/neatfile/undo-journal.jsonl`. The `undo_history_runs` setting sets how many runs the journal keeps. If the journal has a line that neatfile cannot read, undo shows the line number. The next change to the journal removes that line. An undo and a run that renames or moves files both change the journal.
 
 ## Caveats
 

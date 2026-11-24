@@ -14,7 +14,7 @@ from nclutils import pp
 from rich.traceback import install
 
 from neatfile import constants
-from neatfile.commands import Mode, execute_command
+from neatfile.commands import Mode, execute_command, execute_undo
 from neatfile.config import Config, ConfigError, RunOptions, load_config
 from neatfile.constants import PrintLevel, Separator, TransformCase
 from neatfile.models import Project
@@ -172,6 +172,7 @@ def _require_date_format(config: Config, options: RunOptions) -> None:
 -   Use vector matching to find similar terms
 -   Respect the [Johnny Decimal](https://johnnydecimal.com) system if you use it
 -   Optionally, add `.neatfile` files to directories containing a list of words that will match files
+-   Revert the last run of `clean`, `sort`, or `process` with `neatfile undo`
 
 **Configuration**
 
@@ -182,7 +183,7 @@ class NeatFile:
     """A CLI tool that automatically normalizes and organizes your files based on customizable rules."""
 
     command: cappa.Subcommands[
-        CleanCommand | ConfigCommand | SortCommand | ProcessCommand | TreeCommand
+        CleanCommand | ConfigCommand | SortCommand | ProcessCommand | TreeCommand | UndoCommand
     ]
 
     project_name: Annotated[
@@ -458,6 +459,23 @@ class TreeCommand:
         """Print the selected project's folder tree."""
         project = _require_project(config=config, message=TREE_NO_PROJECT_MESSAGE)
         pp.console().print(project.tree())
+
+
+@command(name="undo")
+class UndoCommand:
+    """Revert the last run of clean, sort, or process."""
+
+    force: Annotated[
+        bool,
+        cappa.Arg(
+            help="Do not prompt for confirmation before restoring files",
+            show_default=False,
+        ),
+    ] = False
+
+    def __call__(self, options: Annotated[RunOptions, Dep(build_run_options)]) -> None:
+        """Move the files of the newest run in the undo journal back to their original paths."""
+        execute_undo(dry_run=options.dry_run, force=self.force)
 
 
 def main() -> None:  # pragma: no cover

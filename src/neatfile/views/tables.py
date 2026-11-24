@@ -1,12 +1,15 @@
 """Rich tables for the neatfile package."""
 
+from collections.abc import Sequence
 from pathlib import Path
 
 from nclutils import pp
 from rich import box
 from rich.table import Table
+from rich.text import Text
 
 from neatfile.models import File
+from neatfile.utils.paths import display_path
 
 
 def confirmation_table(
@@ -47,14 +50,44 @@ def confirmation_table(
     for _n, file in enumerate(files, start=1):
         table.add_row(
             str(_n),
-            file.name,
-            file.new_name if file.has_new_name else "[green]No Changes[/green]",
-            str("…/" + str(file.new_parent.relative_to(project_path)) + "/")
+            Text(file.name),
+            Text(file.new_name) if file.has_new_name else "[green]No Changes[/green]",
+            Text("…/" + str(file.new_parent.relative_to(project_path)) + "/")
             if organized_files and file.has_new_parent
             else "",
             file.get_filename_diff()
             if pp.get_default().verbosity >= 1 and file.has_new_name
             else "",
+        )
+
+    return table
+
+
+def undo_table(moves: Sequence[tuple[Path, Path]]) -> Table:
+    """Build a table of the files undo will move back, so the user can review them before confirming.
+
+    Args:
+        moves (Sequence[tuple[Path, Path]]): Each file's current path and the path it returns to.
+
+    Returns:
+        Table: One row per file, with its current path and the path it returns to.
+    """
+    table = Table(
+        box=box.SIMPLE,
+        show_header=True,
+        header_style="bold",
+        min_width=40,
+        title=f"Files to restore from the last run: {len(moves)}",
+    )
+    table.add_column("#")
+    table.add_column("Current path", overflow="fold")
+    table.add_column("Restore to", overflow="fold")
+
+    for number, (current_path, restore_to) in enumerate(moves, start=1):
+        table.add_row(
+            str(number),
+            Text(str(display_path(current_path))),
+            Text(str(display_path(restore_to))),
         )
 
     return table
