@@ -22,6 +22,7 @@ from neatfile.utils.strings import (
     guess_separator,
     join_tokens,
     match_case,
+    remove_inner_apostrophes,
     split_camel_case,
     strip_special_chars,
     strip_stopwords,
@@ -165,8 +166,11 @@ def _filename_stopwords(config: Config) -> frozenset[str]:
         frozenset[str]: Lowercase stopwords: the built-in filler words plus `stopwords`, minus any
             word in `match_case_list`.
     """
-    added: set[str] = {word.lower() for word in config.stopwords}
-    protected: set[str] = {word.lower() for word in config.match_case_list}
+    # Filename tokens never hold inner apostrophes, so "don't" must become "dont" to match
+    added: set[str] = {remove_inner_apostrophes(word.lower()) for word in config.stopwords}
+    protected: set[str] = {
+        remove_inner_apostrophes(word.lower()) for word in config.match_case_list
+    }
     return frozenset((FILENAME_STOPWORDS | added) - protected)
 
 
@@ -180,14 +184,18 @@ def _clean_tokens(stem: str, *, config: Config) -> list[str]:
     Returns:
         list[str]: The cleaned words, ready to join. Empty when nothing survives cleaning.
     """
-    tokens: list[str] = tokenize_string(stem)
+    # Tokens never keep an inner apostrophe, so entries such as "McDonald's" must drop theirs to match
+    match_case_list: tuple[str, ...] = tuple(
+        remove_inner_apostrophes(word) for word in config.match_case_list
+    )
+    tokens: list[str] = tokenize_string(remove_inner_apostrophes(stem))
     pp.debug(f"CLEAN (tokenize): {tokens}")
 
     tokens = strip_special_chars(tokens)
     pp.debug(f"CLEAN (strip special chars): {tokens}")
 
     if config.split_words:
-        tokens = split_camel_case(string_list=tokens, match_case_list=config.match_case_list)
+        tokens = split_camel_case(string_list=tokens, match_case_list=match_case_list)
         pp.debug(f"CLEAN (split words): {tokens}")
 
     if config.strip_stopwords:
@@ -205,7 +213,7 @@ def _clean_tokens(stem: str, *, config: Config) -> list[str]:
     tokens = transform_case(tokens=tokens, case_style=config.transform_case)
     pp.debug(f"CLEAN (transform case): {tokens}")
 
-    tokens = match_case(tokens=tokens, match_case_list=config.match_case_list)
+    tokens = match_case(tokens=tokens, match_case_list=match_case_list)
     pp.debug(f"CLEAN (match case): {tokens}")
 
     return tokens

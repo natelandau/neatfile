@@ -39,6 +39,16 @@ def test_folder_terms_drop_matching_stopwords(tmp_path) -> None:
     assert folder.terms == {"invoices"}
 
 
+def test_folder_terms_keep_possessives_whole(tmp_path) -> None:
+    """Verify a possessive folder name yields the same term as a cleaned filename."""
+    directory = tmp_path / "John's Invoices"
+    directory.mkdir()
+
+    folder = Folder(directory, FolderType.OTHER, strip_stopwords=True)
+
+    assert folder.terms == {"johns", "invoices"}
+
+
 @pytest.mark.parametrize(
     ("dirname", "folder_type", "expected_name", "expected_number"),
     [

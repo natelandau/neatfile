@@ -5,7 +5,12 @@ import re
 from pathlib import Path
 
 from neatfile.constants import MATCHING_STOPWORDS, NEATFILE_IGNORE_NAME, NEATFILE_NAME, FolderType
-from neatfile.utils.strings import strip_special_chars, strip_stopwords, tokenize_string
+from neatfile.utils.strings import (
+    remove_inner_apostrophes,
+    strip_special_chars,
+    strip_stopwords,
+    tokenize_string,
+)
 
 
 class Folder:
@@ -86,7 +91,7 @@ class Folder:
         Returns:
             set[str]: Normalized set of search terms with special characters removed and converted to lowercase
         """
-        terms = tokenize_string(self.name)
+        terms = tokenize_string(remove_inner_apostrophes(self.name))
         terms = strip_special_chars(terms)
 
         if self.strip_stopwords:

@@ -97,6 +97,14 @@ def test_creation_timestamp_falls_back_to_mtime(tmp_path: Path, mocker: MockerFi
             id="date-option-replaces-filename-date",
         ),
         pytest.param(
+            "John's report 2024-01-01.txt",
+            None,
+            False,
+            {},
+            "2024-01-01 Johns Report.txt",
+            id="possessive-stays-one-word",
+        ),
+        pytest.param(
             "report 2020-05-01.txt",
             "no date here",
             False,
@@ -213,6 +221,18 @@ def test_parse_date_option_warns_when_value_has_no_date(
             {"stopwords": ("draft",)},
             "final notes.txt",
             id="user-stopwords-added",
+        ),
+        pytest.param(
+            "don't open notes.txt",
+            {"stopwords": ("don't",)},
+            "open notes.txt",
+            id="user-stopword-with-apostrophe",
+        ),
+        pytest.param(
+            "mcdonald's menu.txt",
+            {"match_case_list": ("McDonald's",), "split_words": True},
+            "McDonalds menu.txt",
+            id="match-case-entry-with-apostrophe",
         ),
         pytest.param("the of.txt", {}, "the of.txt", id="all-stopwords-keeps-original"),
     ],
