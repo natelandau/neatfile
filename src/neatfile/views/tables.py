@@ -1,5 +1,6 @@
 """Rich tables for the neatfile package."""
 
+import difflib
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -10,6 +11,34 @@ from rich.text import Text
 
 from neatfile.models import File
 from neatfile.utils.paths import display_path
+
+
+def filename_diff(original: str, new: str) -> Text:
+    """Highlight how a filename changes, so a user can review a rename before confirming it.
+
+    Show deleted fragments in red and inserted fragments in green.
+
+    Args:
+        original (str): The current filename.
+        new (str): The planned filename.
+
+    Returns:
+        Text: The filename with deleted and inserted fragments highlighted.
+    """
+    matcher = difflib.SequenceMatcher(isjunk=None, a=original, b=new)
+    inserted, deleted = "green reverse", "red reverse"
+    diff = Text()
+
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            diff.append(original[i1:i2])
+            continue
+        if tag in {"delete", "replace"}:
+            diff.append(original[i1:i2], style=deleted)
+        if tag in {"insert", "replace"}:
+            diff.append(new[j1:j2], style=inserted)
+
+    return diff
 
 
 def confirmation_table(
@@ -55,7 +84,7 @@ def confirmation_table(
             Text("…/" + str(file.new_parent.relative_to(project_path)) + "/")
             if organized_files and file.has_new_parent
             else "",
-            file.get_filename_diff()
+            filename_diff(original=file.name, new=file.new_name)
             if pp.get_default().verbosity >= 1 and file.has_new_name
             else "",
         )

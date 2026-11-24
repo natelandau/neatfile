@@ -152,7 +152,7 @@ def _plan_changes(
     Returns:
         bool: False when sorting found no folder for the file, True otherwise.
     """
-    pp.debug(f"Working on: `{file.display_path}`")
+    pp.debug(f"Working on: `{display_path(file.path)}`")
 
     if clean:
         cleaned: CleanedName = clean_name(
