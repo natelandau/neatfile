@@ -181,14 +181,14 @@ def _clean_tokens(stem: str, *, config: Config) -> list[str]:
         list[str]: The cleaned words, ready to join. Empty when nothing survives cleaning.
     """
     tokens: list[str] = tokenize_string(stem)
-    pp.trace(f"CLEAN (tokenize): {tokens}")
+    pp.debug(f"CLEAN (tokenize): {tokens}")
 
     tokens = strip_special_chars(tokens)
-    pp.trace(f"CLEAN (strip special chars): {tokens}")
+    pp.debug(f"CLEAN (strip special chars): {tokens}")
 
     if config.split_words:
         tokens = split_camel_case(string_list=tokens, match_case_list=config.match_case_list)
-        pp.trace(f"CLEAN (split words): {tokens}")
+        pp.debug(f"CLEAN (split words): {tokens}")
 
     if config.strip_stopwords:
         # Keep original tokens if stripping stopwords would remove everything
@@ -200,13 +200,13 @@ def _clean_tokens(stem: str, *, config: Config) -> list[str]:
             )
             or tokens
         )
-        pp.trace(f"CLEAN (strip stopwords): {tokens}")
+        pp.debug(f"CLEAN (strip stopwords): {tokens}")
 
     tokens = transform_case(tokens=tokens, case_style=config.transform_case)
-    pp.trace(f"CLEAN (transform case): {tokens}")
+    pp.debug(f"CLEAN (transform case): {tokens}")
 
     tokens = match_case(tokens=tokens, match_case_list=config.match_case_list)
-    pp.trace(f"CLEAN (match case): {tokens}")
+    pp.debug(f"CLEAN (match case): {tokens}")
 
     return tokens
 
@@ -305,14 +305,14 @@ def clean_name(
             separator=separator,
             insert_location=config.insert_location,
         )
-        pp.trace(f"CLEAN (add date): {new_stem}")
+        pp.debug(f"CLEAN (add date): {new_stem}")
 
     if not new_stem:
         new_stem = stem
-        pp.trace(f"CLEAN (empty name): keeping {stem}")
+        pp.debug(f"CLEAN (empty name): keeping {stem}")
     elif is_dotfile:
         new_stem = f".{new_stem}"
-        pp.trace(f"CLEAN (add dotfile): {new_stem}")
+        pp.debug(f"CLEAN (add dotfile): {new_stem}")
 
     lowered_suffix: str = suffix.lower()
     new_suffix: str = ".jpg" if lowered_suffix == ".jpeg" else lowered_suffix
@@ -320,8 +320,8 @@ def clean_name(
     name: str = f"{stem}{suffix}"
     new_name: str = f"{new_stem}{new_suffix}"
     if name != new_name:
-        pp.trace(f"CLEAN (final): {name} -> {new_name}")
+        pp.debug(f"CLEAN (final): {name} -> {new_name}")
     else:
-        pp.trace(f"CLEAN (final): No changes to {name}")
+        pp.debug(f"CLEAN (final): No changes to {name}")
 
     return CleanedName(stem=new_stem, suffix=new_suffix)

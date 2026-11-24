@@ -519,3 +519,24 @@ def test_invalid_env_value_exits_with_error(create_file, capsys, monkeypatch):
     assert "NEATFILE_SEPARATOR" in stderr
     assert "dash" in stderr
     assert file.exists()
+
+
+@pytest.mark.parametrize(
+    ("verbosity_args", "shows_steps"),
+    [
+        pytest.param([], False, id="default"),
+        pytest.param(["-v"], True, id="verbose"),
+    ],
+)
+def test_clean_shows_cleaning_steps_at_verbose(
+    create_file, capsys, verbosity_args: list[str], shows_steps: bool
+) -> None:
+    """Verify each cleaning step is printed with -v so users can tune their settings."""
+    filename = create_file("The Report.txt")
+    args = ["clean", "--dry-run", "--date-format", "", *verbosity_args, str(filename)]
+
+    with pytest.raises(cappa.Exit):
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
+
+    captured = capsys.readouterr()
+    assert ("CLEAN (strip stopwords)" in captured.out + captured.err) is shows_steps
