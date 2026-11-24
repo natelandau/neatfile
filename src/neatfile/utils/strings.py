@@ -3,7 +3,6 @@
 import re
 
 from neatfile.constants import (
-    ENGLISH_STOPWORDS,
     SEPARATOR_CHARACTERS,
     Separator,
     TransformCase,
@@ -103,21 +102,23 @@ def strip_special_chars(tokens: list[str]) -> list[str]:
     return [cleaned for token in tokens if (cleaned := re.sub(r"[\W_]", "", token))]
 
 
-def strip_stopwords(tokens: list[str], stopwords: tuple[str, ...] = ()) -> list[str]:
-    """Drop stopword tokens so filenames keep only meaningful words.
+def strip_stopwords(
+    tokens: list[str], *, stopwords: frozenset[str], protected_words: frozenset[str] = frozenset()
+) -> list[str]:
+    """Drop stopword tokens so names and search terms keep only meaningful words.
 
-    Match case-insensitively against the bundled English stopwords plus `stopwords`.
+    Match `stopwords` ignoring case. Match `protected_words` with case, so an abbreviation such as
+    "IT" survives while the word "it" is removed.
 
     Args:
         tokens (list[str]): Tokens to filter.
-        stopwords (tuple[str, ...], optional): Extra stopwords to drop. Defaults to ().
+        stopwords (frozenset[str]): Lowercase words to remove.
+        protected_words (frozenset[str], optional): Exact tokens to keep even when they are stopwords. Defaults to an empty set.
 
     Returns:
         list[str]: The tokens that are not stopwords. Empty when every token is a stopword.
     """
-    all_stopwords = ENGLISH_STOPWORDS | {x.lower() for x in stopwords}
-
-    return [token for token in tokens if token.lower() not in all_stopwords]
+    return [token for token in tokens if token in protected_words or token.lower() not in stopwords]
 
 
 def _title_word(word: str) -> str:

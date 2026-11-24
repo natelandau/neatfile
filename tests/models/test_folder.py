@@ -29,6 +29,16 @@ def test_keep_stopwords_if_empty_terms(tmp_path) -> None:
     assert folder.number is None
 
 
+def test_folder_terms_drop_matching_stopwords(tmp_path) -> None:
+    """Verify folder names still lose broad stopwords such as ordinals and numbers."""
+    directory = tmp_path / "part_two_invoices"
+    directory.mkdir()
+
+    folder = Folder(directory, FolderType.OTHER, strip_stopwords=True)
+
+    assert folder.terms == {"invoices"}
+
+
 @pytest.mark.parametrize(
     ("dirname", "folder_type", "expected_name", "expected_number"),
     [

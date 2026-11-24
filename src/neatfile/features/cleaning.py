@@ -9,7 +9,7 @@ from datefind import FoundDate, find_dates
 from nclutils import pp
 
 from neatfile.config import Config
-from neatfile.constants import SEPARATOR_CHARACTERS, InsertLocation, Separator
+from neatfile.constants import MATCHING_STOPWORDS, SEPARATOR_CHARACTERS, InsertLocation, Separator
 from neatfile.models import File
 from neatfile.utils.strings import (
     guess_separator,
@@ -150,7 +150,13 @@ def _clean_tokens(stem: str, *, config: Config) -> list[str]:
 
     if config.strip_stopwords:
         # Keep original tokens if stripping stopwords would remove everything
-        tokens = strip_stopwords(tokens=tokens, stopwords=config.stopwords) or tokens
+        tokens = (
+            strip_stopwords(
+                tokens=tokens,
+                stopwords=MATCHING_STOPWORDS | {word.lower() for word in config.stopwords},
+            )
+            or tokens
+        )
         pp.trace(f"CLEAN (strip stopwords): {tokens}")
 
     tokens = transform_case(tokens=tokens, case_style=config.transform_case)
