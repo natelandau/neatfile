@@ -61,10 +61,10 @@ TODAY = datetime.now().astimezone().date().strftime("%Y-%m-%d")
         ),
         pytest.param(
             "the $#@BAR(#FOO)*&^.txt",
-            f"{TODAY} the $#@BAR(#FOO)*&^.txt",
+            f"{TODAY} the $#@BAR(#FOO)&^.txt",
             ["--date-only"],
             {"separator": "ignore", "strip_stopwords": True, "date_format": "%Y-%m-%d"},
-            f"the $#@BAR(#FOO)*&^.txt -> {TODAY} the $#@BAR(#FOO)*&^.txt",
+            f"the $#@BAR(#FOO)*&^.txt -> {TODAY} the $#@BAR(#FOO)&^.txt",
             id="date-only, ignore-separator",
         ),
         pytest.param(

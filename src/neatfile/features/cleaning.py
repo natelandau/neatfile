@@ -40,6 +40,22 @@ _SHORT_DIGIT_RUN = re.compile(r"\d{4,7}")
 # Two-digit month and day give the longest output of formats such as `%m%d%y`
 _SAMPLE_DATE = datetime(2000, 12, 31)  # noqa: DTZ001
 
+# ext4 and most other Linux filesystems cap a name at 255 bytes, the tightest common limit. A
+# backup of a replaced file appends `.<23-character id>.bak` (28 bytes) to its name, and that name
+# must fit too.
+MAX_FILENAME_BYTES = 255 - 28
+NAME_TOO_LONG_MESSAGE = (
+    "Keeping `{name}`: its date and extension alone are longer than {max_bytes} bytes."
+)
+# Windows refuses these characters anywhere in a name. Normal cleaning already drops them, but
+# `--date-only` keeps the original words.
+_WINDOWS_INVALID_CHARACTERS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+# Windows refuses these names in any letter case, even with an extension such as `con.txt`
+_WINDOWS_RESERVED_NAMES: frozenset[str] = frozenset(
+    {"CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$"}
+    | {f"{device}{number}" for device in ("COM", "LPT") for number in "0123456789¹²³"}
+)
+
 
 def _reads_short_digit_dates(config: Config) -> bool:
     """Decide whether runs of 4 to 7 digits count as dates.
@@ -272,6 +288,75 @@ def _add_date(stem: str, *, new_date: str, separator: str, insert_location: Inse
             assert_never(insert_location)
 
 
+def _starts_word(text: str, index: int) -> bool:
+    """Report whether a word ends right before `index`, so a cut there keeps whole words.
+
+    Args:
+        text (str): The text to inspect.
+        index (int): A position in `text`, greater than 0 and less than its length.
+
+    Returns:
+        bool: True when `text[index]` is a separator or the capital that starts a camelCase word.
+    """
+    character: str = text[index]
+    return character in SEPARATOR_CHARACTERS or (character.isupper() and text[index - 1].islower())
+
+
+def _truncate_to_bytes(text: str, *, max_bytes: int) -> str:
+    """Shorten `text` to at most `max_bytes` of UTF-8, ending on a whole word when possible.
+
+    Words end at any separator character or at a camelCase capital, so names joined without a
+    separator, and `--date-only` names that mix separators, also keep whole words.
+
+    Args:
+        text (str): The text to shorten.
+        max_bytes (int): The largest allowed UTF-8 length.
+
+    Returns:
+        str: `text` unchanged when it fits, else its longest prefix that fits, cut back to the last
+            whole word and stripped of trailing separators.
+    """
+    encoded: bytes = text.encode("utf-8")
+    if len(encoded) <= max_bytes:
+        return text
+
+    # Dropping a partial trailing byte sequence keeps the cut on a character boundary
+    truncated: str = encoded[: max(max_bytes, 0)].decode(encoding="utf-8", errors="ignore")
+    word_end: int | None = next(
+        (index for index in range(len(truncated), 0, -1) if _starts_word(text=text, index=index)),
+        None,
+    )
+    if word_end is not None:
+        truncated = text[:word_end]
+    return truncated.rstrip("".join(SEPARATOR_CHARACTERS))
+
+
+def _make_portable(stem: str, suffix: str) -> str:
+    """Change `stem` so the full name is valid on Windows as well as macOS and Linux.
+
+    Windows refuses characters such as `:` and `?`, drops a trailing dot or space from a name, and
+    refuses device names such as `CON`, so a name that works on one system can break a synced or
+    shared folder.
+
+    Args:
+        stem (str): The planned stem.
+        suffix (str): The planned suffix.
+
+    Returns:
+        str: The stem without characters Windows refuses, without trailing dots or spaces when
+            the name has no suffix, and with an underscore after a reserved device name.
+    """
+    stem = _WINDOWS_INVALID_CHARACTERS.sub("", stem) or stem
+    if not suffix:
+        stem = stem.rstrip(". ") or stem
+
+    # Windows reads the text before the first dot, ignoring trailing spaces, as the device name
+    base_name, dot, rest = stem.partition(".")
+    if base_name.rstrip(" ").upper() in _WINDOWS_RESERVED_NAMES:
+        return f"{base_name}_{dot}{rest}"
+    return stem
+
+
 @dataclass(frozen=True)
 class CleanedName:
     """Hold the stem and suffix that cleaning planned for a filename."""
@@ -294,14 +379,17 @@ def clean_name(
     Remove any date from the stem and add the chosen date back in the configured format. Unless
     `date_only` is set, normalize the words in between: strip special characters, split camelCase,
     drop stopwords, and transform and match case. Keep the original stem when cleaning would leave
-    the name empty.
+    the name empty. Keep the name valid on Windows, macOS, and Linux: shorten the words to fit
+    `MAX_FILENAME_BYTES`, drop characters and trailing dots or spaces that Windows refuses, and
+    add an underscore to a reserved Windows device name such as `CON`. Keep the original name,
+    with a warning, when the date and extension alone do not fit.
 
     Args:
         stem (str): The current stem, with any leading dot of a dotfile.
         suffix (str): The current suffix.
         config (Config): The settings that control each transformation.
         override_date (FoundDate | None): The date from `--date`, parsed with `parse_date_option`, or None to use the name's own date.
-        date_only (bool): Add the date and make no other changes to the name.
+        date_only (bool): Add the date and make no other changes to the name beyond keeping it valid on every system.
         fallback_date (Callable[[], datetime] | None, optional): Returns the date to use when neither `override_date` nor the name holds one, such as the file's creation date. Defaults to None, which adds no date in that case.
 
     Returns:
@@ -335,6 +423,16 @@ def clean_name(
         tokens: list[str] = _clean_tokens(stem=new_stem, config=config)
         new_stem = join_tokens(tokens=tokens, case_style=config.transform_case, separator=separator)
 
+    lowered_suffix: str = suffix.lower()
+    new_suffix: str = ".jpg" if lowered_suffix == ".jpeg" else lowered_suffix
+
+    # Shorten only the words, so the date and the extension always survive. The extra byte leaves
+    # room for the underscore that `_make_portable` adds after a device name.
+    reserved_bytes: int = len(f"{new_suffix}{new_date}{separator if new_date else ''}".encode())
+    new_stem = _truncate_to_bytes(
+        text=new_stem, max_bytes=MAX_FILENAME_BYTES - reserved_bytes - int(is_dotfile) - 1
+    )
+
     if new_date:
         new_stem = _add_date(
             stem=new_stem,
@@ -351,11 +449,14 @@ def clean_name(
         new_stem = f".{new_stem}"
         pp.debug(f"CLEAN (add dotfile): {new_stem}")
 
-    lowered_suffix: str = suffix.lower()
-    new_suffix: str = ".jpg" if lowered_suffix == ".jpeg" else lowered_suffix
+    new_stem = _make_portable(stem=new_stem, suffix=new_suffix)
 
     name: str = f"{stem}{suffix}"
     new_name: str = f"{new_stem}{new_suffix}"
+    if len(new_name.encode()) > MAX_FILENAME_BYTES:
+        pp.warning(NAME_TOO_LONG_MESSAGE.format(name=name, max_bytes=MAX_FILENAME_BYTES))
+        return CleanedName(stem=stem, suffix=suffix)
+
     if name != new_name:
         pp.debug(f"CLEAN (final): {name} -> {new_name}")
     else:
