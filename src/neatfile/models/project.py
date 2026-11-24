@@ -139,6 +139,17 @@ class Project:
         pp.trace(f"{len(folders)} folders indexed in project: {self.name}")
         return folders
 
+    @functools.cached_property
+    def matchable_folders(self) -> tuple[Folder, ...]:
+        """List the folders a file can be matched to, leaving out folders marked with `.neatfileignore`.
+
+        Subfolders of an ignored folder stay matchable.
+
+        Returns:
+            tuple[Folder, ...]: The usable folders that are not ignored, ordered by path.
+        """
+        return tuple(folder for folder in self.usable_folders if not folder.is_ignored)
+
     def _scan_folders(self, directory: Path, level: int) -> Iterator[tuple[Path, FolderType]]:
         """Yield each usable folder below `directory` with its type, recursing to the project's maximum level.
 

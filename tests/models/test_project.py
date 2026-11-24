@@ -49,3 +49,13 @@ def test_tree_stops_at_symlink_loops(tmp_path: Path) -> None:
     output = _render_tree(_make_project(tmp_path, depth=2))
 
     assert "loop" in output
+
+
+def test_matchable_folders_skip_ignored_folders_but_keep_their_children(tmp_path: Path) -> None:
+    """Verify `.neatfileignore` removes only its own folder from matching."""
+    (tmp_path / "10-19 Finance" / "11 Taxes").mkdir(parents=True)
+    (tmp_path / "10-19 Finance" / NEATFILE_IGNORE_NAME).touch()
+
+    project = _make_project(tmp_path, project_type=ProjectType.JD)
+
+    assert [folder.number for folder in project.matchable_folders] == ["11"]
