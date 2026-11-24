@@ -250,7 +250,7 @@ neatfile uses smart matching to determine which directory a file belongs in:
 1. **Word Extraction**: Words are extracted from your filename and compared with directory names in your project structure.
 2. **Intelligent Matching**: The system uses both exact matches and vector similarity to find the best directory. For example, a file containing "budget" might match with a "Finance" directory through vector similarity.
 3. **Hierarchical Navigation**: neatfile considers your project's directory tree (up to the configured depth) when finding directories to match files to.
-4. **Ignoring Folders**: If a folder contains a `.neatfileignore` file, it will be ignored when matching files to directories but it's children will still be considered.
+4. **Ignoring Folders**: If a folder contains a `.neatfileignore` file, it will be ignored when matching files to directories but its children will still be considered.
 
 ### Customizing Match Behavior
 
@@ -272,6 +272,8 @@ You can influence how files match to directories in two ways:
     agreement
     nda
     ```
+
+    Write one term on each line. neatfile ignores blank lines and lines that start with `#`, including indented ones.
 
     Now any file containing these terms will preferentially match to the legal directory.
 
