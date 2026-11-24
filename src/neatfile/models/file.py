@@ -3,6 +3,8 @@
 import difflib
 from pathlib import Path
 
+from rich.text import Text
+
 from neatfile.constants import COMPOUND_EXTENSIONS
 from neatfile.utils.paths import display_path
 
@@ -72,33 +74,24 @@ class File:
         """Return the path to show in messages, relative to the current directory when possible."""
         return display_path(self.path)
 
-    def get_filename_diff(self) -> str:
-        """Compare original and new filenames and highlight their differences.
+    def get_filename_diff(self) -> Text:
+        """Compare original and new filenames and highlight their differences, so a user can review a rename.
 
-        Generate a visual diff by comparing the original filename against the new name. Highlight insertions in green and deletions in red using rich markup syntax.
+        Highlight insertions in green and deletions in red.
 
         Returns:
-            str: A rich-formatted string showing differences between original and new filenames
+            Text: The original filename with deleted and inserted fragments highlighted.
         """
         matcher = difflib.SequenceMatcher(None, self.name, self.new_name)
-
-        # Color codes for highlighting differences in the output
-        green, red, end_color = "[green reverse]", "[red reverse]", "[/]"
-        diff_output = []
+        inserted, deleted = "green reverse", "red reverse"
+        diff = Text()
 
         for tag, i1, i2, j1, j2 in matcher.get_opcodes():
             if tag == "equal":
-                diff_output.append(self.name[i1:i2])
-            elif tag == "insert":
-                diff_output.append(f"{green}{self.new_name[j1:j2]}{end_color}")
-            elif tag == "delete":
-                diff_output.append(f"{red}{self.name[i1:i2]}{end_color}")
-            elif tag == "replace":
-                diff_output.extend(
-                    [
-                        f"{red}{self.name[i1:i2]}{end_color}",
-                        f"{green}{self.new_name[j1:j2]}{end_color}",
-                    ]
-                )
+                diff.append(self.name[i1:i2])
+            if tag in {"delete", "replace"}:
+                diff.append(self.name[i1:i2], style=deleted)
+            if tag in {"insert", "replace"}:
+                diff.append(self.new_name[j1:j2], style=inserted)
 
-        return "".join(diff_output)
+        return diff

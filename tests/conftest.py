@@ -207,3 +207,11 @@ def create_file(tmp_path: Path) -> Callable[[str, str | None, str | None], Path]
         return file_path
 
     return _inner
+
+
+@pytest.fixture(autouse=True)
+def isolate_state_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Point the state folder at a temporary path so no test writes to the real one."""
+    state_dir = tmp_path / "state"
+    monkeypatch.setattr(constants, "STATE_DIR", state_dir)
+    return state_dir
