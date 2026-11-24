@@ -9,7 +9,13 @@ from datefind import FoundDate, find_dates
 from nclutils import pp
 
 from neatfile.config import Config
-from neatfile.constants import MATCHING_STOPWORDS, SEPARATOR_CHARACTERS, InsertLocation, Separator
+from neatfile.constants import (
+    FILENAME_STOPWORDS,
+    PROTECTED_CAPITALIZED_WORDS,
+    SEPARATOR_CHARACTERS,
+    InsertLocation,
+    Separator,
+)
 from neatfile.models import File
 from neatfile.utils.strings import (
     guess_separator,
@@ -128,6 +134,21 @@ def _format_date(
     return created.strftime(config.date_format)
 
 
+def _filename_stopwords(config: Config) -> frozenset[str]:
+    """Return the words to remove from filenames, honoring the user's additions and protections.
+
+    Args:
+        config (Config): The settings that hold the extra stopwords and `match_case_list`.
+
+    Returns:
+        frozenset[str]: Lowercase stopwords: the built-in filler words plus `stopwords`, minus any
+            word in `match_case_list`.
+    """
+    added: set[str] = {word.lower() for word in config.stopwords}
+    protected: set[str] = {word.lower() for word in config.match_case_list}
+    return frozenset((FILENAME_STOPWORDS | added) - protected)
+
+
 def _clean_tokens(stem: str, *, config: Config) -> list[str]:
     """Split a stem into words and normalize them according to the settings.
 
@@ -153,7 +174,8 @@ def _clean_tokens(stem: str, *, config: Config) -> list[str]:
         tokens = (
             strip_stopwords(
                 tokens=tokens,
-                stopwords=MATCHING_STOPWORDS | {word.lower() for word in config.stopwords},
+                stopwords=_filename_stopwords(config),
+                protected_words=PROTECTED_CAPITALIZED_WORDS,
             )
             or tokens
         )

@@ -50,8 +50,8 @@ COMPOUND_EXTENSIONS = (
     ".user.js",
     ".user.css",
 )
-# English stopword list from spaCy (MIT license), used to match files to folders. Bundled so
-# matching needs no model.
+
+# Contractions written with curly quotes, part of spaCy's stopword list below
 _CURLY_QUOTE_CLITICS: frozenset[str] = frozenset(
     {
         f"{quote}{suffix}"
@@ -60,6 +60,8 @@ _CURLY_QUOTE_CLITICS: frozenset[str] = frozenset(
     }
     | {f"n{quote}t" for quote in ("\u2018", "\u2019")}
 )
+# English stopword list from spaCy (MIT license), used to match files to folders. Bundled so
+# matching needs no model.
 _MATCHING_STOPWORDS_ASCII = """
 'd 'll 'm 're 's 've a about above across after afterwards again against all almost alone along
 already also although always am among amongst amount an and another any anyhow anyone anything

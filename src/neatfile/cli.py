@@ -33,7 +33,7 @@ Perform the following transformations on a filename:
 -   Normalize to `lowercase`, `uppercase`, `Sentence case`, or `Title Case`
 -   Normalize all word separators to a common one (`_`, `-`, ` `, `.`)
 -   Enforce lowercase file extensions
--   Remove common English stopwords
+-   Remove filler words such as "the", "of", and "and"
 -   Split `camelCase` words into separate words (`camel Case`)
 -   Add a date to the filename in your preferred format (removing dates already present in the filename)
 """
@@ -155,7 +155,7 @@ def _require_date_format(config: Config, options: RunOptions) -> None:
 -   Normalize to `lowercase`, `uppercase`, `Sentence case`, or `Title Case`
 -   Normalize all files to a common word separator (`_`, `-`, ` `, `.`)
 -   Enforce lowercase file extensions
--   Remove common English stopwords
+-   Remove filler words such as "the", "of", and "and"
 -   Split `camelCase` words into separate words (`camel Case`)
 
 **Date parsing**

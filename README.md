@@ -34,7 +34,7 @@ What's the problem here?
 -   Normalize filenamesto `lowercase`, `uppercase`, `Sentence case`, or `Title Case`
 -   Normalize all files to a common word separator (`_`, `-`, ` `, `.`)
 -   Enforce lowercase file extensions
--   Remove common English stopwords
+-   Remove filler words such as "the", "of", and "and"
 -   Split `camelCase` words into separate words (`camel Case`)
 
 ### Date parsing
@@ -185,11 +185,12 @@ separator          = "ignore"
 # true or false
 split_words        = false
 
-# List of specific stopwords to be stripped from filenames in
-# addition to the default English stopwords
+# Extra words to remove from filenames, in addition to the built-in filler words
 stopwords          = []
 
-# Strip stopwords from filenames.
+# Remove filler words such as "the", "of", and "and" from filenames.
+# Words in match_case_list are never removed, and IT, US, OR, IN, ON,
+# AT, ME, and AS are kept when written in capitals, even if listed in stopwords.
 # true or false
 strip_stopwords    = true
 

@@ -167,3 +167,54 @@ def test_parse_date_option_warns_when_value_has_no_date(
 
     output = capsys.readouterr()
     assert DATE_NOT_FOUND_MESSAGE.format(value="soon") in output.out + output.err
+
+
+@pytest.mark.parametrize(
+    ("name", "settings", "expected"),
+    [
+        pytest.param(
+            "Part Two First Draft.txt",
+            {},
+            "Part Two First Draft.txt",
+            id="keeps-numbers-and-ordinals",
+        ),
+        pytest.param("The Report of the Board.txt", {}, "Report Board.txt", id="drops-filler"),
+        pytest.param(
+            "NOTES FOR THE IT TEAM.txt", {}, "NOTES IT TEAM.txt", id="all-caps-keeps-protected"
+        ),
+        pytest.param("fix it for us later.txt", {}, "fix later.txt", id="lowercase-it-us-removed"),
+        pytest.param("Plan A.txt", {}, "Plan.txt", id="trailing-stopword-removed"),
+        pytest.param(
+            "Plan A.txt", {"match_case_list": ("A",)}, "Plan A.txt", id="match-case-list-protects"
+        ),
+        pytest.param(
+            "final draft notes.txt",
+            {"stopwords": ("draft",)},
+            "final notes.txt",
+            id="user-stopwords-added",
+        ),
+        pytest.param("the of.txt", {}, "the of.txt", id="all-stopwords-keeps-original"),
+    ],
+)
+def test_clean_filename_stopwords(
+    tmp_path: Path,
+    default_config: Config,
+    name: str,
+    settings: dict[str, object],
+    expected: str,
+) -> None:
+    """Verify filename cleaning removes only filler words and keeps protected words."""
+    path = tmp_path / name
+    path.touch()
+    file = File(path)
+    config = replace(
+        default_config,
+        date_format="",
+        separator=Separator.SPACE,
+        strip_stopwords=True,
+        **settings,
+    )
+
+    clean_filename(file=file, config=config, override_date=None, date_only=False)
+
+    assert file.new_name == expected
