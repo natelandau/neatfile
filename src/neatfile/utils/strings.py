@@ -2,7 +2,11 @@
 
 import re
 
-from neatfile.constants import ENGLISH_STOPWORDS, Separator, TransformCase
+from neatfile.constants import (
+    SEPARATOR_CHARACTERS,
+    Separator,
+    TransformCase,
+)
 
 
 def match_case(tokens: list[str], match_case_list: tuple[str, ...] = ()) -> list[str]:
@@ -18,19 +22,7 @@ def match_case(tokens: list[str], match_case_list: tuple[str, ...] = ()) -> list
         list[str]: List of tokens with case adjusted to match reference list where applicable
     """
     case_mapping = {word.lower(): word for word in match_case_list}
-
-    # Process each token
-    result = []
-    for token in tokens:
-        # Check if the lowercase version of the token exists in our mapping
-        if token.lower() in case_mapping:
-            # Replace with the properly cased version from match_case_list
-            result.append(case_mapping[token.lower()])
-        else:
-            # Keep the original token
-            result.append(token)
-
-    return result
+    return [case_mapping.get(token.lower(), token) for token in tokens]
 
 
 def _split_on_case_boundaries(word: str) -> list[str]:
@@ -72,32 +64,20 @@ def split_camel_case(string_list: list[str], match_case_list: tuple[str, ...] = 
     Returns:
         list[str]: List of strings with camelCase words split into separate components.
     """
-    result = []
+    result: list[str] = []
     for item in string_list:
-        if item in match_case_list:
+        if item in match_case_list or item.isupper():
             result.append(item)
-            continue
-
-        if item.isupper():
-            result.append(item)
-            continue
-
-        words = _split_on_case_boundaries(item)
-
-        if len(words) > 1:
-            result.extend(words)
         else:
-            result.append(item)
+            result.extend(_split_on_case_boundaries(item))
 
     return result
 
 
-def tokenize_string(
-    string: str,
-) -> list[str]:
-    """Split a string into individual tokens based on alphanumeric and non-alphanumeric boundaries.
+def tokenize_string(string: str) -> list[str]:
+    """Split a string into word tokens and single separator tokens.
 
-    Split the input string into tokens by finding sequences of alphanumeric characters or individual non-alphanumeric characters. Filter out any empty tokens from the result.
+    Return each run of letters and digits as one token, and each other character, underscore included, as its own token. Joining the tokens reproduces the input.
 
     Args:
         string (str): The input string to tokenize.
@@ -105,70 +85,105 @@ def tokenize_string(
     Returns:
         list[str]: A list of non-empty tokens extracted from the input string.
     """
-    tokens = re.findall(r"[^\W_]+|[\W_]", string)
-    return [token for token in tokens if token]
+    return re.findall(r"[^\W_]+|[\W_]", string)
 
 
 def strip_special_chars(tokens: list[str]) -> list[str]:
-    """Remove all non-alphanumeric characters from each string in a list.
+    """Strip every character that is not a letter or digit, underscores included, from each token.
 
-    Process each string in the input list by removing any characters that are not letters, numbers, or underscores. Empty strings are filtered out of the final result.
-
-    Args:
-        tokens (list[str]): List of strings to process and remove special characters from.
-
-    Returns:
-        list[str]: List of processed strings with special characters removed.
-    """
-    parsed_tokens = [re.sub(r"[\W_]", "", token).strip() for token in tokens if token]
-    return [token for token in parsed_tokens if token]
-
-
-def strip_stopwords(tokens: list[str], stopwords: tuple[str, ...] = ()) -> list[str]:
-    """Remove common English stopwords and any additional specified stopwords from a list of tokens.
-
-    Process the input string by removing both standard English stopwords (using the bundled English list) and any custom stopwords provided. Maintain word boundaries and case-insensitive matching.
+    Drop tokens left empty, so separator-only tokens vanish from the cleaned name.
 
     Args:
-        tokens (list[str]): List of tokens to process and remove stopwords from.
-        stopwords (tuple[str, ...], optional): Additional custom stopwords to remove. Defaults to ().
+        tokens (list[str]): Tokens to strip.
 
     Returns:
-        list[str]: List of tokens with stopwords removed and excess whitespace/separators stripped.
+        list[str]: The stripped, non-empty tokens.
     """
-    all_stopwords = ENGLISH_STOPWORDS | {x.lower() for x in stopwords}
-
-    return [token for token in tokens if token.lower() not in all_stopwords]
+    return [cleaned for token in tokens if (cleaned := re.sub(r"[\W_]", "", token))]
 
 
-def transform_case(tokens: list[str], transform_case: TransformCase) -> list[str]:
-    """Transform the case of each token in a list according to the specified case style.
+def strip_stopwords(
+    tokens: list[str], *, stopwords: frozenset[str], protected_words: frozenset[str] = frozenset()
+) -> list[str]:
+    """Drop stopword tokens so names and search terms keep only meaningful words.
 
-    Apply case transformations like lowercase, uppercase, title case, camelcase, or sentence case to a list of tokens. For camelcase, joins all tokens into a single string with the first token lowercase and subsequent tokens capitalized.
+    Match `stopwords` ignoring case. Match `protected_words` with case, so an abbreviation such as
+    "IT" survives while the word "it" is removed.
 
     Args:
-        tokens (list[str]): List of string tokens to transform.
-        transform_case (TransformCase): The case transformation to apply.
+        tokens (list[str]): Tokens to filter.
+        stopwords (frozenset[str]): Lowercase words to remove.
+        protected_words (frozenset[str], optional): Exact tokens to keep even when they are stopwords. Defaults to an empty set.
 
     Returns:
-        list[str]: List of transformed tokens. For camelcase, returns a single-item list with the joined string.
+        list[str]: The tokens that are not stopwords. Empty when every token is a stopword.
     """
-    match transform_case:
+    return [token for token in tokens if token in protected_words or token.lower() not in stopwords]
+
+
+def _title_word(word: str) -> str:
+    """Capitalize a word for title case without changing letters that follow a digit.
+
+    str.title() turns "1st" into "1St" and str.capitalize() turns "3D" into "3d", so letters after
+    a digit keep the case the user typed.
+
+    Args:
+        word (str): The word to capitalize.
+
+    Returns:
+        str: The word with its first character uppercased and later letters lowercased, except
+            letters directly after a digit.
+    """
+    return "".join(
+        char.upper() if i == 0 else char if word[i - 1].isdigit() else char.lower()
+        for i, char in enumerate(word)
+    )
+
+
+def transform_case(tokens: list[str], case_style: TransformCase) -> list[str]:
+    """Change the case of each token according to the configured case style.
+
+    For camelcase, lowercase the first token and capitalize the rest. Join the result with
+    `join_tokens`, which drops the separator for camelcase.
+
+    Args:
+        tokens (list[str]): Tokens to transform.
+        case_style (TransformCase): The case transformation to apply.
+
+    Returns:
+        list[str]: The transformed tokens. Empty when `tokens` is empty.
+    """
+    match case_style:
         case TransformCase.LOWER:
             return [token.lower() for token in tokens]
         case TransformCase.UPPER:
             return [token.upper() for token in tokens]
         case TransformCase.TITLE:
-            return [token.title() for token in tokens]
+            return [_title_word(token) for token in tokens]
         case TransformCase.CAMELCASE:
-            tokens = [
+            return [
                 token.lower() if i == 0 else token.capitalize() for i, token in enumerate(tokens)
             ]
-            return ["".join(tokens)]
         case TransformCase.SENTENCE:
-            return [tokens[0].capitalize()] + [token.lower() for token in tokens[1:]]
+            return [
+                token.capitalize() if i == 0 else token.lower() for i, token in enumerate(tokens)
+            ]
         case _:
             return tokens
+
+
+def join_tokens(tokens: list[str], *, case_style: TransformCase, separator: str) -> str:
+    """Join cleaned tokens into a stem, so every case style is joined the way it expects.
+
+    Args:
+        tokens (list[str]): Tokens returned by `transform_case`.
+        case_style (TransformCase): The case transformation applied to the tokens.
+        separator (str): Text placed between words.
+
+    Returns:
+        str: The joined stem. Camelcase words are joined without a separator.
+    """
+    return ("" if case_style == TransformCase.CAMELCASE else separator).join(tokens)
 
 
 def guess_separator(stem: str) -> Separator:
@@ -182,9 +197,5 @@ def guess_separator(stem: str) -> Separator:
     Returns:
         Separator: The most common separator, or underscore if the string contains none.
     """
-    separators = [" ", "-", "_", "."]
-    separator_counts: dict[str, int] = {sep: stem.count(sep) for sep in separators if sep in stem}
-    if not separator_counts:
-        return Separator.UNDERSCORE
-
-    return Separator(max(separator_counts, key=separator_counts.__getitem__))
+    most_common: str = max(SEPARATOR_CHARACTERS, key=stem.count)
+    return Separator(most_common) if stem.count(most_common) else Separator.UNDERSCORE

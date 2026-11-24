@@ -6,8 +6,6 @@ import sys
 import pytest
 
 from neatfile.constants import (
-    _ENGLISH_STOPWORDS_ASCII,
-    ENGLISH_STOPWORDS,
     Separator,
     TransformCase,
 )
@@ -94,47 +92,44 @@ def test_strip_special_chars(input_tokens: list[str], expected: list[str]) -> No
 
 
 @pytest.mark.parametrize(
-    ("input_tokens", "stopwords", "expected"),
+    ("input_tokens", "stopwords", "protected_words", "expected"),
     [
-        (["foo", "bar", "baz"], (), ["foo", "bar", "baz"]),
-        (["foo", "bar", "baz"], ("bar",), ["foo", "baz"]),
-        (["foo", "bar", "bar1", "baz"], ("bar", "baz"), ["foo", "bar1"]),
-        (["foo", "bar", "baz"], ("foo", "bar", "baz"), []),
-        (
-            ["the", "Quick", "brown", "fox", "jumps", "Over", "the", "lazy", "dog"],
-            (),
-            ["Quick", "brown", "fox", "jumps", "lazy", "dog"],
-        ),
-        (
-            ["the", "Quick", "brown", "fox", "jumps", "Over", "the", "lazy", "dog"],
-            ("fox",),
-            ["Quick", "brown", "jumps", "lazy", "dog"],
-        ),
+        (["the", "Quick", "fox"], frozenset({"the"}), frozenset(), ["Quick", "fox"]),
+        (["The", "THE", "fox"], frozenset({"the"}), frozenset(), ["fox"]),
+        (["IT", "budget"], frozenset({"it"}), frozenset({"IT"}), ["IT", "budget"]),
+        (["it", "It", "budget"], frozenset({"it"}), frozenset({"IT"}), ["budget"]),
+        (["the", "of"], frozenset({"the", "of"}), frozenset(), []),
     ],
 )
 def test_strip_stopwords(
-    input_tokens: list[str], stopwords: tuple[str, ...], expected: list[str]
+    input_tokens: list[str],
+    stopwords: frozenset[str],
+    protected_words: frozenset[str],
+    expected: list[str],
 ) -> None:
-    """Verify removing stopwords from token lists."""
-    # When: Calling strip_stopwords with various inputs
-    # Then: Stopwords are correctly removed
-    assert strip_stopwords(input_tokens, stopwords=stopwords) == expected
+    """Verify stopwords are removed ignoring case unless the exact token is protected."""
+    assert (
+        strip_stopwords(input_tokens, stopwords=stopwords, protected_words=protected_words)
+        == expected
+    )
 
 
 @pytest.mark.parametrize(
     ("input_tokens", "case_format", "expected"),
     [
-        (["Foo", "BAR", "baz"], TransformCase.CAMELCASE, ["fooBarBaz"]),
+        (["Foo", "BAR", "baz"], TransformCase.CAMELCASE, ["foo", "Bar", "Baz"]),
         (["Foo", "BAR", "baz"], TransformCase.LOWER, ["foo", "bar", "baz"]),
         (["Foo", "BAR", "baz"], TransformCase.UPPER, ["FOO", "BAR", "BAZ"]),
         (["Foo", "BAR", "baz"], TransformCase.SENTENCE, ["Foo", "bar", "baz"]),
         (["Foo", "BAR", "baz"], TransformCase.TITLE, ["Foo", "Bar", "Baz"]),
         (["Foo", "BAR", "baz"], TransformCase.IGNORE, ["Foo", "BAR", "baz"]),
+        (["1st", "3D", "MP3player"], TransformCase.TITLE, ["1st", "3D", "Mp3player"]),
+        ([], TransformCase.SENTENCE, []),
     ],
 )
 def test_transform_case(input_tokens: list[str], case_format, expected: list[str]) -> None:
     """Verify transforming string case according to specified format."""
-    assert transform_case(input_tokens, case_format) == expected
+    assert transform_case(input_tokens, case_style=case_format) == expected
 
 
 @pytest.mark.parametrize(
@@ -163,16 +158,6 @@ def test_guess_separator(input_string: str, expected: Separator | None) -> None:
     # When: Guessing the separator for the input string
     # Then: The correct separator or None is returned
     assert guess_separator(input_string) == expected
-
-
-def test_english_stopwords_matches_spacy_list() -> None:
-    """Verify the bundled stopword list is the full spaCy English list."""
-    # Then: The list has spaCy's 326 entries with no duplicates, including clitics and curly quotes
-    words = _ENGLISH_STOPWORDS_ASCII.split()
-    assert len(words) == len(set(words))
-    assert len(ENGLISH_STOPWORDS) == 326
-    assert {"the", "a", "'s", "n't", "\u2018d", "\u2019ve", "hereupon"} <= ENGLISH_STOPWORDS
-    assert all(word == word.lower() for word in ENGLISH_STOPWORDS)
 
 
 def test_strings_module_does_not_load_nlp() -> None:

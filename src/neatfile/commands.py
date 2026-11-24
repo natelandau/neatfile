@@ -4,15 +4,23 @@ from enum import StrEnum
 from pathlib import Path
 
 import cappa
+from datefind import FoundDate
 from nclutils import pp
 from rich.prompt import Confirm
 
 from neatfile.config import Config, RunOptions
-from neatfile.features import clean_filename, commit_changes, find_processable_files, sort_file
+from neatfile.features import (
+    clean_filename,
+    commit_changes,
+    find_processable_files,
+    parse_date_option,
+    sort_file,
+)
 from neatfile.models import File, Project
 from neatfile.views import confirmation_table
 
 NO_CHANGES_MESSAGE = "No changes made"
+CHANGES_NOT_APPLIED_MESSAGE = "Changes not applied"
 CONFIRMATION_NO_INPUT_MESSAGE = "Cannot confirm changes because stdin has no input. Run neatfile in an interactive terminal, pipe the answer (y or n), or add --force to skip confirmation."
 
 
@@ -22,6 +30,16 @@ class Mode(StrEnum):
     CLEAN = "clean"
     SORT = "sort"
     PROCESS = "process"
+
+    @property
+    def cleans(self) -> bool:
+        """Report whether this mode cleans filenames."""
+        return self in {Mode.CLEAN, Mode.PROCESS}
+
+    @property
+    def sorts(self) -> bool:
+        """Report whether this mode sorts files into a project."""
+        return self in {Mode.SORT, Mode.PROCESS}
 
 
 def _user_approves(
@@ -66,6 +84,7 @@ def _plan_changes(
     config: Config,
     options: RunOptions,
     clean: bool,
+    override_date: FoundDate | None,
     sort_project: Project | None,
 ) -> bool:
     """Set the file's new name and parent for the steps this run takes.
@@ -75,13 +94,18 @@ def _plan_changes(
         config (Config): The settings for this run.
         options (RunOptions): The CLI-only values for this run.
         clean (bool): Whether to clean the filename.
+        override_date (FoundDate | None): The date from `--date` to give every cleaned file, or None.
         sort_project (Project | None): The project to sort the file into, or None to skip sorting.
 
     Returns:
         bool: False when sorting found no folder for the file, True otherwise.
     """
+    pp.debug(f"Working on: `{file.display_path}`")
+
     if clean:
-        clean_filename(file=file, config=config, date=options.date, date_only=options.date_only)
+        clean_filename(
+            file=file, config=config, override_date=override_date, date_only=options.date_only
+        )
 
     if sort_project is not None:
         new_parent = sort_file(file=file, project=sort_project, user_terms=config.user_terms)
@@ -108,7 +132,7 @@ def execute_command(
         cappa.Exit: Always, once processing ends. The code is non-zero when any file could not be sorted.
     """
     sort_project: Project | None = None
-    if mode in {Mode.SORT, Mode.PROCESS}:
+    if mode.sorts:
         if project is None:
             msg = f"Mode `{mode}` sorts files and needs a project, but project is None"
             raise ValueError(msg)
@@ -120,28 +144,29 @@ def execute_command(
             options.files, config=config, max_depth=options.file_search_depth
         )
     ]
-    project_path = project.path if project else None
+    project_path: Path | None = project.path if project else None
 
-    planned_files: list[File] = []
-    unmatched_count = 0
+    override_date: FoundDate | None = (
+        parse_date_option(options.date, config=config) if mode.cleans else None
+    )
 
-    for file in files_to_process:
-        pp.debug(f"Working on: `{file.display_path}`")
-
-        # Skip an unsorted file rather than abort so the rest of the batch still gets sorted
-        if not _plan_changes(
-            file,
+    # Skip an unsorted file rather than abort so the rest of the batch still gets sorted
+    planned_files: list[File] = [
+        file
+        for file in files_to_process
+        if _plan_changes(
+            file=file,
             config=config,
             options=options,
-            clean=mode in {Mode.CLEAN, Mode.PROCESS},
+            clean=mode.cleans,
+            override_date=override_date,
             sort_project=sort_project,
-        ):
-            unmatched_count += 1
-            continue
-        planned_files.append(file)
+        )
+    ]
+    unmatched_count: int = len(files_to_process) - len(planned_files)
 
-    exit_code = 1 if unmatched_count else 0
-    files_with_changes = [file for file in planned_files if file.has_changes]
+    exit_code: int = 1 if unmatched_count else 0
+    files_with_changes: list[File] = [file for file in planned_files if file.has_changes]
 
     if not files_with_changes:
         pp.info(NO_CHANGES_MESSAGE)
@@ -153,7 +178,7 @@ def execute_command(
         options=options,
         project_path=project_path,
     ):
-        pp.info("Changes not applied")
+        pp.info(CHANGES_NOT_APPLIED_MESSAGE)
         raise cappa.Exit(code=exit_code)
 
     # Report changed files before the unchanged ones; the sort is stable within each group

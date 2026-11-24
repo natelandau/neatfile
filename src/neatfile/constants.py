@@ -50,7 +50,8 @@ COMPOUND_EXTENSIONS = (
     ".user.js",
     ".user.css",
 )
-# English stopword list from spaCy (MIT license), bundled so filename cleaning needs no model.
+
+# Contractions written with curly quotes, part of spaCy's stopword list below
 _CURLY_QUOTE_CLITICS: frozenset[str] = frozenset(
     {
         f"{quote}{suffix}"
@@ -59,7 +60,9 @@ _CURLY_QUOTE_CLITICS: frozenset[str] = frozenset(
     }
     | {f"n{quote}t" for quote in ("\u2018", "\u2019")}
 )
-_ENGLISH_STOPWORDS_ASCII = """
+# English stopword list from spaCy (MIT license), used to match files to folders. Bundled so
+# matching needs no model.
+_MATCHING_STOPWORDS_ASCII = """
 'd 'll 'm 're 's 've a about above across after afterwards again against all almost alone along
 already also although always am among amongst amount an and another any anyhow anyone anything
 anyway anywhere are around as at back be became because become becomes becoming been before
@@ -81,8 +84,59 @@ upon us used using various very via was we well were what whatever when whence w
 whereafter whereas whereby wherein whereupon wherever whether which while whither who whoever
 whole whom whose why will with within without would yet you your yours yourself yourselves
 """
-ENGLISH_STOPWORDS: frozenset[str] = (
-    frozenset(_ENGLISH_STOPWORDS_ASCII.split()) | _CURLY_QUOTE_CLITICS
+MATCHING_STOPWORDS: frozenset[str] = (
+    frozenset(_MATCHING_STOPWORDS_ASCII.split()) | _CURLY_QUOTE_CLITICS
+)
+
+# Filler words removed from filenames. Kept short so numbers, ordinals, and nouns survive.
+FILENAME_STOPWORDS: frozenset[str] = frozenset(
+    [
+        "a",
+        "an",
+        "the",
+        "and",
+        "or",
+        "but",
+        "nor",
+        "of",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "from",
+        "by",
+        "with",
+        "into",
+        "onto",
+        "about",
+        "via",
+        "as",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "i",
+        "me",
+        "my",
+        "we",
+        "us",
+        "our",
+        "you",
+        "your",
+        "it",
+        "this",
+        "that",
+        "these",
+        "those",
+    ]
+)
+
+# Abbreviations that spell a filename stopword. Kept when typed in capitals, so IT and US survive.
+PROTECTED_CAPITALIZED_WORDS: frozenset[str] = frozenset(
+    {"IT", "US", "OR", "IN", "ON", "AT", "ME", "AS"}
 )
 
 
@@ -154,6 +208,15 @@ class Separator(Enum):
     SPACE = " "
     UNDERSCORE = "_"
     PERIOD = "."
+
+
+# Ordered by preference: when two separators appear equally often, the earlier one wins
+SEPARATOR_CHARACTERS: tuple[str, ...] = (
+    Separator.SPACE.value,
+    Separator.DASH.value,
+    Separator.UNDERSCORE.value,
+    Separator.PERIOD.value,
+)
 
 
 class TransformCase(StrEnum):

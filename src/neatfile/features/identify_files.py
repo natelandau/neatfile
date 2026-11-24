@@ -10,6 +10,7 @@ from nclutils import pp
 
 from neatfile.config import Config
 from neatfile.constants import ALWAYS_IGNORE_FILES_REGEXES
+from neatfile.utils.paths import display_path
 
 
 def _is_ignored_file(file: Path, config: Config) -> bool:
@@ -32,21 +33,6 @@ def _is_ignored_file(file: Path, config: Config) -> bool:
     )
 
 
-def _display_path(path: Path) -> Path:
-    """Shorten a path for messages by making it relative to the current directory when possible.
-
-    Args:
-        path (Path): The path to shorten
-
-    Returns:
-        Path: The path relative to the current directory, or the original path when it lies outside it
-    """
-    try:
-        return path.relative_to(Path.cwd())
-    except ValueError:
-        return path
-
-
 def _process_file(path: Path, files: list[Path], config: Config) -> None:
     """Add a file to the list of processable files unless it is a symlink or matches an ignore rule.
 
@@ -56,11 +42,11 @@ def _process_file(path: Path, files: list[Path], config: Config) -> None:
         config (Config): The settings that hold the ignore rules
     """
     if path.is_symlink():
-        pp.warning(f"Symlink: `{_display_path(path)}`")
+        pp.warning(f"Symlink: `{display_path(path)}`")
         return
 
     if _is_ignored_file(file=path, config=config):
-        pp.debug(f"Ignored: `{_display_path(path)}`")
+        pp.debug(f"Ignored: `{display_path(path)}`")
         return
 
     files.append(path.absolute())
@@ -90,10 +76,10 @@ def _walk_directory(directory: Path, files: list[Path], *, config: Config, max_d
         for dirname in list(dirnames):
             subdirectory = root_path / dirname
             if subdirectory.is_symlink():
-                pp.warning(f"Symlink: `{_display_path(subdirectory)}`")
+                pp.warning(f"Symlink: `{display_path(subdirectory)}`")
                 dirnames.remove(dirname)
             elif _is_ignored_file(file=subdirectory, config=config):
-                pp.debug(f"Ignored: `{_display_path(subdirectory)}`")
+                pp.debug(f"Ignored: `{display_path(subdirectory)}`")
                 dirnames.remove(dirname)
 
         for filename in filenames:
@@ -113,7 +99,7 @@ def _process_path(path: Path, files: list[Path], *, config: Config, max_depth: i
         cappa.Exit: If the path does not exist
     """
     if not path.exists():
-        pp.error(f"Not found: `{_display_path(path)}`")
+        pp.error(f"Not found: `{display_path(path)}`")
         raise cappa.Exit(code=1)
 
     if path.is_dir() and not path.is_symlink():

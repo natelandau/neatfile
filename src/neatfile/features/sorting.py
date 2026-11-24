@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, NamedTuple
 
 from nclutils import pp
 
-from neatfile.constants import ProjectType
+from neatfile.constants import MATCHING_STOPWORDS, ProjectType
 from neatfile.models import File, Folder, MatchResult, Project
 from neatfile.utils.strings import strip_special_chars, strip_stopwords, tokenize_string
 from neatfile.views import select_folder
@@ -270,7 +270,7 @@ def sort_file(file: File, *, project: Project, user_terms: tuple[str, ...]) -> P
 
     tokens_to_match = [*tokenize_string(file.new_stem), *user_terms]
     tokens_to_match = strip_special_chars(tokens_to_match)
-    tokens_to_match = strip_stopwords(tokens_to_match)
+    tokens_to_match = strip_stopwords(tokens_to_match, stopwords=MATCHING_STOPWORDS)
 
     pp.trace(f"SORT: '{file.new_name}' tokens to match: {tokens_to_match}")
 

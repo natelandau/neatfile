@@ -4,7 +4,7 @@ import functools
 import re
 from pathlib import Path
 
-from neatfile.constants import NEATFILE_IGNORE_NAME, NEATFILE_NAME, FolderType
+from neatfile.constants import MATCHING_STOPWORDS, NEATFILE_IGNORE_NAME, NEATFILE_NAME, FolderType
 from neatfile.utils.strings import strip_special_chars, strip_stopwords, tokenize_string
 
 
@@ -90,7 +90,7 @@ class Folder:
         terms = strip_special_chars(terms)
 
         if self.strip_stopwords:
-            filtered_tokens = strip_stopwords(terms)
+            filtered_tokens = strip_stopwords(terms, stopwords=MATCHING_STOPWORDS)
             # Keep original tokens if stripping stopwords would remove everything
             terms = filtered_tokens or terms
 
