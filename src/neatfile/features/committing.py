@@ -155,7 +155,7 @@ def commit_changes(
     # Resolve only the folders: `..` segments in a journal path stop undo once a folder they pass
     # through is gone, and resolving the file name would follow a symbolic link at the destination
     source = file.path.parent.resolve() / file.path.name
-    destination = file.new_path.parent.resolve() / file.new_path.name
+    destination = file.new_parent.resolve() / file.new_name
     try:
         backup = move_file(source=source, destination=destination, keep_backup=keep_backup)
     except (OSError, ValueError) as e:
