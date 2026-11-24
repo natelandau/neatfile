@@ -156,6 +156,15 @@ class Separator(Enum):
     PERIOD = "."
 
 
+# Ordered by preference: when two separators appear equally often, the earlier one wins
+SEPARATOR_CHARACTERS: tuple[str, ...] = (
+    Separator.SPACE.value,
+    Separator.DASH.value,
+    Separator.UNDERSCORE.value,
+    Separator.PERIOD.value,
+)
+
+
 class TransformCase(StrEnum):
     """Define choices for case transformation."""
 

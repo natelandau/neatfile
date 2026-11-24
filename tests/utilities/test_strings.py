@@ -134,7 +134,7 @@ def test_strip_stopwords(
 )
 def test_transform_case(input_tokens: list[str], case_format, expected: list[str]) -> None:
     """Verify transforming string case according to specified format."""
-    assert transform_case(input_tokens, case_format) == expected
+    assert transform_case(input_tokens, case_style=case_format) == expected
 
 
 @pytest.mark.parametrize(

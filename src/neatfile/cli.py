@@ -23,6 +23,21 @@ NO_PROJECT_MESSAGE = "`project` is not specified"
 TREE_NO_PROJECT_MESSAGE = "You must specify a project name with the `--project` flag."
 NO_DATE_FORMAT_MESSAGE = "`date_format` is not specified"
 
+_CLEAN_DESCRIPTION = """\
+Perform the following transformations on a filename:
+
+-   Remove special characters
+-   Trim multiple separators (`word----word` becomes `word-word`)
+-   Normalize to `lowercase`, `uppercase`, `Sentence case`, or `Title Case`
+-   Normalize all word separators to a common one (`_`, `-`, ` `, `.`)
+-   Enforce lowercase file extensions
+-   Remove common English stopwords
+-   Split `camelCase` words into separate words (`camel Case`)
+-   Add a date to the filename in your preferred format (removing dates already present in the filename)
+"""
+
+_PRINT_LEVEL_VERBOSITY: dict[PrintLevel, int] = {PrintLevel.DEBUG: 1, PrintLevel.TRACE: 2}
+
 
 def configure_output(neatfile: NeatFile) -> None:
     """Set the output verbosity from the `-v` flags before any command prints.
@@ -30,13 +45,7 @@ def configure_output(neatfile: NeatFile) -> None:
     Args:
         neatfile (NeatFile): The parsed CLI arguments.
     """
-    pp.configure(
-        verbosity=1
-        if neatfile.verbosity == PrintLevel.DEBUG
-        else 2
-        if neatfile.verbosity == PrintLevel.TRACE
-        else 0
-    )
+    pp.configure(verbosity=_PRINT_LEVEL_VERBOSITY.get(neatfile.verbosity, 0))
 
 
 def build_config(neatfile: NeatFile) -> Config:
@@ -115,7 +124,7 @@ def _require_project(config: Config, message: str) -> Project:
     if config.project is None:
         pp.error(message)
         raise cappa.Exit(code=1)
-    return Project.from_config(config.project, strip_stopwords=config.strip_stopwords)
+    return Project.from_config(project=config.project, strip_stopwords=config.strip_stopwords)
 
 
 def _require_date_format(config: Config, options: RunOptions) -> None:
@@ -312,18 +321,8 @@ class _CleanArguments(_FileArguments):
 
 @command(
     name="clean",
-    description="""\
-Perform the following transformations on a filename:
-
--   Remove special characters
--   Trim multiple separators (`word----word` becomes `word-word`)
--   Normalize to `lowercase`, `uppercase`, `Sentence case`, or `Title Case`
--   Normalize all word separators to a common one (`_`, `-`, ` `, `.`)
--   Enforce lowercase file extensions
--   Remove common English stopwords
--   Split `camelCase` words into separate words (`camel Case`)
--   Add a date to the filename in your preferred format (removing dates already present in the filename)
-
+    description=_CLEAN_DESCRIPTION
+    + """
 Learn more [in the README](https://github.com/natelandau/neatfile).
 """,
 )
@@ -337,7 +336,7 @@ class CleanCommand(_CleanArguments):
         config: Annotated[Config, Dep(build_config)],
         options: Annotated[RunOptions, Dep(build_run_options)],
     ) -> None:
-        """Call the command."""
+        """Clean the names of the given files and apply the changes."""
         _require_date_format(config=config, options=options)
         execute_command(mode=Mode.CLEAN, config=config, options=options, project=None)
 
@@ -352,7 +351,7 @@ class ConfigCommand:
     ] = False
 
     def __call__(self, options: Annotated[RunOptions, Dep(build_run_options)]) -> None:
-        """Call the command."""
+        """Show the current configuration, or create the user configuration file with `--create`."""
         user_config = constants.USER_CONFIG_PATH
         if self.create:
             if user_config.exists():
@@ -389,18 +388,8 @@ class ConfigCommand:
 
 @command(
     name="process",
-    description="""\
-Perform the following transformations on a filename:
-
--   Remove special characters
--   Trim multiple separators (`word----word` becomes `word-word`)
--   Normalize to `lowercase`, `uppercase`, `Sentence case`, or `Title Case`
--   Normalize all word separators to a common one (`_`, `-`, ` `, `.`)
--   Enforce lowercase file extensions
--   Remove common English stopwords
--   Split `camelCase` words into separate words (`camel Case`)
--   Add a date to the filename in your preferred format (removing dates already present in the filename)
-
+    description=_CLEAN_DESCRIPTION
+    + """
 Sort files into a project directory:
 
 -   Specify the project with the `--project` flag
@@ -424,7 +413,7 @@ class ProcessCommand(_CleanArguments):
         config: Annotated[Config, Dep(build_config)],
         options: Annotated[RunOptions, Dep(build_run_options)],
     ) -> None:
-        """Call the command."""
+        """Clean the names of the given files, sort them into the selected project, and apply the changes."""
         _require_date_format(config=config, options=options)
         project = _require_project(config=config, message=NO_PROJECT_MESSAGE)
         execute_command(mode=Mode.PROCESS, config=config, options=options, project=project)
@@ -454,7 +443,7 @@ class SortCommand(_FileArguments):
         config: Annotated[Config, Dep(build_config)],
         options: Annotated[RunOptions, Dep(build_run_options)],
     ) -> None:
-        """Call the command."""
+        """Sort the given files into the selected project and apply the changes."""
         project = _require_project(config=config, message=NO_PROJECT_MESSAGE)
         execute_command(mode=Mode.SORT, config=config, options=options, project=project)
 
@@ -464,7 +453,7 @@ class TreeCommand:
     """Print a tree representation of the project folder."""
 
     def __call__(self, config: Annotated[Config, Dep(build_config)]) -> None:
-        """Call the command."""
+        """Print the selected project's folder tree."""
         project = _require_project(config=config, message=TREE_NO_PROJECT_MESSAGE)
         pp.console().print(project.tree())
 

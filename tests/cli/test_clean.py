@@ -8,7 +8,7 @@ import pytest
 from cappa.base import invoke
 
 from neatfile.cli import NO_DATE_FORMAT_MESSAGE, NeatFile, configure_output
-from neatfile.commands import NO_CHANGES_MESSAGE
+from neatfile.commands import CHANGES_NOT_APPLIED_MESSAGE, NO_CHANGES_MESSAGE
 
 # Use local time to match how the `clean` command stamps filenames.
 # UTC would disagree with the app during the evening US window, when
@@ -383,7 +383,7 @@ def test_view_diff_table_not_confirm_changes(create_file, capsys, mocker, debug)
     assert "Pending changes for 1 of 1 files" in output
     assert "#   Original Name   New Name      Diff" in output
     assert "1   file#$%.txt     file.txt      file#$%.txt" in output
-    assert "Changes not applied" in output
+    assert CHANGES_NOT_APPLIED_MESSAGE in output
     assert original.exists()
     assert not Path(original.parent, "file.txt").exists()
 
