@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import functools
 import re
+from collections import defaultdict
 from typing import TYPE_CHECKING
 
 import cappa
 from nclutils import pp
+from rich.style import Style
+from rich.text import Text
 from rich.tree import Tree
 
 from neatfile.constants import FolderType, ProjectType
@@ -19,6 +22,9 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from neatfile.config import ProjectConfig
+
+IGNORED_FOLDER_LABEL = "(ignored)"
+OPEN_FOLDER_ICON = "\N{OPEN FILE FOLDER}"
 
 # Johnny Decimal folder type expected at each nesting level below the project root
 JD_LEVELS = (FolderType.AREA, FolderType.CATEGORY, FolderType.SUBCATEGORY)
@@ -182,56 +188,31 @@ class Project:
 
         return path
 
-    def _walk_directory(self, directory: Path, tree: Tree) -> None:
-        """Build a hierarchical tree structure by recursively traversing directories.
-
-        Show only non-hidden folders, sorted by name. For Johnny Decimal projects, only include folders matching JD patterns.
-
-        Args:
-            directory (Path): Directory path to traverse and build tree from
-            tree (Tree): Tree object to populate with directory structure
-        """
-        children: list[Path] | None = _list_children(directory)
-        if children is None:
-            return
-
-        subdirectories: list[Path] = sorted(
-            (path for path in children if self._is_tree_entry(path)),
-            key=lambda path: path.name.lower(),
-        )
-
-        for path in subdirectories:
-            branch = tree.add(path.name)
-            self._walk_directory(directory=path, tree=branch)
-
-    def _is_tree_entry(self, path: Path) -> bool:
-        """Report whether the tree view shows `path`: a non-hidden folder, named with any JD pattern in JD projects.
-
-        Args:
-            path (Path): Directory entry to test.
-
-        Returns:
-            bool: True when the entry belongs in the tree.
-        """
-        if path.name.startswith("."):
-            return False
-        if self.project_type == ProjectType.JD and not any(
-            re.match(pattern=folder_type.pattern, string=path.name) for folder_type in JD_LEVELS
-        ):
-            return False
-        return path.is_dir()
-
     def tree(self) -> Tree:
-        """Generate a visual tree representation of the project directory structure.
+        """Draw the folders that files can be sorted into, so users can preview where `sort` may file things.
 
-        Create a tree showing the hierarchical folder structure, with the project root as the base.
+        Folders marked with `.neatfileignore` are shown and labeled, because their subfolders can still match.
 
         Returns:
-            Tree: Visual tree representation with folders and formatting
+            Tree: The usable folders nested under the project root, sorted by name.
         """
-        tree = Tree(
-            f":open_file_folder: [link file://{self.path}]{self.path}",
+        children_by_parent: defaultdict[Path, list[Folder]] = defaultdict(list)
+        for folder in self.usable_folders:
+            children_by_parent[folder.path.parent].append(folder)
+
+        # Text instead of markup strings, so brackets in folder names print literally
+        root = Tree(
+            Text.assemble(f"{OPEN_FOLDER_ICON} ", (str(self.path), Style(link=self.path.as_uri()))),
             guide_style="dim",
         )
-        self._walk_directory(directory=self.path, tree=tree)
-        return tree
+        pending: list[tuple[Path, Tree]] = [(self.path, root)]
+        while pending:
+            directory, branch = pending.pop()
+            for folder in sorted(
+                children_by_parent[directory], key=lambda child: child.path.name.lower()
+            ):
+                label = Text(folder.path.name)
+                if folder.is_ignored:
+                    label.append(f" {IGNORED_FOLDER_LABEL}", style="dim")
+                pending.append((folder.path, branch.add(label)))
+        return root

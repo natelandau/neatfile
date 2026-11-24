@@ -73,13 +73,14 @@ python -m pip install --user neatfile
 
 ## Quickstart
 
-neatfile has four subcommands:
+neatfile has six subcommands:
 
 -   `clean` - Clean and normalize filenames
 -   `config` - View the user configuration file (or create one)
 -   `sort` - Move files into a directory tree
 -   `process` - Clean AND sort files
--   `tree` - Print a tree representation of a project's directory structure
+-   `tree` - Print the project folders that `sort` can move files into. Folders with a `.neatfileignore` file show the label `(ignored)`.
+-   `undo` - Revert the last run of `clean`, `sort`, or `process`
 
 To see the help text for a subcommand, run `neatfile <subcommand> --help`.
 
