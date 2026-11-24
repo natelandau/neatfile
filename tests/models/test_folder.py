@@ -1,5 +1,7 @@
 """Tests for the Folder model."""
 
+from pathlib import Path
+
 import pytest
 
 from neatfile.constants import NEATFILE_NAME, FolderType
@@ -11,7 +13,7 @@ def test_read_neatfile(tmp_path) -> None:
     # Given: A folder with a .neatfile file
     directory = tmp_path / "the_test_folder"
     directory.mkdir()
-    (directory / NEATFILE_NAME).write_text("koala\nfoo\n# bar")
+    (directory / NEATFILE_NAME).write_text("koala\nfoo\n# bar\n  # baz")
 
     folder = Folder(directory, FolderType.OTHER, strip_stopwords=True)
     assert folder.terms == {"folder", "foo", "koala", "test"}
@@ -84,3 +86,27 @@ def test_number_is_none_when_jd_prefix_missing(tmp_path) -> None:
 
     assert folder.number is None
     assert folder.name == "Finance"
+
+
+def test_unreadable_neatfile_adds_no_terms(tmp_path) -> None:
+    """Verify a .neatfile that is not UTF-8 text is skipped instead of stopping the run."""
+    directory = tmp_path / "invoices"
+    directory.mkdir()
+    (directory / NEATFILE_NAME).write_bytes(b"\xff\xfe\x00koala")
+
+    folder = Folder(directory, FolderType.OTHER, strip_stopwords=True)
+
+    assert folder.terms == {"invoices"}
+
+
+def test_symlinked_folder_keeps_its_project_path(tmp_path) -> None:
+    """Verify a symbolic link to a folder elsewhere stays inside the project, so paths shown relative to the project work."""
+    target = tmp_path / "elsewhere" / "invoices"
+    target.mkdir(parents=True)
+    link = tmp_path / "linked_project" / "invoices"
+    link.parent.mkdir()
+    link.symlink_to(target, target_is_directory=True)
+
+    folder = Folder(link, FolderType.OTHER, strip_stopwords=True)
+
+    assert folder.path.relative_to(tmp_path / "linked_project") == Path("invoices")

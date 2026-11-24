@@ -4,7 +4,13 @@ import cappa
 import pytest
 from cappa.base import invoke
 
-from neatfile.cli import TREE_NO_PROJECT_MESSAGE, NeatFile, configure_output
+from neatfile import constants
+from neatfile.cli import (
+    PROJECT_PATH_NOT_FOLDER_MESSAGE,
+    TREE_NO_PROJECT_MESSAGE,
+    NeatFile,
+    configure_output,
+)
 from neatfile.config import PROJECT_NOT_FOUND_MESSAGE
 
 
@@ -134,3 +140,18 @@ def test_tree_name_not_found(debug, capsys):
 
     assert e.value.code == 1
     assert PROJECT_NOT_FOUND_MESSAGE.format(project_name="non_existent_project") in stderr
+
+
+def test_tree_missing_project_folder(tmp_path, render_project_section, capsys):
+    """Verify a project whose folder does not exist stops the run with an error naming the path."""
+    missing = tmp_path / "missing_project"
+    with constants.DEV_CONFIG_PATH.open("a") as config_file:
+        config_file.write(render_project_section("missing", path=missing, settings={}))
+
+    with pytest.raises(cappa.Exit) as e:
+        invoke(obj=NeatFile, argv=["tree", "--project", "missing"], deps=[configure_output])
+
+    _, stderr = capsys.readouterr()
+    assert e.value.code == 1
+    # capsys strips the temporary directory from captured output
+    assert PROJECT_PATH_NOT_FOLDER_MESSAGE.format(path=missing.name) in stderr

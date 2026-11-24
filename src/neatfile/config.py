@@ -94,7 +94,7 @@ _ENV_PREFIX = "NEATFILE_"
 _MERGED_LIST_SETTINGS = frozenset({"ignored_files", "match_case_list", "stopwords"})
 # Settings that cannot differ per project because the undo journal is one file shared by all projects
 _GLOBAL_ONLY_SETTINGS = frozenset({"undo_history_runs"})
-_DEFAULT_PROJECT_DEPTH = 2
+_DEFAULT_PROJECT_DEPTH = 3
 _DEFAULT_PROJECT_TYPE = ProjectType.FOLDER
 PROJECT_NOT_FOUND_MESSAGE = "Project `{project_name}` not found in the configuration file."
 
@@ -308,9 +308,15 @@ def _build_project(
         project_errors.append(f"{prefix}: `path` is {raw_path!r}; expected a non-empty string")
 
     raw_depth = table.get("depth", _DEFAULT_PROJECT_DEPTH)
-    depth = raw_depth if isinstance(raw_depth, int) and not isinstance(raw_depth, bool) else None
+    depth = (
+        raw_depth
+        if isinstance(raw_depth, int) and not isinstance(raw_depth, bool) and raw_depth >= 1
+        else None
+    )
     if depth is None:
-        project_errors.append(f"{prefix}: `depth` is {raw_depth!r}; expected an integer")
+        project_errors.append(
+            f"{prefix}: `depth` is {raw_depth!r}; expected an integer of 1 or more"
+        )
 
     project_type: ProjectType | None = _DEFAULT_PROJECT_TYPE
     if "type" in table:

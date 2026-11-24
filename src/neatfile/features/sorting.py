@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, NamedTuple
 
 from nclutils import pp
 
-from neatfile.constants import MATCHING_STOPWORDS, ProjectType
+from neatfile.constants import MATCHING_STOPWORDS
 from neatfile.models import File, Folder, MatchResult, Project
 from neatfile.utils.strings import (
     remove_inner_apostrophes,
@@ -19,6 +19,7 @@ from neatfile.utils.strings import (
 from neatfile.views import select_folder
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
     import numpy as np
@@ -182,7 +183,7 @@ def _process_tokens_with_digits(tokens: tuple[str, ...]) -> tuple[Term, ...]:
 
 
 def _find_matching_folders(
-    filename_tokens: list[str], folders: list[Folder], threshold: float = MATCH_THRESHOLD
+    filename_tokens: list[str], folders: Sequence[Folder], threshold: float = MATCH_THRESHOLD
 ) -> list[MatchResult]:
     """Compare filename tokens against folder names using semantic similarity to find matching folders.
 
@@ -190,7 +191,7 @@ def _find_matching_folders(
 
     Args:
         filename_tokens (list[str]): Tokens extracted from the filename to match against folders
-        folders (list[Folder]): Collection of folders to evaluate for matches
+        folders (Sequence[Folder]): Folders to evaluate for matches, with ignored folders already left out
         threshold (float, optional): Minimum semantic similarity score required for a match. Defaults to MATCH_THRESHOLD.
 
     Returns:
@@ -200,7 +201,7 @@ def _find_matching_folders(
 
     token_match_threshold = threshold * TOKEN_THRESHOLD_FACTOR
 
-    index = _folder_index(tuple(folder for folder in folders if not folder.is_ignored))
+    index = _folder_index(tuple(folders))
     filename_terms = _process_tokens_with_digits(tuple(filename_tokens))
     pp.trace(f"SORT: filename_lemmas={[term.lemma for term in filename_terms]}")
     if not index.folders or not filename_terms:
@@ -244,14 +245,11 @@ def _match_by_jd_number(terms: tuple[str, ...], project: Project) -> Path | None
     Returns:
         Path | None: Path of the matching folder if found, None otherwise
     """
-    if project.project_type != ProjectType.JD:
-        return None
-
+    # Only Johnny Decimal folders have a number, so other projects never match
     for term in terms:
-        if re.match(r"^(\d{2}-\d{2}|\d{2}\.\d{2}|\d{2})$", term):
-            for folder in project.usable_folders:
-                if folder.number == term:
-                    return folder.path
+        for folder in project.matchable_folders:
+            if folder.number == term:
+                return folder.path
 
     return None
 
@@ -280,7 +278,7 @@ def sort_file(file: File, *, project: Project, user_terms: tuple[str, ...]) -> P
     pp.trace(f"SORT: '{file.new_name}' tokens to match: {tokens_to_match}")
 
     matching_dirs = _find_matching_folders(
-        filename_tokens=tokens_to_match, folders=project.usable_folders
+        filename_tokens=tokens_to_match, folders=project.matchable_folders
     )
 
     if not matching_dirs:

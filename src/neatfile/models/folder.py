@@ -4,6 +4,8 @@ import functools
 import re
 from pathlib import Path
 
+from nclutils import pp
+
 from neatfile.constants import MATCHING_STOPWORDS, NEATFILE_IGNORE_NAME, NEATFILE_NAME, FolderType
 from neatfile.utils.strings import (
     remove_inner_apostrophes,
@@ -19,35 +21,36 @@ class Folder:
     Args:
         path (Path): Path to the folder.
         folder_type (FolderType): Type of the folder.
-        area (Path | None, optional): Path to the area folder, if the folder is a category or subcategory. Defaults to None.
-        category (Path | None, optional): Path to the category folder, if the folder is a subcategory. Defaults to None.
         strip_stopwords (bool): Remove stopwords from the terms taken from the folder name.
 
     Attributes:
         path (Path): Path to the folder.
         type (FolderType): Type of the folder.
-        area (Path | None): Path to the area folder, if the folder is a category or subcategory.
-        category (Path | None): Path to the category folder, if the folder is a subcategory.
         number (str | None): The Johnny Decimal number of the folder.
         name (str): The name of the folder.
-        terms (list[str]): List of unique search terms from folder name and .neatfile contents.
+        terms (set[str]): Unique search terms from folder name and .neatfile contents.
     """
 
     def __init__(
         self,
         path: Path,
         folder_type: FolderType,
-        area: Path | None = None,
-        category: Path | None = None,
         *,
         strip_stopwords: bool,
     ) -> None:
-        self.path = Path(path).expanduser().resolve()
+        # Absolute but not resolved: resolving a symbolic link would place the folder outside its project
+        self.path = Path(path).expanduser().absolute()
         self.type = folder_type
-        self.area = area
-        self.category = category
         self.strip_stopwords = strip_stopwords
-        self.is_ignored = Path(self.path, NEATFILE_IGNORE_NAME).exists()
+
+    @functools.cached_property
+    def is_ignored(self) -> bool:
+        """Report whether a `.neatfileignore` marker excludes this folder from matching.
+
+        Returns:
+            bool: True when the folder holds a `.neatfileignore` file.
+        """
+        return (self.path / NEATFILE_IGNORE_NAME).exists()
 
     def __str__(self) -> str:  # pragma: no cover
         """Return string representation of the folder.
@@ -57,7 +60,7 @@ class Folder:
         """
         return f"FOLDER: {self.path.name} ({self.type.value}): {self.path}"
 
-    @property
+    @functools.cached_property
     def name(self) -> str:
         """Extract the name portion of the folder by removing the Johnny Decimal prefix.
 
@@ -67,9 +70,9 @@ class Folder:
         if self.type == FolderType.OTHER:
             return self.path.name
 
-        return re.sub(self.type.pattern, "", self.path.name).strip()
+        return re.sub(pattern=self.type.pattern, repl="", string=self.path.name).strip()
 
-    @property
+    @functools.cached_property
     def number(self) -> str | None:
         """Extract the Johnny Decimal number from the folder name.
 
@@ -79,7 +82,7 @@ class Folder:
         if self.type == FolderType.OTHER:
             return None
 
-        match = re.match(self.type.pattern, self.path.name)
+        match = re.match(pattern=self.type.pattern, string=self.path.name)
         return match.group(0).strip("- _") if match else None
 
     @functools.cached_property
@@ -99,11 +102,15 @@ class Folder:
             # Keep original tokens if stripping stopwords would remove everything
             terms = filtered_tokens or terms
 
-        if Path(self.path, NEATFILE_NAME).exists():
-            content = Path(self.path, NEATFILE_NAME).read_text(encoding="utf-8").splitlines()
-            for line in content:
-                if line.startswith("#") or line in terms:
-                    continue
-                terms.append(line)
+        neatfile_path: Path = self.path / NEATFILE_NAME
+        neatfile_lines: list[str]
+        try:
+            neatfile_lines = neatfile_path.read_text(encoding="utf-8").splitlines()
+        except FileNotFoundError:
+            neatfile_lines = []
+        except (OSError, UnicodeDecodeError) as error:
+            pp.warning(f"Ignoring {neatfile_path}: expected a readable UTF-8 text file ({error})")
+            neatfile_lines = []
+        terms.extend(line for line in neatfile_lines if not line.strip().startswith("#"))
 
         return {stripped for x in terms if (stripped := x.lower().strip())}

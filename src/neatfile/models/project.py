@@ -2,22 +2,64 @@
 
 from __future__ import annotations
 
+import functools
 import re
-from pathlib import Path
+from collections import defaultdict
 from typing import TYPE_CHECKING
 
-import cappa
 from nclutils import pp
+from rich.style import Style
+from rich.text import Text
 from rich.tree import Tree
 
-from neatfile.constants import NEATFILE_NAME, FolderType, ProjectType
+from neatfile.constants import FolderType, ProjectType
 
 from .folder import Folder
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Iterator
+    from pathlib import Path
 
     from neatfile.config import ProjectConfig
+
+IGNORED_FOLDER_LABEL = "(ignored)"
+OPEN_FOLDER_ICON = "\N{OPEN FILE FOLDER}"
+
+# Johnny Decimal folder type expected at each nesting level below the project root
+JD_LEVELS = (FolderType.AREA, FolderType.CATEGORY, FolderType.SUBCATEGORY)
+
+
+def _is_usable_name(name: str, folder_type: FolderType) -> bool:
+    """Report whether a folder name fits its expected type, so the scan can reject it before touching the disk.
+
+    Args:
+        name (str): Folder name to test.
+        folder_type (FolderType): Type the folder must have at its level.
+
+    Returns:
+        bool: True when a JD name carries its type's prefix, or a non-JD name is not hidden.
+    """
+    if folder_type == FolderType.OTHER:
+        return not name.startswith(".")
+    return re.match(pattern=folder_type.pattern, string=name) is not None
+
+
+def _list_children(directory: Path) -> list[Path] | None:
+    """List a folder's entries, warning instead of crashing when the folder cannot be read.
+
+    An unreadable folder inside a project should hide only that branch, not stop the whole run.
+
+    Args:
+        directory (Path): Folder to list.
+
+    Returns:
+        list[Path] | None: The folder's entries, or None when the folder cannot be read.
+    """
+    try:
+        return list(directory.iterdir())
+    except OSError as error:
+        pp.warning(f"Skipping {directory}: expected a readable folder ({error})")
+        return None
 
 
 class Project:
@@ -27,8 +69,8 @@ class Project:
 
     Args:
         name (str): The name of the project
-        path (str | Path): Path to the project directory
-        depth (int): Maximum folder depth to traverse.
+        path (Path): Path to the project directory
+        depth (int): Number of folder levels below the root to index, where 1 means only the root's subfolders. Johnny Decimal projects ignore it.
         project_type (ProjectType): Type of project structure to use.
         strip_stopwords (bool): Remove stopwords from the terms taken from folder names.
     """
@@ -36,46 +78,30 @@ class Project:
     def __init__(
         self,
         name: str,
-        path: str | Path,
+        path: Path,
         *,
         depth: int,
         project_type: ProjectType,
         strip_stopwords: bool,
     ) -> None:
-        """Initialize a new project instance.
-
-        Args:
-            name (str): The name of the project
-            path (str | Path): Path to the project directory
-            depth (int): Maximum folder depth to traverse.
-            project_type (ProjectType): Type of project structure to use.
-            strip_stopwords (bool): Remove stopwords from the terms taken from folder names.
-        """
         self.name = name
-        self.path = self._validate_project_path(Path(path).expanduser().resolve())
+        self.path = path.expanduser().resolve()
         self.depth = depth
         self.project_type = project_type
         self.strip_stopwords = strip_stopwords
 
-        # Identify usable folders within the project
-        self.usable_folders = (
-            self._find_jd_folders()
-            if self.project_type == ProjectType.JD
-            else self._find_non_jd_folders()
-        )
-
     @classmethod
     def from_config(cls, project: ProjectConfig, *, strip_stopwords: bool) -> Project:
-        """Scan the folder tree of the project selected in the configuration.
+        """Build the project selected in the configuration.
 
-        Call this only from commands that need the folders, because scanning reads the whole tree.
+        The folder tree is scanned on first access to `usable_folders`, so commands that never read it pay nothing.
 
         Args:
             project (ProjectConfig): The validated project settings.
             strip_stopwords (bool): Remove stopwords from the terms taken from folder names.
 
         Returns:
-            Project: The project with its usable folders indexed.
+            Project: The project for the selected configuration.
         """
         return cls(
             name=project.name,
@@ -91,156 +117,91 @@ class Project:
         Returns:
             str: String representation of the project.
         """
-        return f"PROJECT: {self.name}: {self.path} {len(self.usable_folders)} usable folders (type: {self.project_type})"
+        return f"PROJECT: {self.name}: {self.path} (type: {self.project_type})"
 
-    def _find_non_jd_folders(self) -> list[Folder]:
-        """Traverse the project directory and identify all non-Johnny Decimal folders.
+    @functools.cached_property
+    def usable_folders(self) -> list[Folder]:
+        """Index the folders that files can be sorted into.
 
-        Recursively search through the project directory up to the configured depth, identifying and categorizing all folders that don't follow the Johnny Decimal naming convention. Exclude hidden folders (those starting with '.').
-
-        Returns:
-            list[Folder]: A sorted list of Folder objects representing non-JD folders, ordered by path.
-        """
-
-        def traverse_directory(directory: Path, depth: int) -> Generator[Folder, None, None]:
-            for item in directory.iterdir():
-                if item.is_dir() and item.name[0] != ".":  # Exclude hidden folders
-                    yield Folder(
-                        path=item,
-                        folder_type=FolderType.OTHER,
-                        strip_stopwords=self.strip_stopwords,
-                    )
-                    if depth < self.depth:
-                        yield from traverse_directory(item, depth + 1)
-
-        non_jd_folders = list(traverse_directory(self.path, 0))
-
-        pp.trace(f"{len(non_jd_folders)} non-JD folders indexed in project: {self.name}")
-        return sorted(non_jd_folders, key=lambda folder: folder.path)
-
-    def _find_jd_folders(self) -> list[Folder]:
-        """Identify and categorize Johnny Decimal folders within the project directory.
-
-        Recursively search through the project directory to find folders that follow the Johnny Decimal naming convention. Categorize each folder as an area (XX-XX), category (XX), or subcategory (XX.XX) based on its name pattern. Include folders marked with a `.neatfile` even if they don't match the naming pattern.
+        For Johnny Decimal projects, keep areas (XX-XX) at the root, categories (XX) inside areas, and subcategories (XX.XX) inside categories. For other projects, keep every non-hidden folder down to the configured depth.
 
         Returns:
-            list[Folder]: A sorted list of Folder objects representing JD folders, ordered by path.
+            list[Folder]: The usable folders, ordered by path.
         """
+        folders: list[Folder] = sorted(
+            (
+                Folder(path=path, folder_type=folder_type, strip_stopwords=self.strip_stopwords)
+                for path, folder_type in self._scan_folders(directory=self.path, level=0)
+            ),
+            key=lambda folder: folder.path,
+        )
+        pp.trace(f"{len(folders)} folders indexed in project: {self.name}")
+        return folders
 
-        def create_folders(
-            directory: Path,
-            folder_type: FolderType,
-            parent_area: Path | None = None,
-            parent_category: Path | None = None,
-        ) -> list[Folder]:
-            return [
-                Folder(
-                    path=item,
-                    folder_type=folder_type,
-                    area=parent_area or item,
-                    category=parent_category or item,
-                    strip_stopwords=self.strip_stopwords,
-                )
-                for item in directory.iterdir()
-                if item.is_dir() and re.match(folder_type.pattern, item.name)
-            ]
+    @functools.cached_property
+    def matchable_folders(self) -> tuple[Folder, ...]:
+        """List the folders a file can be matched to, leaving out folders marked with `.neatfileignore`.
 
-        areas = create_folders(self.path, FolderType.AREA)
-        categories = [
-            folder
-            for area in areas
-            for folder in create_folders(area.path, FolderType.CATEGORY, parent_area=area.path)
-        ]
-        subcategories = [
-            folder
-            for category in categories
-            for folder in create_folders(
-                category.path,
-                FolderType.SUBCATEGORY,
-                parent_area=category.area,
-                parent_category=category.path,
-            )
-        ]
+        Subfolders of an ignored folder stay matchable.
 
-        # Filtering to avoid duplicates and include folders with .neatfile
-        all_folders: list[Folder] = []
-        seen_paths: set[Path] = set()
-        for folder_list in (areas, categories, subcategories):
-            for folder in folder_list:
-                if folder.path not in seen_paths or Path(folder.path / NEATFILE_NAME).exists():
-                    # pp.trace(f"PROJECT: Add '{folder.path.name}'")  # noqa: ERA001
-                    seen_paths.add(folder.path)
-                    all_folders.append(folder)
+        Returns:
+            tuple[Folder, ...]: The usable folders that are not ignored, ordered by path.
+        """
+        return tuple(folder for folder in self.usable_folders if not folder.is_ignored)
 
-        pp.trace(f"{len(all_folders)} folders indexed in project: {self.name}")
-        return sorted(all_folders, key=lambda folder: folder.path)
-
-    @staticmethod
-    def _validate_project_path(path: str | Path) -> Path:
-        """Validate and convert a path string or Path object to a resolved Path.
-
-        Ensure the path exists and is an accessible directory. Convert string paths to resolved Path objects.
+    def _scan_folders(self, directory: Path, level: int) -> Iterator[tuple[Path, FolderType]]:
+        """Yield each usable folder below `directory` with its type, recursing to the project's maximum level.
 
         Args:
-            path (str | Path): Path to validate, either as string or Path object
+            directory (Path): Directory whose children to scan.
+            level (int): Nesting level of the children, where 0 is the project root's children.
 
-        Returns:
-            Path: Resolved and validated Path object
-
-        Raises:
-            cappa.Exit: When path does not exist or is not a directory
+        Yields:
+            tuple[Path, FolderType]: A usable folder and its type.
         """
-        path_to_validate = Path(path).expanduser().resolve() if isinstance(path, str) else path
-
-        if not path_to_validate.exists():
-            pp.error(f"Specified project path does not exist: {path}")
-            raise cappa.Exit(code=1)
-
-        if not path_to_validate.is_dir():
-            pp.error(f"Specified project path is not a directory: {path}")
-            raise cappa.Exit(code=1)
-
-        return path_to_validate
-
-    def _walk_directory(self, directory: Path, tree: Tree) -> None:
-        """Build a hierarchical tree structure by recursively traversing directories.
-
-        Sort directories before files and exclude hidden files. For Johnny Decimal projects, only include folders matching JD patterns.
-
-        Args:
-            directory (Path): Directory path to traverse and build tree from
-            tree (Tree): Tree object to populate with directory structure
-        """
-        # Sort dirs first then by filename
-        paths = sorted(
-            Path(directory).iterdir(),
-            key=lambda path: (path.is_file(), path.name.lower()),
+        folder_type: FolderType = (
+            JD_LEVELS[level] if self.project_type == ProjectType.JD else FolderType.OTHER
+        )
+        max_level: int = (
+            len(JD_LEVELS) - 1 if self.project_type == ProjectType.JD else self.depth - 1
         )
 
-        for path in paths:
-            if path.name.startswith(".") or not path.is_dir():
-                continue
+        children: list[Path] | None = _list_children(directory)
+        if children is None:
+            return
 
-            if self.project_type == ProjectType.JD and not any(
-                re.match(ft.pattern, path.name)
-                for ft in (FolderType.AREA, FolderType.CATEGORY, FolderType.SUBCATEGORY)
-            ):
-                continue
-
-            branch = tree.add(f"{path.name}")
-            self._walk_directory(path, branch)
+        for item in children:
+            # The name test comes first so files and rejected names skip the stat in is_dir
+            if _is_usable_name(name=item.name, folder_type=folder_type) and item.is_dir():
+                yield item, folder_type
+                if level < max_level:
+                    yield from self._scan_folders(directory=item, level=level + 1)
 
     def tree(self) -> Tree:
-        """Generate a visual tree representation of the project directory structure.
+        """Draw the folders that files can be sorted into, so users can preview where `sort` may file things.
 
-        Create a tree showing the hierarchical folder structure, with the project root as the base.
+        Folders marked with `.neatfileignore` are shown and labeled, because their subfolders can still match.
 
         Returns:
-            Tree: Visual tree representation with folders and formatting
+            Tree: The usable folders nested under the project root, sorted by name.
         """
-        tree = Tree(
-            f":open_file_folder: [link file://{self.path}]{self.path}",
+        children_by_parent: defaultdict[Path, list[Folder]] = defaultdict(list)
+        for folder in self.usable_folders:
+            children_by_parent[folder.path.parent].append(folder)
+
+        # Text instead of markup strings, so brackets in folder names print literally
+        root = Tree(
+            Text.assemble(f"{OPEN_FOLDER_ICON} ", (str(self.path), Style(link=self.path.as_uri()))),
             guide_style="dim",
         )
-        self._walk_directory(Path(self.path), tree)
-        return tree
+        pending: list[tuple[Path, Tree]] = [(self.path, root)]
+        while pending:
+            directory, branch = pending.pop()
+            for folder in sorted(
+                children_by_parent[directory], key=lambda child: child.path.name.lower()
+            ):
+                label = Text(folder.path.name)
+                if folder.is_ignored:
+                    label.append(f" {IGNORED_FOLDER_LABEL}", style="dim")
+                pending.append((folder.path, branch.add(label)))
+        return root
