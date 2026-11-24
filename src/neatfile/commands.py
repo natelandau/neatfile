@@ -161,7 +161,7 @@ def _plan_changes(
             config=config,
             override_date=override_date,
             date_only=options.date_only,
-            fallback_date=partial(file_creation_date, file.path, tz=config.tz),
+            fallback_date=partial(file_creation_date, path=file.path, tz=config.tz),
         )
         file.new_stem = cleaned.stem
         file.new_suffix = cleaned.suffix

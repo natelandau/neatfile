@@ -39,7 +39,8 @@ What's the problem here?
 
 ### Date parsing
 
--   Identify dates in filenames in many different formats and and normalize them into a preferred format
+-   Identify dates in filenames in many different formats and normalize them into a preferred format
+-   Keep a date that names a month, week, quarter, half year, or year in a short form, such as `2025-03` or `2024-Q3`, instead of adding a day that the filename does not state
 -   Add the date to the beginning or the end of the filename (or remove it entirely)
 -   Fall back to file creation date if no date is found in the filename
 
@@ -156,6 +157,8 @@ date_first = "month"
 # date format
 # If specified, the date will be added to the filename following this format.
 # See https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes for details on how to specify a format.
+# A date that names only a month, week, quarter, half year, or year keeps a short
+# form, such as 2025-03 or 2024-Q3, instead of this format.
 date_format        = ""
 
 # Ignores dotfiles (files that start with a period) when cleaning a directory.
@@ -186,6 +189,13 @@ overwrite_existing = false
 # "ignore" does it's best to keep the original separator.
 separator          = "ignore"
 
+# Read runs of 4 to 7 digits with no separators, such as 120524 or 9819, as dates.
+# Off by default because such runs are usually invoice numbers, counts, or IDs.
+# Runs of 8 digits, such as 20240512, are always read as dates, as are runs that
+# date_format writes, such as 051224 from %m%d%y.
+# true or false
+short_digit_dates  = false
+
 # Split CamelCase words into separate words.
 # true or false
 split_words        = false
@@ -203,7 +213,7 @@ strip_stopwords    = true
 # Options: "ignore", "lower", "upper", "title", "sentence"
 transform_case     = "ignore"
 
-# Time zone for the date that neatfile reads from the file creation time.
+# Time zone for the dates that neatfile reads from filenames and file creation times.
 # Use an IANA time zone name. If you do not set it, neatfile uses the local time zone.
 # tz                 = "America/New_York"
 

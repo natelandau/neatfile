@@ -7,7 +7,7 @@ from datetime import datetime, tzinfo
 from pathlib import Path
 from typing import assert_never
 
-from datefind import FoundDate, find_dates
+from datefind import FoundDate, find_date
 from nclutils import pp
 
 from neatfile.config import Config
@@ -36,6 +36,26 @@ DATE_NOT_FOUND_MESSAGE = (
 )
 
 _SEPARATOR_RUN = f"[{re.escape(''.join(SEPARATOR_CHARACTERS))}]*"
+_SHORT_DIGIT_RUN = re.compile(r"\d{4,7}")
+# Two-digit month and day give the longest output of formats such as `%m%d%y`
+_SAMPLE_DATE = datetime(2000, 12, 31)  # noqa: DTZ001
+
+
+def _reads_short_digit_dates(config: Config) -> bool:
+    """Decide whether runs of 4 to 7 digits count as dates.
+
+    A `date_format` such as `%m%d%y` writes such a run, and a renamed file must still read as
+    dated, or the next run adds a second date in front of it.
+
+    Args:
+        config (Config): The settings that hold `short_digit_dates` and `date_format`.
+
+    Returns:
+        bool: True when `short_digit_dates` is on or `date_format` writes a run of 4 to 7 digits.
+    """
+    if config.short_digit_dates:
+        return True
+    return _SHORT_DIGIT_RUN.fullmatch(_SAMPLE_DATE.strftime(config.date_format)) is not None
 
 
 def _first_date(text: str, *, config: Config) -> FoundDate | None:
@@ -43,12 +63,17 @@ def _first_date(text: str, *, config: Config) -> FoundDate | None:
 
     Args:
         text (str): The text to search.
-        config (Config): The settings that decide how ambiguous numeric dates are read.
+        config (Config): The settings that decide how numeric dates are read and the time zone.
 
     Returns:
         FoundDate | None: The first date found, or None when the text holds no date.
     """
-    return next(iter(find_dates(text=text, first=config.date_first.value)), None)
+    return find_date(
+        text=text,
+        first=config.date_first.value,
+        tz=config.tz,
+        short_digit_dates=_reads_short_digit_dates(config),
+    )
 
 
 def parse_date_option(text: str | None, *, config: Config) -> FoundDate | None:
@@ -56,7 +81,7 @@ def parse_date_option(text: str | None, *, config: Config) -> FoundDate | None:
 
     Args:
         text (str | None): The `--date` value, or None when the option was not given.
-        config (Config): The settings that decide how ambiguous numeric dates are read.
+        config (Config): The settings that decide how numeric dates are read and the time zone.
 
     Returns:
         FoundDate | None: The date to use for every file, or None to use each file's own date.
@@ -131,7 +156,9 @@ def _format_date(
 ) -> str:
     """Return the date to add to the name, in the configured format.
 
-    Prefer `override_date`, then the date in the filename, then `fallback_date`.
+    Prefer `override_date`, then the date in the filename, then `fallback_date`. A found date
+    that names a period longer than a day, such as `March 2025` or `Q3 2024`, keeps that period
+    in a short form (`2025-03`, `2024-Q3`) so the name never gains a day the source did not state.
 
     Args:
         config (Config): The settings that hold the date format.
@@ -148,7 +175,9 @@ def _format_date(
 
     chosen_date: FoundDate | None = override_date or filename_date
     if chosen_date is not None:
-        return chosen_date.datetime.strftime(config.date_format)
+        if chosen_date.precision == "day":
+            return chosen_date.datetime.strftime(config.date_format)
+        return chosen_date.value
 
     if fallback_date is None:
         return ""
