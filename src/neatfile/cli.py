@@ -111,14 +111,14 @@ def build_run_options(neatfile: NeatFile) -> RunOptions:
 
 
 def _require_project(config: Config, message: str) -> Project:
-    """Scan the selected project's folders, or stop the run when no project is selected.
+    """Build the selected project, or stop the run when no project is selected.
 
     Args:
         config (Config): The settings for this run.
         message (str): The error to show when no project is selected.
 
     Returns:
-        Project: The selected project with its folders indexed.
+        Project: The selected project. Its folders are scanned on first use.
 
     Raises:
         cappa.Exit: If no project is selected.

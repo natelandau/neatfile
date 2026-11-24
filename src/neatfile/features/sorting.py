@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, NamedTuple
 
 from nclutils import pp
 
-from neatfile.constants import MATCHING_STOPWORDS, ProjectType
+from neatfile.constants import MATCHING_STOPWORDS
 from neatfile.models import File, Folder, MatchResult, Project
 from neatfile.utils.strings import (
     remove_inner_apostrophes,
@@ -244,14 +244,11 @@ def _match_by_jd_number(terms: tuple[str, ...], project: Project) -> Path | None
     Returns:
         Path | None: Path of the matching folder if found, None otherwise
     """
-    if project.project_type != ProjectType.JD:
-        return None
-
+    # Only Johnny Decimal folders have a number, so other projects never match
     for term in terms:
-        if re.match(r"^(\d{2}-\d{2}|\d{2}\.\d{2}|\d{2})$", term):
-            for folder in project.usable_folders:
-                if folder.number == term:
-                    return folder.path
+        for folder in project.usable_folders:
+            if folder.number == term:
+                return folder.path
 
     return None
 
