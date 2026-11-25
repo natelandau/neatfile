@@ -16,7 +16,7 @@ from rich.traceback import install
 from neatfile import constants
 from neatfile.commands import Mode, execute_command, execute_undo
 from neatfile.config import Config, ConfigError, RunOptions, load_config
-from neatfile.constants import PrintLevel, Separator, TransformCase
+from neatfile.constants import DateFallback, PrintLevel, Separator, TransformCase
 from neatfile.models import Project
 
 NO_PROJECT_MESSAGE = (
@@ -69,6 +69,7 @@ def build_config(neatfile: NeatFile) -> Config:
         flag_values["overwrite_existing"] = command.overwrite or None
     if isinstance(command, _CleanArguments):
         flag_values |= {
+            "date_fallback": command.date_fallback,
             "date_format": command.date_format,
             "separator": command.separator,
             "transform_case": command.transform_case,
@@ -305,6 +306,16 @@ class _CleanArguments(_FileArguments):
             show_default=False,
         ),
     ] = False
+    date_fallback: Annotated[
+        str | None,
+        cappa.Arg(
+            choices=[c.name for c in DateFallback],
+            long="date-fallback",
+            help="Date to use when the filename and the file's metadata hold none",
+            show_default=False,
+            parse=lambda x: x.upper(),
+        ),
+    ] = None
     transform_case: Annotated[
         str | None,
         cappa.Arg(

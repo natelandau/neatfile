@@ -16,6 +16,11 @@ date_first = "month"
 # form, such as 2025-03 or 2024-Q3, instead of this format.
 date_format = ""
 
+# Date to use when neither the filename nor the file's metadata holds one.
+# "created" uses the creation date where the system reports it, else the modified date.
+# Options: "created", "modified"
+date_fallback = "created"
+
 # Ignores dotfiles (files that start with a period) when cleaning a directory.
 # true or false
 ignore_dotfiles = true
@@ -69,7 +74,7 @@ strip_stopwords = true
 # Options: "ignore", "lower", "upper", "title", "sentence"
 transform_case = "ignore"
 
-# Time zone for the dates that neatfile reads from filenames and file creation times.
+# Time zone for the dates that neatfile reads from filenames, file metadata, and file dates.
 # Use an IANA time zone name. If you do not set it, neatfile uses the local time zone.
 # tz = "America/New_York"
 

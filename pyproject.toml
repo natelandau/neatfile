@@ -9,10 +9,12 @@
     dependencies = [
         "cappa>=0.33.0",
         "datefind>=1.0.1,<2",
+        "exifread>=3.5.1,<4",
         "huggingface-hub>=1.33.0,<3",
         "model2vec>=0.10.0,<1",
         "nclutils>=4.0.0,<5",
         "numpy>=2.5.5,<3",
+        "pypdf>=7.1.1,<8",
         "questionary>=2.1.1,<3",
         "rich>=15.0.0",
         "simplemma>=2.0.0,<3",

@@ -4,11 +4,9 @@ from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 from datefind import FoundDate
-from pytest_mock import MockerFixture
 
 from neatfile.config import Config
 from neatfile.constants import InsertLocation, Separator, TransformCase
@@ -16,7 +14,6 @@ from neatfile.features.cleaning import (
     DATE_NOT_FOUND_MESSAGE,
     MAX_FILENAME_BYTES,
     NAME_TOO_LONG_MESSAGE,
-    _creation_timestamp,
     _truncate_to_bytes,
     clean_name,
     parse_date_option,
@@ -49,24 +46,6 @@ def _planned_name(
 def dated_config(default_config: Config) -> Config:
     """Return settings that add dates in ISO format and title-case the words."""
     return replace(default_config, date_format="%Y-%m-%d", transform_case=TransformCase.TITLE)
-
-
-def test_creation_timestamp_prefers_birth_time(tmp_path: Path, mocker: MockerFixture) -> None:
-    """Verify the file birth time is used when the platform reports one."""
-    mocker.patch.object(
-        Path,
-        "stat",
-        return_value=SimpleNamespace(st_birthtime=100.0, st_mtime=200.0, st_ctime=300.0),
-    )
-
-    assert _creation_timestamp(tmp_path / "file.txt") == 100.0
-
-
-def test_creation_timestamp_falls_back_to_mtime(tmp_path: Path, mocker: MockerFixture) -> None:
-    """Verify modification time is used when birth time is unavailable, never ctime."""
-    mocker.patch.object(Path, "stat", return_value=SimpleNamespace(st_mtime=200.0, st_ctime=300.0))
-
-    assert _creation_timestamp(tmp_path / "file.txt") == 200.0
 
 
 @pytest.mark.parametrize(

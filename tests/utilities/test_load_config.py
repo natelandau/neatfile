@@ -5,7 +5,13 @@ from pathlib import Path
 import pytest
 
 from neatfile.config import PROJECT_NOT_FOUND_MESSAGE, ConfigError, ProjectConfig, load_config
-from neatfile.constants import DEFAULT_CONFIG_PATH, ProjectType, Separator, TransformCase
+from neatfile.constants import (
+    DEFAULT_CONFIG_PATH,
+    DateFallback,
+    ProjectType,
+    Separator,
+    TransformCase,
+)
 
 
 def test_defaults_match_default_config_file() -> None:
@@ -15,6 +21,7 @@ def test_defaults_match_default_config_file() -> None:
     assert config.separator == Separator.IGNORE
     assert config.transform_case == TransformCase.IGNORE
     assert config.date_format == ""
+    assert config.date_fallback == DateFallback.CREATED
     assert config.ignore_file_regex.pattern == "^$"
     assert config.user_terms == ()
     assert config.undo_history_runs == 50
@@ -112,6 +119,13 @@ def test_cli_user_terms_replace_configured_terms(tmp_path: Path) -> None:
             id="toml list",
         ),
         pytest.param("NEATFILE_SEPARATOR", "dash", "separator", Separator.DASH, id="raw enum"),
+        pytest.param(
+            "NEATFILE_DATE_FALLBACK",
+            "modified",
+            "date_fallback",
+            DateFallback.MODIFIED,
+            id="date fallback enum",
+        ),
         pytest.param("NEATFILE_DATE_FORMAT", "2024", "date_format", "2024", id="int-like string"),
         pytest.param(
             "NEATFILE_DATE_FORMAT", "2023-01-01", "date_format", "2023-01-01", id="date-like string"

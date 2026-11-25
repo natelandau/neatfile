@@ -237,6 +237,13 @@ class InsertLocation(StrEnum):
     BEFORE = "before"
 
 
+class DateFallback(StrEnum):
+    """Define which file timestamp dates a file when nothing else does."""
+
+    CREATED = "created"
+    MODIFIED = "modified"
+
+
 class DateFirst(StrEnum):
     """Define choices for date region."""
 

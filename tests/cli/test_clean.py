@@ -1,5 +1,6 @@
 """Test the clean command."""
 
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from cappa.base import invoke
 
 from neatfile.cli import NO_DATE_FORMAT_MESSAGE, NeatFile, configure_output
 from neatfile.commands import CHANGES_NOT_APPLIED_MESSAGE, NO_CHANGES_MESSAGE
+from tests.metadata_files import pdf_with_creation_date
 
 # Use local time to match how the `clean` command stamps filenames.
 # UTC would disagree with the app during the evening US window, when
@@ -540,3 +542,58 @@ def test_clean_shows_cleaning_steps_at_verbose(
 
     captured = capsys.readouterr()
     assert ("CLEAN (strip stopwords)" in captured.out + captured.err) is shows_steps
+
+
+def test_date_fallback_flag_uses_modified_date(create_file):
+    """Verify --date-fallback modified names an undated file by its modification time."""
+    # Given: An undated file last modified on 2020-01-02
+    file = create_file("notes.txt")
+    modified = datetime(2020, 1, 2, 12, 0).astimezone().timestamp()
+    os.utime(file, times=(modified, modified))
+
+    # When: Cleaning with the modified-date fallback
+    args = ["clean", "--date-format", "%Y-%m-%d", "--date-fallback", "modified", str(file)]
+    with pytest.raises(cappa.Exit) as e:
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
+
+    # Then: The name carries the modification date
+    assert e.value.code == 0
+    assert (file.parent / "2020-01-02_notes.txt").exists()
+
+
+@pytest.mark.parametrize(
+    ("filename", "extra_args", "expected_name"),
+    [
+        pytest.param(
+            "invoice.pdf", [], "2023-09-04_invoice.pdf", id="metadata names an undated file"
+        ),
+        pytest.param(
+            "invoice 2021-05-06.pdf",
+            [],
+            "2021-05-06 invoice.pdf",
+            id="filename date beats metadata",
+        ),
+        pytest.param(
+            "invoice.pdf",
+            ["--date", "2022-01-01"],
+            "2022-01-01_invoice.pdf",
+            id="--date beats metadata",
+        ),
+    ],
+)
+def test_clean_uses_metadata_date_after_name_and_override(
+    tmp_path, filename, extra_args, expected_name
+):
+    """Verify a PDF's creation date names it only when --date and the filename give no date."""
+    # Given: A PDF created on 2023-09-04
+    file = tmp_path / filename
+    file.write_bytes(pdf_with_creation_date("D:20230904120000"))
+
+    # When: Cleaning with a date format
+    args = ["clean", "--date-format", "%Y-%m-%d", *extra_args, str(file)]
+    with pytest.raises(cappa.Exit) as e:
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
+
+    # Then: The name carries the highest-priority date
+    assert e.value.code == 0
+    assert (tmp_path / expected_name).exists()

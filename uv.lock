@@ -426,6 +426,15 @@ wheels = [
 ]
 
 [[package]]
+name = "exifread"
+version = "3.5.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e2/4e/d8fce8810d819db47f5b159e75223511c5ccd7ad07c2feca64cf7fab2477/exifread-3.5.1.tar.gz", hash = "sha256:9f998f80d3062741c976dfc4fd033424bc40932937994e4d2181eb70c4b6aedd", size = 56552, upload-time = "2025-08-23T21:59:18.123Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e2/a3/20e34a55c7b225110d3822d07c3cab9e8653d9c179e36783f2ed632a96a7/exifread-3.5.1-py3-none-any.whl", hash = "sha256:e5426ce2857423ad401e575ea9d159dc97449dc041fb6e61b35109caea72c311", size = 59742, upload-time = "2025-08-23T21:59:16.633Z" },
+]
+
+[[package]]
 name = "failprint"
 version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -777,10 +786,12 @@ source = { editable = "." }
 dependencies = [
     { name = "cappa" },
     { name = "datefind" },
+    { name = "exifread" },
     { name = "huggingface-hub" },
     { name = "model2vec" },
     { name = "nclutils" },
     { name = "numpy" },
+    { name = "pypdf" },
     { name = "questionary" },
     { name = "rich" },
     { name = "simplemma" },
@@ -808,10 +819,12 @@ dev = [
 requires-dist = [
     { name = "cappa", specifier = ">=0.33.0" },
     { name = "datefind", specifier = ">=1.0.1,<2" },
+    { name = "exifread", specifier = ">=3.5.1,<4" },
     { name = "huggingface-hub", specifier = ">=1.33.0,<3" },
     { name = "model2vec", specifier = ">=0.10.0,<1" },
     { name = "nclutils", specifier = ">=4.0.0,<5" },
     { name = "numpy", specifier = ">=2.5.5,<3" },
+    { name = "pypdf", specifier = ">=7.1.1,<8" },
     { name = "questionary", specifier = ">=2.1.1,<3" },
     { name = "rich", specifier = ">=15.0.0" },
     { name = "simplemma", specifier = ">=2.0.0,<3" },
@@ -980,6 +993,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/49/2e/ced460408999b33da6b31b0021b0f37d329e202d4169aeb164493778f25b/pygments-2.21.0.tar.gz", hash = "sha256:610ca751c9bc2492b38eb9a38a7fbc93edbbb2d7182edaf34e66ae493dee5c8c", size = 5005329, upload-time = "2026-08-17T08:02:48.824Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/71/46/17f022dd3e953bf20a04a028a21ec746d942f8d2af30fa0f124fa0e6a684/pygments-2.21.0-py3-none-any.whl", hash = "sha256:2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9", size = 1250147, upload-time = "2026-08-17T08:02:44.912Z" },
+]
+
+[[package]]
+name = "pypdf"
+version = "7.1.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/96/5f/f41984a8150ec37c6ee50fa6fa1868d065337b65ba510a155848b2ce0b62/pypdf-7.1.1.tar.gz", hash = "sha256:2eff4e2fc5fb22a6d6711e6f1166cdc9ab5765d90cd0d77dfea3f4aa91a27b1d", size = 7221452, upload-time = "2026-11-18T11:51:08.608Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5b/ef/11ed995bd10a1632f7fea3da38ae8d42bc3ccc5b9969fe04d8620c844408/pypdf-7.1.1-py3-none-any.whl", hash = "sha256:04c5680d4b4cfa04ab505b09393fc949860c34a4dad6565284d11a2f5c3ce8b1", size = 421026, upload-time = "2026-11-18T11:51:06.563Z" },
 ]
 
 [[package]]

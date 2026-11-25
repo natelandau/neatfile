@@ -16,6 +16,7 @@ from tzlocal import get_localzone
 
 from neatfile import constants
 from neatfile.constants import (
+    DateFallback,
     DateFirst,
     InsertLocation,
     ProjectType,
@@ -54,6 +55,7 @@ class ProjectConfig:
 class Config:
     """Hold the resolved, validated settings for one run of the CLI."""
 
+    date_fallback: DateFallback
     date_first: DateFirst
     date_format: str
     ignore_dotfiles: bool
@@ -191,6 +193,7 @@ def _to_timezone(sourced: _SourcedValue) -> tzinfo:
         raise _InvalidValueError(msg) from e
 
 
+_to_date_fallback = _enum_converter(DateFallback)
 _to_date_first = _enum_converter(DateFirst)
 _to_insert_location = _enum_converter(InsertLocation)
 _to_separator = _enum_converter(Separator)
@@ -198,6 +201,7 @@ _to_transform_case = _enum_converter(TransformCase)
 
 # Converters for the settings that take the single highest-precedence value
 _SCALAR_CONVERTERS: dict[str, Callable[[_SourcedValue], object]] = {
+    "date_fallback": _to_date_fallback,
     "date_first": _to_date_first,
     "date_format": _to_str,
     "ignore_dotfiles": _to_bool,
@@ -458,6 +462,7 @@ class _SettingResolver:
             Config: The converted settings.
         """
         return Config(
+            date_fallback=self.setting(key="date_fallback", converter=_to_date_fallback),
             date_first=self.setting(key="date_first", converter=_to_date_first),
             date_format=self.setting(key="date_format", converter=_to_str),
             ignore_dotfiles=self.setting(key="ignore_dotfiles", converter=_to_bool),
