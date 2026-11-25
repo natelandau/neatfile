@@ -7,10 +7,10 @@ from pathlib import Path
 import cappa
 import pytest
 from cappa.base import invoke
-from pypdf import PdfWriter
 
 from neatfile.cli import NO_DATE_FORMAT_MESSAGE, NeatFile, configure_output
 from neatfile.commands import CHANGES_NOT_APPLIED_MESSAGE, NO_CHANGES_MESSAGE
+from tests.metadata_files import pdf_with_creation_date
 
 # Use local time to match how the `clean` command stamps filenames.
 # UTC would disagree with the app during the evening US window, when
@@ -561,15 +561,6 @@ def test_date_fallback_flag_uses_modified_date(create_file):
     assert (file.parent / "2020-01-02_notes.txt").exists()
 
 
-def _pdf_with_creation_date(path: Path, creation_date: str) -> None:
-    """Write a one-page PDF to `path` whose document info holds `creation_date`."""
-    writer = PdfWriter()
-    writer.add_blank_page(width=10, height=10)
-    writer.add_metadata({"/CreationDate": creation_date})
-    with path.open("wb") as handle:
-        writer.write(handle)
-
-
 @pytest.mark.parametrize(
     ("filename", "extra_args", "expected_name"),
     [
@@ -596,7 +587,7 @@ def test_clean_uses_metadata_date_after_name_and_override(
     """Verify a PDF's creation date names it only when --date and the filename give no date."""
     # Given: A PDF created on 2023-09-04
     file = tmp_path / filename
-    _pdf_with_creation_date(file, "D:20230904120000")
+    file.write_bytes(pdf_with_creation_date("D:20230904120000"))
 
     # When: Cleaning with a date format
     args = ["clean", "--date-format", "%Y-%m-%d", *extra_args, str(file)]

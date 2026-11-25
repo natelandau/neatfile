@@ -10,21 +10,15 @@ from pathlib import Path
 from typing import assert_never
 from xml.etree import ElementTree as ET
 
-import exifread
-from exifread.core.exceptions import ExifError
 from nclutils import pp
-from pypdf import PdfReader
-from pypdf.errors import DependencyError, PyPdfError
 
 from neatfile.constants import DateFallback
 from neatfile.utils.paths import display_path
 
-# Both libraries print warnings to stderr for malformed files; neatfile reports those itself at
-# debug level, so keep the libraries quiet
+# Both libraries log warnings for malformed files, which Python prints to stderr when nothing
+# handles them; neatfile reports unreadable metadata itself at debug level
 for _library_logger_name in ("exifread", "pypdf"):
-    _library_logger = logging.getLogger(_library_logger_name)
-    _library_logger.addHandler(logging.NullHandler())
-    _library_logger.setLevel(logging.CRITICAL)
+    logging.getLogger(_library_logger_name).setLevel(logging.CRITICAL)
 
 _EXIF_DATE_FORMAT = "%Y:%m:%d %H:%M:%S"
 _EXIF_DATE_TAGS = (
@@ -33,6 +27,47 @@ _EXIF_DATE_TAGS = (
 )
 _OFFICE_CORE_PROPERTIES = "docProps/core.xml"
 _OFFICE_CREATED_TAG = "{http://purl.org/dc/terms/}created"
+
+# Errors the parsers raise on truncated, malformed, or encrypted files. Each means the file has no
+# usable date, never a reason to stop the run.
+_PHOTO_PARSER_ERRORS: tuple[type[Exception], ...] = (
+    AttributeError,
+    EOFError,
+    IndexError,
+    KeyError,
+    OSError,
+    TypeError,
+    ValueError,
+    struct.error,
+)
+_PDF_PARSER_ERRORS: tuple[type[Exception], ...] = (
+    AttributeError,
+    IndexError,
+    KeyError,
+    OSError,
+    RecursionError,
+    TypeError,
+    ValueError,
+    struct.error,
+    zlib.error,
+)
+_OFFICE_PARSER_ERRORS: tuple[type[Exception], ...] = (
+    EOFError,
+    ET.ParseError,
+    KeyError,
+    OSError,
+    RuntimeError,  # Unsupported compression or an encrypted archive member
+    ValueError,
+    zipfile.BadZipFile,
+    zlib.error,
+)
+
+
+class _UnreadableMetadataError(Exception):
+    """Signal that a file's metadata cannot be parsed, carrying the parser's reason."""
+
+    def __init__(self, cause: Exception) -> None:
+        super().__init__(f"{type(cause).__name__}: {cause}")
 
 
 def filesystem_date(path: Path, *, fallback: DateFallback, tz: tzinfo) -> datetime:
@@ -72,10 +107,8 @@ def _parse_exif_date(tags: dict[str, object], date_tag: str, offset_tag: str) ->
     Returns:
         datetime | None: The date, or None when the tag is missing or malformed.
     """
-    if date_tag not in tags:
-        return None
     try:
-        taken = datetime.strptime(str(tags[date_tag]).strip(), _EXIF_DATE_FORMAT)  # noqa: DTZ007
+        taken = datetime.strptime(str(tags.get(date_tag, "")).strip(), _EXIF_DATE_FORMAT)  # noqa: DTZ007
     except ValueError:
         return None
     # A malformed offset keeps the date, which is then read in the configured zone
@@ -94,9 +127,20 @@ def _read_photo_date(path: Path) -> datetime | None:
 
     Returns:
         datetime | None: The capture date, with its offset when the photo records one.
+
+    Raises:
+        _UnreadableMetadataError: If the photo's EXIF data cannot be parsed.
     """
-    with path.open("rb") as handle:
-        tags = exifread.process_file(handle, details=False)
+    # Imported lazily so runs that never read a photo do not pay for loading the parser
+    import exifread  # noqa: PLC0415
+    from exifread.core.exceptions import ExifError  # noqa: PLC0415
+
+    try:
+        with path.open("rb") as handle:
+            tags = exifread.process_file(handle, details=False)
+    except (*_PHOTO_PARSER_ERRORS, ExifError) as e:
+        raise _UnreadableMetadataError(e) from e
+
     return next(
         (
             taken
@@ -115,15 +159,25 @@ def _read_pdf_date(path: Path) -> datetime | None:
 
     Returns:
         datetime | None: The creation date, or None when the PDF records none.
+
+    Raises:
+        _UnreadableMetadataError: If the PDF cannot be parsed or decrypted.
     """
-    # Passing a handle lets pypdf seek; given a path, it reads the whole file into memory
-    with path.open("rb") as handle:
-        reader = PdfReader(handle, strict=False)
-        if reader.metadata is not None and reader.metadata.creation_date is not None:
-            return reader.metadata.creation_date
-        if reader.xmp_metadata is not None:
-            return reader.xmp_metadata.xmp_create_date
-    return None
+    # Imported lazily so runs that never read a PDF do not pay for loading the parser
+    from pypdf import PdfReader  # noqa: PLC0415
+    from pypdf.errors import DependencyError, PyPdfError  # noqa: PLC0415
+
+    try:
+        # Passing a handle lets pypdf seek; given a path, it reads the whole file into memory
+        with path.open("rb") as handle:
+            reader = PdfReader(handle, strict=False)
+            info = reader.metadata
+            if info is not None and info.creation_date is not None:
+                return info.creation_date
+            xmp = reader.xmp_metadata
+            return xmp.xmp_create_date if xmp is not None else None
+    except (*_PDF_PARSER_ERRORS, DependencyError, PyPdfError) as e:
+        raise _UnreadableMetadataError(e) from e
 
 
 def _read_office_date(path: Path) -> datetime | None:
@@ -134,37 +188,20 @@ def _read_office_date(path: Path) -> datetime | None:
 
     Returns:
         datetime | None: The creation date, or None when the file records none.
+
+    Raises:
+        _UnreadableMetadataError: If the file is not a readable Office archive or holds a malformed
+            date.
     """
-    with zipfile.ZipFile(path) as archive:
-        core_properties = ET.fromstring(archive.read(_OFFICE_CORE_PROPERTIES))  # noqa: S314
-    created = core_properties.find(_OFFICE_CREATED_TAG)
-    if created is None or not created.text:
-        return None
-    return datetime.fromisoformat(created.text.strip())
-
-
-# The parsers read untrusted bytes and raise many unrelated errors on truncated, malformed, or
-# encrypted files. Each is a missing date, never a reason to stop the run.
-_UNREADABLE_METADATA_ERRORS: tuple[type[Exception], ...] = (
-    AttributeError,
-    DependencyError,
-    EOFError,
-    ET.ParseError,
-    ExifError,
-    IndexError,
-    KeyError,
-    NotImplementedError,
-    OSError,
-    OverflowError,
-    PyPdfError,
-    RecursionError,
-    RuntimeError,
-    TypeError,
-    ValueError,
-    struct.error,
-    zipfile.BadZipFile,
-    zlib.error,
-)
+    try:
+        with zipfile.ZipFile(path) as archive:
+            core_properties = ET.fromstring(archive.read(_OFFICE_CORE_PROPERTIES))  # noqa: S314
+        created = core_properties.find(_OFFICE_CREATED_TAG)
+        if created is None or not created.text:
+            return None
+        return datetime.fromisoformat(created.text.strip())
+    except _OFFICE_PARSER_ERRORS as e:
+        raise _UnreadableMetadataError(e) from e
 
 
 _PHOTO_SUFFIXES = [
@@ -183,12 +220,11 @@ _PHOTO_SUFFIXES = [
     ".tiff",
     ".webp",
 ]
+_OFFICE_SUFFIXES = (".docx", ".pptx", ".xlsx")
 _METADATA_READERS: dict[str, Callable[[Path], datetime | None]] = {
     **dict.fromkeys(_PHOTO_SUFFIXES, _read_photo_date),
+    **dict.fromkeys(_OFFICE_SUFFIXES, _read_office_date),
     ".pdf": _read_pdf_date,
-    ".docx": _read_office_date,
-    ".pptx": _read_office_date,
-    ".xlsx": _read_office_date,
 }
 
 
@@ -212,13 +248,18 @@ def read_metadata_date(path: Path, *, tz: tzinfo) -> datetime | None:
 
     try:
         found = reader(path)
-        if found is None:
-            return None
-        if found.tzinfo is None:
-            return found.replace(tzinfo=tz)
+    except _UnreadableMetadataError as e:
+        pp.debug(f"No metadata date in `{display_path(path)}`: {e}")
+        return None
+
+    if found is None:
+        return None
+    if found.tzinfo is None:
+        return found.replace(tzinfo=tz)
+    try:
         return found.astimezone(tz)
-    except _UNREADABLE_METADATA_ERRORS as e:
-        pp.debug(f"No metadata date in `{display_path(path)}`: {type(e).__name__}: {e}")
+    except OverflowError as e:
+        pp.debug(f"Metadata date in `{display_path(path)}` is out of range: {found!r}: {e}")
         return None
 
 
