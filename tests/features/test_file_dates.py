@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 from pypdf import PdfWriter
+from pypdf.errors import DependencyError
 from pytest_mock import MockerFixture
 
 from neatfile.constants import DateFallback
@@ -56,10 +57,14 @@ def test_filesystem_date(
     ) == datetime.fromtimestamp(expected_timestamp, tz=UTC)
 
 
-def _jpeg_with_exif(date_text: str, offset_text: str | None = None) -> bytes:
-    """Return a minimal JPEG whose Exif IFD holds DateTimeOriginal and, optionally, OffsetTimeOriginal."""
+def _jpeg_with_exif(
+    date_text: str, offset_text: str | None = None, *, digitized_text: str | None = None
+) -> bytes:
+    """Return a minimal JPEG whose Exif IFD holds DateTimeOriginal and the optional date tags."""
     entries: list[tuple[int, bytes]] = [(0x9003, date_text.encode() + b"\0")]
-    if offset_text:
+    if digitized_text:
+        entries.append((0x9004, digitized_text.encode() + b"\0"))
+    if offset_text is not None:
         entries.append((0x9011, offset_text.encode() + b"\0"))
     ifd0_offset = 8
     exif_ifd_offset = ifd0_offset + 2 + 12 + 4
@@ -146,6 +151,18 @@ def _office_with_created(created: str) -> bytes:
             datetime(2023, 9, 4, 8, 34, 56, tzinfo=TZ),
             id="xlsx",
         ),
+        pytest.param(
+            "photo.jpg",
+            _jpeg_with_exif("0000:00:00 00:00:00", digitized_text="2023:09:04 12:34:56"),
+            datetime(2023, 9, 4, 12, 34, 56, tzinfo=TZ),
+            id="unset original falls through to digitized",
+        ),
+        pytest.param(
+            "photo.jpg",
+            _jpeg_with_exif("2023:09:04 12:34:56", "      "),
+            datetime(2023, 9, 4, 12, 34, 56, tzinfo=TZ),
+            id="blank offset keeps the date in tz",
+        ),
     ],
 )
 def test_read_metadata_date_finds_date(
@@ -176,6 +193,12 @@ def test_read_metadata_date_finds_date(
         ),
         pytest.param("report.pptx", b"junk", id="not a zip"),
         pytest.param("notes.txt", b"2023-09-04", id="unsupported type"),
+        pytest.param("photo.jpg", b"\xff\xd8\xff", id="truncated photo"),
+        pytest.param(
+            "scan.pdf",
+            _pdf_with_creation_date("D:00010101000000+05'00'"),
+            id="pdf date out of range after conversion",
+        ),
     ],
 )
 def test_read_metadata_date_without_date(
@@ -187,3 +210,17 @@ def test_read_metadata_date_without_date(
 
     assert read_metadata_date(path, tz=TZ) is None
     assert capsys.readouterr().err == ""
+
+
+def test_read_metadata_date_pdf_needing_missing_decryption_library(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
+    """Verify an AES-encrypted PDF, which pypdf cannot open without `cryptography`, gives None."""
+    path = tmp_path / "statement.pdf"
+    path.write_bytes(_pdf_with_creation_date("D:20230904123456"))
+    mocker.patch(
+        "neatfile.features.file_dates.PdfReader",
+        side_effect=DependencyError("cryptography>=3.1 is required for AES algorithm"),
+    )
+
+    assert read_metadata_date(path, tz=TZ) is None

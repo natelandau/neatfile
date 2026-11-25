@@ -19,7 +19,7 @@
         "rich>=15.0.0",
         "simplemma>=2.0.0,<3",
         "tzlocal>=5.4.5,<6",
-]
+    ]
     description = "CLI to automatically normalize and organize your files based on customizable rules."
     license = "AGPL-3.0-only"
     name = "neatfile"
