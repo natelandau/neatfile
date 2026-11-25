@@ -1,3 +1,43 @@
+## v6.0.0 (2026-11-25)
+
+### BREAKING CHANGE
+
+- runs of 4 to 7 digits, such as 120524, are
+no longer read as dates. Set short_digit_dates = true to read
+them. Digit runs that date_format itself writes are always
+read.
+- a project that sets `depth` indexes one level
+fewer than before. Add 1 to the value to keep the same
+folders. The default rises from 2 to 3, so projects that do
+not set `depth` are unchanged. `depth = 0` is now a
+configuration error.
+
+### Feat
+
+- **clean**: date undated files from their metadata (#152)
+- **clean**: upgrade date detection to datefind 1.0.1 (#149)
+- **undo**: add an undo journal and neatfile undo (#146)
+- **clean**: show each cleaning step at -v
+- **clean**: use filename stopwords and fix cleaning bugs (#144)
+
+### Fix
+
+- **clean**: keep new filenames valid on every platform (#150)
+- **file**: keep dotted names whole, skip same-folder moves (#148)
+- **project**: rework project folder indexing and depth (#147)
+- **clean**: keep possessives as one word (#145)
+- **cli**: exit with an error when a prompt gets no input
+
+### Refactor
+
+- **clean**: plan names without touching the file
+- **config**: replace dynaconf with typed settings (#143)
+- **types**: fix issues flagged by ty
+
+### Perf
+
+- **move**: rename instead of copy on the same filesystem (#151)
+
 ## v5.1.0 (2026-09-04)
 
 ### Feat
