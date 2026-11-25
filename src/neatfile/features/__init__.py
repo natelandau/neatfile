@@ -2,7 +2,7 @@
 
 from .cleaning import CleanedName, clean_name, parse_date_option
 from .committing import CommittedChange, commit_changes, with_backup_location
-from .file_dates import filesystem_date
+from .file_dates import fallback_file_date
 from .identify_files import find_processable_files
 from .journal import (
     JournalEntry,
@@ -37,7 +37,7 @@ __all__ = [
     "UndoResult",
     "clean_name",
     "commit_changes",
-    "filesystem_date",
+    "fallback_file_date",
     "find_processable_files",
     "journal_lock",
     "journal_path",

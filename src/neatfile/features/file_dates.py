@@ -191,3 +191,17 @@ def read_metadata_date(path: Path, *, tz: tzinfo) -> datetime | None:
     if found.tzinfo is None:
         return found.replace(tzinfo=tz)
     return found.astimezone(tz)
+
+
+def fallback_file_date(path: Path, *, fallback: DateFallback, tz: tzinfo) -> datetime:
+    """Return the date for a file whose name holds none: its metadata date, else a file timestamp.
+
+    Args:
+        path (Path): The file to date.
+        fallback (DateFallback): Which file timestamp to use when the metadata holds no date.
+        tz (tzinfo): The time zone to express the date in.
+
+    Returns:
+        datetime: The metadata date, else the chosen file timestamp, in `tz`.
+    """
+    return read_metadata_date(path, tz=tz) or filesystem_date(path, fallback=fallback, tz=tz)

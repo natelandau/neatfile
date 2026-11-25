@@ -7,6 +7,7 @@ from pathlib import Path
 import cappa
 import pytest
 from cappa.base import invoke
+from pypdf import PdfWriter
 
 from neatfile.cli import NO_DATE_FORMAT_MESSAGE, NeatFile, configure_output
 from neatfile.commands import CHANGES_NOT_APPLIED_MESSAGE, NO_CHANGES_MESSAGE
@@ -558,3 +559,50 @@ def test_date_fallback_flag_uses_modified_date(create_file):
     # Then: The name carries the modification date
     assert e.value.code == 0
     assert (file.parent / "2020-01-02_notes.txt").exists()
+
+
+def _pdf_with_creation_date(path: Path, creation_date: str) -> None:
+    """Write a one-page PDF to `path` whose document info holds `creation_date`."""
+    writer = PdfWriter()
+    writer.add_blank_page(width=10, height=10)
+    writer.add_metadata({"/CreationDate": creation_date})
+    with path.open("wb") as handle:
+        writer.write(handle)
+
+
+@pytest.mark.parametrize(
+    ("filename", "extra_args", "expected_name"),
+    [
+        pytest.param(
+            "invoice.pdf", [], "2023-09-04_invoice.pdf", id="metadata names an undated file"
+        ),
+        pytest.param(
+            "invoice 2021-05-06.pdf",
+            [],
+            "2021-05-06 invoice.pdf",
+            id="filename date beats metadata",
+        ),
+        pytest.param(
+            "invoice.pdf",
+            ["--date", "2022-01-01"],
+            "2022-01-01_invoice.pdf",
+            id="--date beats metadata",
+        ),
+    ],
+)
+def test_clean_uses_metadata_date_after_name_and_override(
+    tmp_path, filename, extra_args, expected_name
+):
+    """Verify a PDF's creation date names it only when --date and the filename give no date."""
+    # Given: A PDF created on 2023-09-04
+    file = tmp_path / filename
+    _pdf_with_creation_date(file, "D:20230904120000")
+
+    # When: Cleaning with a date format
+    args = ["clean", "--date-format", "%Y-%m-%d", *extra_args, str(file)]
+    with pytest.raises(cappa.Exit) as e:
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
+
+    # Then: The name carries the highest-priority date
+    assert e.value.code == 0
+    assert (tmp_path / expected_name).exists()

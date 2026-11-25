@@ -360,7 +360,7 @@ def clean_name(
         config (Config): The settings that control each transformation.
         override_date (FoundDate | None): The date from `--date`, parsed with `parse_date_option`, or None to use the name's own date.
         date_only (bool): Add the date and make no other changes to the name beyond keeping it valid on every system.
-        fallback_date (Callable[[], datetime] | None, optional): Returns the date to use when neither `override_date` nor the name holds one, such as the file's creation date. Defaults to None, which adds no date in that case.
+        fallback_date (Callable[[], datetime] | None, optional): Returns the date to use when neither `override_date` nor the name holds one, such as the file's metadata date or a file timestamp. Defaults to None, which adds no date in that case.
 
     Returns:
         CleanedName: The planned stem and suffix.

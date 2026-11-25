@@ -43,7 +43,7 @@ What's the problem here?
 -   Identify dates in filenames in many different formats and normalize them into a preferred format
 -   Keep a date that names a month, week, quarter, half year, or year in a short form, such as `2025-03` or `2024-Q3`, instead of adding a day that the filename does not state
 -   Add the date to the beginning or the end of the filename (or remove it entirely)
--   Fall back to file creation date if no date is found in the filename
+-   When the filename has no date, use the date in the file's metadata (photos, PDF, Word, Excel, PowerPoint), then the file's created or modified date
 
 ### File organization
 
@@ -219,7 +219,7 @@ strip_stopwords    = true
 # Options: "ignore", "lower", "upper", "title", "sentence"
 transform_case     = "ignore"
 
-# Time zone for the dates that neatfile reads from filenames and file creation times.
+# Time zone for the dates that neatfile reads from filenames, file metadata, and file dates.
 # Use an IANA time zone name. If you do not set it, neatfile uses the local time zone.
 # tz                 = "America/New_York"
 

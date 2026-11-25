@@ -24,7 +24,7 @@ from neatfile.features import (
     UndoResult,
     clean_name,
     commit_changes,
-    filesystem_date,
+    fallback_file_date,
     find_processable_files,
     journal_lock,
     journal_path,
@@ -162,7 +162,7 @@ def _plan_changes(
             override_date=override_date,
             date_only=options.date_only,
             fallback_date=partial(
-                filesystem_date, path=file.path, fallback=config.date_fallback, tz=config.tz
+                fallback_file_date, path=file.path, fallback=config.date_fallback, tz=config.tz
             ),
         )
         file.new_stem = cleaned.stem

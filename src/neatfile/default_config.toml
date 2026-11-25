@@ -74,7 +74,7 @@ strip_stopwords = true
 # Options: "ignore", "lower", "upper", "title", "sentence"
 transform_case = "ignore"
 
-# Time zone for the dates that neatfile reads from filenames and file creation times.
+# Time zone for the dates that neatfile reads from filenames, file metadata, and file dates.
 # Use an IANA time zone name. If you do not set it, neatfile uses the local time zone.
 # tz = "America/New_York"
 
