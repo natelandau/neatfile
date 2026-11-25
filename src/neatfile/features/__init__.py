@@ -1,7 +1,8 @@
 """Feature module."""
 
-from .cleaning import CleanedName, clean_name, file_creation_date, parse_date_option
+from .cleaning import CleanedName, clean_name, parse_date_option
 from .committing import CommittedChange, commit_changes, with_backup_location
+from .file_dates import filesystem_date
 from .identify_files import find_processable_files
 from .journal import (
     JournalEntry,
@@ -36,7 +37,7 @@ __all__ = [
     "UndoResult",
     "clean_name",
     "commit_changes",
-    "file_creation_date",
+    "filesystem_date",
     "find_processable_files",
     "journal_lock",
     "journal_path",

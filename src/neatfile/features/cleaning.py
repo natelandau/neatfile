@@ -3,8 +3,7 @@
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, tzinfo
-from pathlib import Path
+from datetime import datetime
 from typing import assert_never
 
 from datefind import FoundDate, find_date
@@ -109,35 +108,6 @@ def parse_date_option(text: str | None, *, config: Config) -> FoundDate | None:
     if found_date is None:
         pp.warning(DATE_NOT_FOUND_MESSAGE.format(value=text))
     return found_date
-
-
-def _creation_timestamp(path: Path) -> float:
-    """Return the best available creation time for a file.
-
-    Birth time is only reported on some platforms. Modification time is the fallback because
-    ctime on Unix is the inode change time and moves on every chmod or rename.
-
-    Args:
-        path (Path): The file to inspect.
-
-    Returns:
-        float: Seconds since the epoch.
-    """
-    stat = path.stat()
-    return getattr(stat, "st_birthtime", stat.st_mtime)
-
-
-def file_creation_date(path: Path, *, tz: tzinfo) -> datetime:
-    """Return when a file was created, for naming files whose names hold no date.
-
-    Args:
-        path (Path): The file to inspect.
-        tz (tzinfo): The time zone to express the date in.
-
-    Returns:
-        datetime: The birth time where the platform reports one, else the modification time.
-    """
-    return datetime.fromtimestamp(_creation_timestamp(path), tz=tz)
 
 
 def _remove_date_text(stem: str, date_text: str) -> str:

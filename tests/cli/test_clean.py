@@ -1,5 +1,6 @@
 """Test the clean command."""
 
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -540,3 +541,20 @@ def test_clean_shows_cleaning_steps_at_verbose(
 
     captured = capsys.readouterr()
     assert ("CLEAN (strip stopwords)" in captured.out + captured.err) is shows_steps
+
+
+def test_date_fallback_flag_uses_modified_date(create_file):
+    """Verify --date-fallback modified names an undated file by its modification time."""
+    # Given: An undated file last modified on 2020-01-02
+    file = create_file("notes.txt")
+    modified = datetime(2020, 1, 2, 12, 0).astimezone().timestamp()
+    os.utime(file, (modified, modified))
+
+    # When: Cleaning with the modified-date fallback
+    args = ["clean", "--date-format", "%Y-%m-%d", "--date-fallback", "modified", str(file)]
+    with pytest.raises(cappa.Exit) as e:
+        invoke(obj=NeatFile, argv=args, deps=[configure_output])
+
+    # Then: The name carries the modification date
+    assert e.value.code == 0
+    assert (file.parent / "2020-01-02_notes.txt").exists()

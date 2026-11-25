@@ -162,6 +162,11 @@ date_first = "month"
 # form, such as 2025-03 or 2024-Q3, instead of this format.
 date_format        = ""
 
+# Date to use when neither the filename nor the file's metadata holds one.
+# "created" uses the creation date where the system reports it, else the modified date.
+# Options: "created", "modified"
+date_fallback      = "created"
+
 # Ignores dotfiles (files that start with a period) when cleaning a directory.
 # true or false
 ignore_dotfiles    = true
