@@ -549,7 +549,7 @@ def test_date_fallback_flag_uses_modified_date(create_file):
     # Given: An undated file last modified on 2020-01-02
     file = create_file("notes.txt")
     modified = datetime(2020, 1, 2, 12, 0).astimezone().timestamp()
-    os.utime(file, (modified, modified))
+    os.utime(file, times=(modified, modified))
 
     # When: Cleaning with the modified-date fallback
     args = ["clean", "--date-format", "%Y-%m-%d", "--date-fallback", "modified", str(file)]

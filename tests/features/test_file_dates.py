@@ -12,9 +12,11 @@ from pytest_mock import MockerFixture
 from neatfile.constants import DateFallback
 from neatfile.features.file_dates import filesystem_date, read_metadata_date
 from tests.metadata_files import (
+    heic_with_open_ended_box,
     jpeg_with_exif,
     office_with_created,
     pdf_with_creation_date,
+    pdf_with_xmp,
     zip_bytes,
 )
 
@@ -70,7 +72,7 @@ def test_filesystem_date(
         ),
         pytest.param(
             "photo.JPG",
-            jpeg_with_exif("2023:09:04 12:34:56", "+02:00"),
+            jpeg_with_exif("2023:09:04 12:34:56", offset_text="+02:00"),
             datetime(2023, 9, 4, 6, 34, 56, tzinfo=TZ),
             id="photo offset converted to tz, uppercase suffix",
         ),
@@ -79,6 +81,12 @@ def test_filesystem_date(
             pdf_with_creation_date("D:20230904123456+02'00'"),
             datetime(2023, 9, 4, 6, 34, 56, tzinfo=TZ),
             id="pdf",
+        ),
+        pytest.param(
+            "scan.pdf",
+            pdf_with_xmp("2023-09-04T12:34:56Z", info_creation_date="garbage"),
+            datetime(2023, 9, 4, 8, 34, 56, tzinfo=TZ),
+            id="pdf malformed info date falls through to xmp",
         ),
         pytest.param(
             "report.docx",
@@ -100,7 +108,7 @@ def test_filesystem_date(
         ),
         pytest.param(
             "photo.jpg",
-            jpeg_with_exif("2023:09:04 12:34:56", "      "),
+            jpeg_with_exif("2023:09:04 12:34:56", offset_text="      "),
             datetime(2023, 9, 4, 12, 34, 56, tzinfo=TZ),
             id="blank offset keeps the date in tz",
         ),
@@ -139,6 +147,22 @@ def test_read_metadata_date_finds_date(
             "scan.pdf",
             pdf_with_creation_date("D:00010101000000+05'00'"),
             id="pdf date out of range after conversion",
+        ),
+        pytest.param("photo.heic", heic_with_open_ended_box(), id="heic open-ended box"),
+        pytest.param(
+            "scan.pdf",
+            pdf_with_xmp("2023-09-04T12:34:56Z", stream_filter="/UnknownDecode"),
+            id="pdf xmp with unsupported filter",
+        ),
+        pytest.param(
+            "report.docx",
+            zip_bytes({"docProps/core.xml": '<?xml version="1.0" encoding="x-unknown"?><a/>'}),
+            id="office core.xml with unknown encoding",
+        ),
+        pytest.param(
+            "report.docx",
+            zip_bytes({"docProps/core.xml": " " * (1024 * 1024 + 1)}),
+            id="office core.xml over the size cap",
         ),
     ],
 )

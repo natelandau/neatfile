@@ -5,6 +5,7 @@ import struct
 import zipfile
 
 from pypdf import PdfWriter
+from pypdf.generic import DecodedStreamObject, NameObject
 
 
 def jpeg_with_exif(
@@ -48,12 +49,44 @@ def pdf_with_creation_date(creation_date: str, *, password: str | None = None) -
     return buffer.getvalue()
 
 
+def pdf_with_xmp(
+    create_date: str, *, info_creation_date: str | None = None, stream_filter: str | None = None
+) -> bytes:
+    """Return a one-page PDF whose XMP metadata holds `create_date`, with an optional info date and stream filter."""
+    writer = PdfWriter()
+    writer.add_blank_page(width=10, height=10)
+    if info_creation_date is not None:
+        writer.add_metadata({"/CreationDate": info_creation_date})
+    xmp = DecodedStreamObject()
+    xmp.set_data(
+        b'<x:xmpmeta xmlns:x="adobe:ns:meta/">'
+        b'<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+        b'<rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/">'
+        + f"<xmp:CreateDate>{create_date}</xmp:CreateDate>".encode()
+        + b"</rdf:Description></rdf:RDF></x:xmpmeta>"
+    )
+    xmp[NameObject("/Type")] = NameObject("/Metadata")
+    xmp[NameObject("/Subtype")] = NameObject("/XML")
+    if stream_filter is not None:
+        xmp[NameObject("/Filter")] = NameObject(stream_filter)
+    writer.root_object[NameObject("/Metadata")] = writer._add_object(xmp)
+    buffer = io.BytesIO()
+    writer.write(buffer)
+    return buffer.getvalue()
+
+
+def heic_with_open_ended_box() -> bytes:
+    """Return a HEIC header followed by a box whose size of 0 means it runs to the end of the file."""
+    ftyp = struct.pack(">L", 24) + b"ftypheic" + b"\0\0\0\0" + b"mif1heic"
+    return ftyp + struct.pack(">L", 0) + b"meta" + b"\0" * 32
+
+
 def zip_bytes(members: dict[str, str]) -> bytes:
     """Return a zip archive holding `members`, keyed by archive path."""
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, mode="w") as archive:
         for name, text in members.items():
-            archive.writestr(name, text)
+            archive.writestr(zinfo_or_arcname=name, data=text)
     return buffer.getvalue()
 
 

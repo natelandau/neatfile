@@ -5,15 +5,18 @@ import struct
 import zipfile
 import zlib
 from collections.abc import Callable
-from datetime import datetime, tzinfo
+from datetime import UTC, datetime, tzinfo
 from pathlib import Path
-from typing import assert_never
+from typing import TYPE_CHECKING, assert_never
 from xml.etree import ElementTree as ET
 
 from nclutils import pp
 
 from neatfile.constants import DateFallback
 from neatfile.utils.paths import display_path
+
+if TYPE_CHECKING:
+    from pypdf import DocumentInformation
 
 # Both libraries log warnings for malformed files, which Python prints to stderr when nothing
 # handles them; neatfile reports unreadable metadata itself at debug level
@@ -27,6 +30,8 @@ _EXIF_DATE_TAGS = (
 )
 _OFFICE_CORE_PROPERTIES = "docProps/core.xml"
 _OFFICE_CREATED_TAG = "{http://purl.org/dc/terms/}created"
+# Real core properties are a few kilobytes; the cap stops a zip bomb from exhausting memory
+_MAX_OFFICE_CORE_PROPERTIES_BYTES = 1024 * 1024
 
 # Errors the parsers raise on truncated, malformed, or encrypted files. Each means the file has no
 # usable date, never a reason to stop the run.
@@ -35,6 +40,7 @@ _PHOTO_PARSER_ERRORS: tuple[type[Exception], ...] = (
     EOFError,
     IndexError,
     KeyError,
+    NotImplementedError,  # A HEIC box that runs to the end of the file
     OSError,
     TypeError,
     ValueError,
@@ -44,6 +50,7 @@ _PDF_PARSER_ERRORS: tuple[type[Exception], ...] = (
     AttributeError,
     IndexError,
     KeyError,
+    NotImplementedError,  # A stream compressed with a filter pypdf does not support
     OSError,
     RecursionError,
     TypeError,
@@ -55,6 +62,7 @@ _OFFICE_PARSER_ERRORS: tuple[type[Exception], ...] = (
     EOFError,
     ET.ParseError,
     KeyError,
+    LookupError,  # An XML declaration naming an unknown encoding
     OSError,
     RuntimeError,  # Unsupported compression or an encrypted archive member
     ValueError,
@@ -145,10 +153,30 @@ def _read_photo_date(path: Path) -> datetime | None:
         (
             taken
             for date_tag, offset_tag in _EXIF_DATE_TAGS
-            if (taken := _parse_exif_date(tags, date_tag, offset_tag)) is not None
+            if (taken := _parse_exif_date(tags=tags, date_tag=date_tag, offset_tag=offset_tag))
+            is not None
         ),
         None,
     )
+
+
+def _read_pdf_info_date(info: "DocumentInformation | None", *, path: Path) -> datetime | None:
+    """Return the creation date in a PDF's document info, so a malformed one still lets XMP answer.
+
+    Args:
+        info (DocumentInformation | None): The PDF's document info, or None when it has none.
+        path (Path): The PDF, named in the debug message for a malformed date.
+
+    Returns:
+        datetime | None: The creation date, or None when it is missing or malformed.
+    """
+    if info is None:
+        return None
+    try:
+        return info.creation_date
+    except ValueError as e:
+        pp.debug(f"Malformed document info creation date in `{display_path(path)}`: {e}")
+        return None
 
 
 def _read_pdf_date(path: Path) -> datetime | None:
@@ -171,13 +199,39 @@ def _read_pdf_date(path: Path) -> datetime | None:
         # Passing a handle lets pypdf seek; given a path, it reads the whole file into memory
         with path.open("rb") as handle:
             reader = PdfReader(handle, strict=False)
-            info = reader.metadata
-            if info is not None and info.creation_date is not None:
-                return info.creation_date
+            info_date = _read_pdf_info_date(reader.metadata, path=path)
+            if info_date is not None:
+                return info_date
             xmp = reader.xmp_metadata
-            return xmp.xmp_create_date if xmp is not None else None
+            if xmp is None or xmp.xmp_create_date is None:
+                return None
+            # pypdf converts XMP dates to UTC and drops the zone
+            return xmp.xmp_create_date.replace(tzinfo=UTC)
     except (*_PDF_PARSER_ERRORS, DependencyError, PyPdfError) as e:
         raise _UnreadableMetadataError(e) from e
+
+
+def _read_office_core_properties(archive: zipfile.ZipFile) -> bytes:
+    """Return an Office archive's core properties XML without inflating more than the size cap.
+
+    Args:
+        archive (zipfile.ZipFile): The open Office archive.
+
+    Returns:
+        bytes: The core properties XML.
+
+    Raises:
+        ValueError: If the core properties exceed `_MAX_OFFICE_CORE_PROPERTIES_BYTES`.
+    """
+    with archive.open(_OFFICE_CORE_PROPERTIES) as member:
+        core_xml = member.read(_MAX_OFFICE_CORE_PROPERTIES_BYTES + 1)
+    if len(core_xml) > _MAX_OFFICE_CORE_PROPERTIES_BYTES:
+        msg = (
+            f"`{_OFFICE_CORE_PROPERTIES}` is larger than the "
+            f"{_MAX_OFFICE_CORE_PROPERTIES_BYTES}-byte limit for core properties"
+        )
+        raise ValueError(msg)
+    return core_xml
 
 
 def _read_office_date(path: Path) -> datetime | None:
@@ -195,7 +249,7 @@ def _read_office_date(path: Path) -> datetime | None:
     """
     try:
         with zipfile.ZipFile(path) as archive:
-            core_properties = ET.fromstring(archive.read(_OFFICE_CORE_PROPERTIES))  # noqa: S314
+            core_properties = ET.fromstring(_read_office_core_properties(archive))  # noqa: S314
         created = core_properties.find(_OFFICE_CREATED_TAG)
         if created is None or not created.text:
             return None
